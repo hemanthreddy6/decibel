@@ -31,6 +31,8 @@
 
 alpha [a-zA-Z]
 digit [0-9]
+multiline_comment_start \/\*
+multiline_comment_end \*+\/
 
 %%
 "import"        { token("IMPORT"); }
@@ -107,6 +109,15 @@ digit [0-9]
 "<-" { token("<-"); } 
 
 ";" { token(";"); }
+"{" { token("{")}
+"}" { token("}")}
+"[" { token("[")}
+"]" { token("]")}
+"(" { token("(")}
+")" { token(")")}
+":" { token(":")}
+"@" { token("@")}
+"_" { token("_")}
 
 {alpha}({alpha}|{digit}|_)* { token("IDENTIFIER");}
 {digit}+ { token("INT"); printf("%ld\n", atol(yytext));} 
@@ -116,6 +127,9 @@ digit [0-9]
 ({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(s|S) { token("FLOAT"); printf("%lf\n", seconds_to_float(yytext)); }
 \"[^"]*\" { token("STRING"); printf("%s\n", yytext);}
 \'[^']*\' { token("STRING"); printf("%s\n", yytext);}
+
+\/\/(.*)(\n)? ;
+{multiline_comment_start}([^\*]|\*+[^\/\*])*{multiline_comment_end}(\n)? ;
 
 \n { ; }
 . { ; }
