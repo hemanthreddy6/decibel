@@ -1,6 +1,6 @@
 build:
 	flex lexer.l
-	gcc -o lexer lex.yy.c
+	gcc -o lexer lex.yy.c -lm
 
 run: build
 	./lexer
