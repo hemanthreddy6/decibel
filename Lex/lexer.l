@@ -1,12 +1,16 @@
 %{
     #include <stdio.h>
+    void token(char* str) {
+        printf("%s\n",str);
+    }
 %}
 
 alpha [a-zA-Z]
 digit [0-9]
 
 %%
-const { printf("CONST\n");}
+"const" { token("CONST"); }
+"load" { token("LOAD"); }
 
 
 {alpha}({alpha}|{digit}|_)* { printf("IDENTIFIER\n");}
