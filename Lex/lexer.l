@@ -1,9 +1,13 @@
 %{
     #include <stdio.h>
+    void token(char* str) {
+        printf("%s\n",str);
+    }
 %}
 
 %%
-const { printf("CONST\n");}
+"const" { token("CONST"); }
+"load" { token("LOAD"); }
 
 \n { ;}
 . { ;}
