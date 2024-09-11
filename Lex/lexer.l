@@ -109,15 +109,15 @@ multiline_comment_end \*+\/
 "<-" { token("<-"); } 
 
 ";" { token(";"); }
-"{" { token("{")}
-"}" { token("}")}
-"[" { token("[")}
-"]" { token("]")}
-"(" { token("(")}
-")" { token(")")}
-":" { token(":")}
-"@" { token("@")}
-"_" { token("_")}
+"{" { token("{"); }
+"}" { token("}"); }
+"[" { token("["); }
+"]" { token("]"); }
+"(" { token("("); }
+")" { token(")"); }
+":" { token(":"); }
+"@" { token("@"); }
+"_" { token("_"); }
 
 {alpha}({alpha}|{digit}|_)* { token("IDENTIFIER");}
 {digit}+ { token("INT"); printf("%ld\n", atol(yytext));} 
