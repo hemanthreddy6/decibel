@@ -1,0 +1,7 @@
+if a%b {
+    a *= b;
+} or a/c {
+    a %= c;
+} otherwise {
+    a /= d;
+}
