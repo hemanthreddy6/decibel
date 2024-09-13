@@ -1,0 +1,11 @@
+import "fdsklj";
+function sum <- (a:int, b:int):int{
+    return a + b;
+}
+function add1 <- sum(_, 1);
+function main <- () {
+    a <- 0;
+    a = add1(2);
+    b <- sum(1);
+    return a;
+}

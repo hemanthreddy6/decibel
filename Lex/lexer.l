@@ -119,9 +119,10 @@ multiline_comment_end \*+\/
 ":" { token(":"); }
 "@" { token("@"); }
 "_" { token("_"); }
+"," { token(","); }
 
 {alpha}({alpha}|{digit}|_)* { token("IDENTIFIER");}
-{digit}+ { token("INT");/* printf("%ld\n", atol(yytext));*/} 
+{digit}+ { token("NUMBER");/* printf("%ld\n", atol(yytext));*/} 
 ({digit}*"."{digit}+|{digit}+"."{digit}*) { token("FLOAT");/* double var; sscanf(yytext, "%lf", &var); printf("%lf\n", var);*/}
 ({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(hz|HZ|hZ|Hz) { token("FLOAT"); /*printf("%lf\n", frequency_to_semitones(yytext));*/}
 ({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(ms|Ms|MS|mS) { token("FLOAT"); /*printf("%lf\n", milliseconds_to_float(yytext));*/ }
