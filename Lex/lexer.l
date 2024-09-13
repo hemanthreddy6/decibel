@@ -133,7 +133,8 @@ multiline_comment_end \*+\/
 {multiline_comment_start}([^\*]|\*+[^\/\*])*{multiline_comment_end}(\n)? ;
 
 \n { ; }
-. { ; }
+[\t ] { ; }
+. { printf("INVALID_SYMBOL\n"); }
 %%
 
 int yywrap(void) {
