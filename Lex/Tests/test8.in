@@ -1,0 +1,8 @@
+audio my_audio_1 = audio(SIN,1.2,120);
+audio my_audio_2 = audio(COS,1.2,120);
+
+my_audio_1 = my_audio_1 + my_audio_2;
+sliced_audio = my_audio_1[:23];
+
+
+play sliced_audio^12;  // plays the file 12 times 

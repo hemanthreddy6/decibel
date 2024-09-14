@@ -1,0 +1,10 @@
+audio_1 = audio_1 | audio_2;
+
+function exp <- (length:float, time: float) {
+	return 2^(-length*time);
+}
+
+audio_1*exp(10); 
+
+audio_2 >> 2.5;
+audio_3 = ~audio_1[40:];
