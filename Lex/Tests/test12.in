@@ -1,0 +1,8 @@
+audio track <- load "track.wav";
+audio modifiedTrack <- (track >> 2) * 1.2 & DISTORT(3); 
+/*
+The above expression speeds up the track ny a factor of 2, scales all the amplitudes
+by a factor of 1.2 and the distorts the track based on some distortion function with
+3 as an input.
+*/
+play modifiedTrack;
