@@ -1,0 +1,11 @@
+/* This is a comment **** **/ This_is_not_a_comment   /* Another * comment */ 3.1415926535 // yet another one // still comment */ /* fdsfj */
+'This is a string. "This is a string inside a string"' id 'another string'
+" This string's got a comment in it. // but it's not a comment /* and this isn't a comment either */" another_id "another string" ""
+"
+multiline string?
+"
+'multiline strings also work,
+// and newline characters are part of that string.' 123456
+// "this is a string inside a comment so still a comment"
+'"huh?"
+// a comment at the end of the file!
