@@ -1,4 +1,4 @@
-const float freq = 440hz;
+const freq: float <- 440hz;
 HIGHPASS(200hz);
 LOWPASS(1000hz);
 EQ(freq, -10, 5);
