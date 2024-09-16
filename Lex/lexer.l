@@ -120,15 +120,16 @@ multiline_comment_end \*+\/
 "@" { token("@"); }
 "_" { token("_"); }
 "," { token(","); }
+"=>" { token("=>"); }
 
 {alpha}({alpha}|{digit}|_)* { token("IDENTIFIER");}
-{digit}+ { token("NUMBER");/* printf("%ld\n", atol(yytext));*/} 
-({digit}*"."{digit}+|{digit}+"."{digit}*) { token("FLOAT");/* double var; sscanf(yytext, "%lf", &var); printf("%lf\n", var);*/}
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(hz|HZ|hZ|Hz) { token("FLOAT"); /*printf("%lf\n", frequency_to_semitones(yytext));*/}
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(ms|Ms|MS|mS) { token("FLOAT"); /*printf("%lf\n", milliseconds_to_float(yytext));*/ }
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(s|S) { token("FLOAT"); /*printf("%lf\n", seconds_to_float(yytext));*/ }
-\"[^"]*\" { token("STRING"); /*printf("%s\n", yytext);*/}
-\'[^']*\' { token("STRING"); /*printf("%s\n", yytext);*/}
+{digit}+ { token("INT_LITERAL");/* printf("%ld\n", atol(yytext));*/} 
+({digit}*"."{digit}+|{digit}+"."{digit}*) { token("FLOAT_LITERAL");/* double var; sscanf(yytext, "%lf", &var); printf("%lf\n", var);*/}
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(hz|HZ|hZ|Hz) { token("FLOAT_LITERAL"); /*printf("%lf\n", frequency_to_semitones(yytext));*/}
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(ms|Ms|MS|mS) { token("FLOAT_LITERAL"); /*printf("%lf\n", milliseconds_to_float(yytext));*/ }
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(s|S) { token("FLOAT_LITERAL"); /*printf("%lf\n", seconds_to_float(yytext));*/ }
+\"[^"]*\" { token("STRING_LITERAL"); /*printf("%s\n", yytext);*/}
+\'[^']*\' { token("STRING_LITERAL"); /*printf("%s\n", yytext);*/}
 
 \/\/(.*)(\n)? ;
 {multiline_comment_start}([^\*]|\*+[^\/\*])*{multiline_comment_end}(\n)? ;
