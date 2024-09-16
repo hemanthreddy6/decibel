@@ -1,0 +1,5 @@
+improt myfile.bd ;
+import 'hello.c'
+import [file1.java] $
+import 'girgr` :
+import "a.c" & <bits/stdc++.h>
