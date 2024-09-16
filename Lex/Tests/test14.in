@@ -1,0 +1,9 @@
+function scaleWave <- (factor: float, t: float): float {
+    return SIN(t) * factor;
+}
+
+function halfScale <- scaleWave(0.5, _);
+audio softWave <- audio(halfScale, 440hz, 5s);
+
+play softWave;
+save softWave -> "soft_wave.wav";
