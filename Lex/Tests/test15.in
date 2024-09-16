@@ -1,0 +1,6 @@
+audio sound_3 = audio(PAN,0.8,440);
+audio sound_4 = audio(SQUARE,0.5,220);
+
+sound_3 = sound_3 * sound_4;
+filtered_audio = sound_3[10:20];
+play filtered_audio^3;
