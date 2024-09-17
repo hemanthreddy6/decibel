@@ -2,6 +2,7 @@
     #include <stdio.h>
     #include <string.h>
     #include <math.h>
+    #include "../Parser/y.tab.h"
     void token(char* str) {
         printf("%s\n",str);
     }

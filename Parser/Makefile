@@ -1,0 +1,2 @@
+all:
+	yacc parser.y
