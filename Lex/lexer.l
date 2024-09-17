@@ -100,7 +100,7 @@ multiline_comment_end \*+\/
 
 "=" { return '='; }
 "^=" { return POWER_EQUALS; }
-"&=" { return DISTIORION_EQUALS; }
+"&=" { return DISTORTION_EQUALS; }
 "*=" { return MULT_EQUALS; }
 "/=" { return DIVIDE_EQUALS; }
 "%=" { return MOD_EQUALS; }
@@ -143,8 +143,3 @@ multiline_comment_end \*+\/
 int yywrap(void) {
     return 1;
 }
-
-// int main(){
-//     yylex();
-// }
-

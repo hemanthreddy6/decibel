@@ -1,6 +1,9 @@
-Lex/lexer
 Lex/lex.yy.c
 Lex/a.out
+Lex/Tests/lexer
+Lex/Tests/a.out
 Parser/y.tab.c
 Parser/y.tab.h
+Parser/parser
+Parser/a.out
 .vscode/

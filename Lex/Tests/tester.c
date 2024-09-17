@@ -145,7 +145,7 @@ int main() {
       printf("/=\n");
       break;
     case MOD_EQUALS:
-      printf("\%=\n");
+      printf("%%=\n");
       break;
     case PLUS_EQUALS:
       printf("+=\n");
