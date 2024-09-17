@@ -36,108 +36,108 @@ multiline_comment_start \/\*
 multiline_comment_end \*+\/
 
 %%
-"import"        { token("IMPORT"); }
-"const"         { token("CONST"); }
-"load"          { token("LOAD"); }
-"save"          { token("SAVE"); }
-"play"          { token("PLAY"); }
-"function"      { token("FUNCTION"); }
-"if"            { token("IF"); }
-"or"            { token("OR"); }
-"otherwise"     { token("OTHERWISE"); }
-"loop"          { token("LOOP"); }
-"over"          { token("OVER"); }
-"long"          { token("LONG"); }
-"int"           { token("INT"); }
-"float"         { token("FLOAT"); }
-"string"        { token("STRING"); }
-"audio"         { token("AUDIO"); }
-"bool"          { token("BOOL"); }
-"true"          { token("TRUE"); }
-"false"         { token("FALSE"); }
-"continue"      { token("CONTINUE"); }
-"break"         { token("BREAK"); }
-"return"        { token("RETURN"); }
-"HIGHPASS"      { token("HIGHPASS"); }
-"LOWPASS"       { token("LOWPASS"); }
-"EQ"            { token("EQ"); }
-"SIN"           { token("SIN"); }
-"COS"           { token("COS"); }
-"EXP_DECAY"     { token("EXP_DECAY"); }
-"LIN_DECAY"     { token("LIN_DECAY"); }
-"SQUARE"        { token("SQUARE"); }
-"SAW"           { token("SAW"); }
-"TRIANGLE"      { token("TRIANGLE"); }
-"PAN"           { token("PAN"); }
-"to"            { token("TO"); }
+"import"        { return IMPORT; }
+"const"         { return CONST; }
+"load"          { return LOAD; }
+"save"          { return SAVE; }
+"play"          { return PLAY; }
+"function"      { return FUNCTION; }
+"if"            { return IF; }
+"or"            { return OR; }
+"otherwise"     { return OTHERWISE; }
+"loop"          { return LOOP; }
+"over"          { return OVER; }
+"long"          { return LONG; }
+"int"           { return INT; }
+"float"         { return FLOAT; }
+"string"        { return STRING; }
+"audio"         { return AUDIO; }
+"bool"          { return BOOL; }
+"true"          { return TRUE; }
+"false"         { return FALSE; }
+"continue"      { return CONTINUE; }
+"break"         { return BREAK; }
+"return"        { return RETURN; }
+"HIGHPASS"      { return HIGHPASS; }
+"LOWPASS"       { return LOWPASS; }
+"EQ"            { return EQ; }
+"SIN"           { return SIN; }
+"COS"           { return COS; }
+"EXP_DECAY"     { return EXP_DECAY; }
+"LIN_DECAY"     { return LIN_DECAY; }
+"SQUARE"        { return SQUARE; }
+"SAW"           { return SAW; }
+"TRIANGLE"      { return TRIANGLE; }
+"PAN"           { return PAN; }
+"to"            { return TO; }
 
-"~" { token("~"); }
-"!" { token("!"); }
+"~" { return '~'; }
+"!" { return '!'; }
 
-"^" { token("^"); }
+"^" { return '^'; }
 
-"&" { token("&"); }
+"&" { return '&'; }
 
-"*" { token("*"); }
-"/" { token("/"); }
-"%" { token("\%"); }
-">>" { token(">>"); }
-"<<" { token("<<"); }
+"*" { return '*'; }
+"/" { return '/'; }
+"%" { return '%'; }
+">>" { return SPEEDUP; }
+"<<" { return SPEEDDOWN; }
 
-"+" { token("+"); }
-"-" { token("-"); }
-"|" { token("|"); }
+"+" { return '+'; }
+"-" { return '-'; }
+"|" { return '|'; }
 
-"<" { token("<"); }
-"<=" { token("<="); }
-">" { token(">"); }
-">=" { token(">="); }
-"==" { token("=="); }
-"!=" { token("!="); }
+"<" { return '<'; }
+"<=" { return LEQ; }
+">" { return '>'; }
+">=" { return GEQ; }
+"==" { return EQUALS; }
+"!=" { return NOT_EQUALS; }
 
-"&&" { token("&&"); }
-"||" { token("||"); }
+"&&" { return LOGICAL_AND; }
+"||" { return LOGICAL_OR; }
 
-"=" { token("="); }
-"^=" { token("^="); }
-"&=" { token("&="); }
-"*=" { token("*="); }
-"/=" { token("/="); }
-"%=" { token("\%="); }
-"+=" { token("+="); }
-"-=" { token("-="); }
-"|=" { token("|="); }
-"->" { token("->"); }
-"<-" { token("<-"); } 
+"=" { return '='; }
+"^=" { return POWER_EQUALS; }
+"&=" { return DISTIORION_EQUALS; }
+"*=" { return MULT_EQUALS; }
+"/=" { return DIVIDE_EQUALS; }
+"%=" { return MOD_EQUALS; }
+"+=" { return PLUS_EQUALS; }
+"-=" { return MINUS_EQUALS; }
+"|=" { return OR_EQUALS; }
+"->" { return RIGHT_ARROW; }
+"<-" { return LEFT_ARROW; } 
 
-";" { token(";"); }
-"{" { token("{"); }
-"}" { token("}"); }
-"[" { token("["); }
-"]" { token("]"); }
-"(" { token("("); }
-")" { token(")"); }
-":" { token(":"); }
-"@" { token("@"); }
-"_" { token("_"); }
-"," { token(","); }
-"=>" { token("=>"); }
+";" { return ';'; }
+"{" { return '{'; }
+"}" { return '}'; }
+"[" { return '['; }
+"]" { return ']'; }
+"(" { return '('; }
+")" { return ')'; }
+":" { return ':'; }
+"@" { return '@'; }
+"_" { return '_'; }
+"," { return ','; }
+"=>" { return IMPLIES; }
 
-{alpha}({alpha}|{digit}|_)* { token("IDENTIFIER");}
-{digit}+ { token("INT_LITERAL");/* printf("%ld\n", atol(yytext));*/} 
-({digit}*"."{digit}+|{digit}+"."{digit}*) { token("FLOAT_LITERAL");/* double var; sscanf(yytext, "%lf", &var); printf("%lf\n", var);*/}
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(hz|HZ|hZ|Hz) { token("FLOAT_LITERAL"); /*printf("%lf\n", frequency_to_semitones(yytext));*/}
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(ms|Ms|MS|mS) { token("FLOAT_LITERAL"); /*printf("%lf\n", milliseconds_to_float(yytext));*/ }
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(s|S) { token("FLOAT_LITERAL"); /*printf("%lf\n", seconds_to_float(yytext));*/ }
-\"[^"]*\" { token("STRING_LITERAL"); /*printf("%s\n", yytext);*/}
-\'[^']*\' { token("STRING_LITERAL"); /*printf("%s\n", yytext);*/}
+{alpha}({alpha}|{digit}|_)* { return IDENTIFIER;}
+{digit}+ { return INT_LITERAL;/* printf("%ld\n", atol(yytext));*/} 
+({digit}*"."{digit}+|{digit}+"."{digit}*) { return FLOAT_LITERAL;/* double var; sscanf(yytext, "%lf", &var); printf("%lf\n", var);*/}
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(hz|HZ|hZ|Hz) { return FLOAT_LITERAL; /*printf("%lf\n", frequency_to_semitones(yytext));*/}
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(ms|Ms|MS|mS) { return FLOAT_LITERAL; /*printf("%lf\n", milliseconds_to_float(yytext));*/ }
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(s|S) { return FLOAT_LITERAL; /*printf("%lf\n", seconds_to_float(yytext));*/ }
+\"[^"]*\" { return STRING_LITERAL; /*printf("%s\n", yytext);*/}
+\'[^']*\' { return STRING_LITERAL; /*printf("%s\n", yytext);*/}
 
 \/\/(.*)(\n)? ;
 {multiline_comment_start}([^\*]|\*+[^\/\*])*{multiline_comment_end}(\n)? ;
 
 \n { ; }
 [\t ] { ; }
-. { printf("INVALID_SYMBOL\n"); }
+. { return INVALID_SYMBOL; }
 %%
 
 int yywrap(void) {
