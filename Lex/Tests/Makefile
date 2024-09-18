@@ -6,6 +6,9 @@ build:
 	@make build -C "../" --quiet
 	gcc -o lexer tester.c -lm
 
+run: build
+	./lexer
+
 clean:
 	rm -f lexer
 
