@@ -1,4 +1,4 @@
-audio my_audio <- load "my_file.wav";
+my_audio: audio <- load "my_file.wav";
 play my_audio
 
 modified_my_audio = HIGHPASS(my_audio, 440Hz)
