@@ -11,20 +11,20 @@ function valid_album <- (float: average_length, count: int): bool {
 }
 
 function main <- (): int {
-    audio my_music <- load "song1.wav"; // Taking a song as input
-    audio backing_track <- load "bt.wav";
+    my_music: audio <- load "song1.wav"; // Taking a song as input
+    backing_track: audio <- load "bt.wav";
 
-    float duration <- 3.5;
-    int count;
+    duration: float <- 3.5;
+    count: int <- 4;
 
     /* Scaling the volume of the
         backing track down */
 
     backing_track <- backing_track*0.5;
 
-    bool valid <- valid_album(duration, count);
+    valid: bool <- valid_album(duration, count);
 
-    audio new_track <- combine(my_music, backing_track);   // Another comment
+    new_track: audio <- combine(my_music, backing_track);   // Another comment
     play new_track;
     save new_track -> "song2.wav";
 

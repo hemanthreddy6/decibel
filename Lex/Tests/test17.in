@@ -1,5 +1,5 @@
-audio music <- load "song.wav";
-audio loudMusic <- music * 2.0;
-audio softMusic <- music * 0.5;
+music: audio <- load "song.wav";
+loudMusic: audio <- music * 2.0;
+softMusic: audio <- music * 0.5;
 play loudMusic;
 play softMusic;

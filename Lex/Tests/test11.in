@@ -1,7 +1,7 @@
-audio heavenly_chorus <- load "track.mp3"; //Loading a track
+heavenly_chorus: audio <- load "track.mp3"; //Loading a track
 
-audio sped_up_chaotic_chorus <- heavenly_chorus >> 2; //Speeding up the track
-audio slowed_down_boring_chorus <- heavenly_chorus << 3; //Slowing down the track
+sped_up_chaotic_chorus: audio <- heavenly_chorus >> 2; //Speeding up the track
+slowed_down_boring_chorus: audio <- heavenly_chorus << 3; //Slowing down the track
 
 //Playing the modified tracks
 play sped_up_chaotic_chorus;

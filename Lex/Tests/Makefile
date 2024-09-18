@@ -4,7 +4,7 @@ INPUT_FILES := $(if $(FILE), $(FILE).in, $(TESTS))
 
 build:
 	@make build -C "../" --quiet
-	gcc -o lexer tester.c -lm
+	@gcc -o lexer tester.c -lm
 
 run: build
 	./lexer

@@ -3,7 +3,7 @@ function scaleWave <- (factor: float, t: float): float {
 }
 
 function halfScale <- scaleWave(0.5, _);
-audio softWave <- audio(halfScale, 440hz, 5s);
+softWave: audio <- audio(halfScale, 440hz, 5s);
 
 play softWave;
 save softWave -> "soft_wave.wav";
