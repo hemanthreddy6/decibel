@@ -1,5 +1,9 @@
 build:
-	yacc -d parser.y
+	@if yacc -d parser.y 2>/dev/null; then \
+		: ; \
+	else \
+		byacc -d parser.y 2>/dev/null; \
+	fi
 	gcc -o parser y.tab.c -lm
 
 clean:
