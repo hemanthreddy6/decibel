@@ -1,6 +1,7 @@
 %{
     #include <stdio.h>
     #include "../Lex/lex.yy.c"
+    int yyerror(char*);
 %}
 
 %start program
