@@ -123,14 +123,14 @@ multiline_comment_end \*+\/
 "," { return ','; }
 "=>" { return IMPLIES; }
 
-{alpha}({alpha}|{digit}|_)* { return IDENTIFIER;}
-{digit}+ { return INT_LITERAL;/* printf("%ld\n", atol(yytext));*/} 
-({digit}*"."{digit}+|{digit}+"."{digit}*) { return FLOAT_LITERAL;/* double var; sscanf(yytext, "%lf", &var); printf("%lf\n", var);*/}
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(hz|HZ|hZ|Hz) { return FLOAT_LITERAL; /*printf("%lf\n", frequency_to_semitones(yytext));*/}
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(ms|Ms|MS|mS) { return FLOAT_LITERAL; /*printf("%lf\n", milliseconds_to_float(yytext));*/ }
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(s|S) { return FLOAT_LITERAL; /*printf("%lf\n", seconds_to_float(yytext));*/ }
-\"[^"]*\" { return STRING_LITERAL; /*printf("%s\n", yytext);*/}
-\'[^']*\' { return STRING_LITERAL; /*printf("%s\n", yytext);*/}
+{alpha}({alpha}|{digit}|_)* { return IDENTIFIER; }
+{digit}+ { return INT_LITERAL; } 
+({digit}*"."{digit}+|{digit}+"."{digit}*) { return FLOAT_LITERAL; }
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(hz|HZ|hZ|Hz) { return FLOAT_LITERAL; }
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(ms|Ms|MS|mS) { return FLOAT_LITERAL; }
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(s|S) { return FLOAT_LITERAL; }
+\"[^"]*\" { return STRING_LITERAL; }
+\'[^']*\' { return STRING_LITERAL; }
 
 \/\/(.*)(\n)? ;
 {multiline_comment_start}([^\*]|\*+[^\/\*])*{multiline_comment_end}(\n)? ;
