@@ -1,0 +1,9 @@
+int a <- 10;
+
+loop a {
+    loop 3 {
+        loop a - 10 {
+            string b <- "word";
+        }
+    }
+}
