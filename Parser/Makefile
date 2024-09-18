@@ -1,5 +1,5 @@
 build:
-	yacc parser.y -d
+	yacc -d parser.y
 	gcc -o parser y.tab.c -lm
 
 clean:

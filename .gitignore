@@ -1,5 +1,6 @@
 Lex/lex.yy.c
 Lex/a.out
+Lex/lexer
 Lex/Tests/lexer
 Lex/Tests/a.out
 Parser/y.tab.c
