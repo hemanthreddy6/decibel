@@ -1,1 +1,1 @@
-a: int <- b + c:
+a: int <- b + c;
