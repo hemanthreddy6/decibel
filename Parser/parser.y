@@ -11,10 +11,53 @@
 %token INVALID_SYMBOL
 
 %%
-program: ;
+program: statements {/* anything that does not have a rule or the rule is empty, please add stuff */};
+statement: declaration_statemnt
+         | function_declaration
+         | assignment_statement
+         | return_statement
+         | conditional_statement
+         | loop_statement
+         | load_statement
+         | play_statement;
+statements: statements statement
+          | statement;
+declaration_statement: IDENTIFIER LEFT_ARROW expr ';'
+                     | IDENTIFIER ':' data_type LEFT_ARROW expr ';'
+                     | CONST IDENTIFIER ':' data_type LEFT_ARROW expr ';';
+data_type: INT
+         | LONG
+         | FLOAT
+         | AUDIO
+         | STRING
+         | BOOL;
+function_declaration: FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' data_type '{' statements '}'
+                    | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' data_type IMPLIES expr
+                    | FUNCTION IDENTIFIER LEFT_ARROW expr;
+                 parameter_list:;
+inbuilt_functions: highpass_function
+                 | lowpass_function
+                 | eq_function
+                 | sin_function
+                 | cos_functino
+                 | exp_decay_function
+                 | lin_decay_function
+                 | square_function
+                 | saw_function
+                 | triangle_function
+                 | pan_function;
+expr_that_returns_function:;
+expr:;
+assignment_statement:;
+return_statement:;
+conditional_statement:;
+loop_statement:;
+load_statement:;
+play_statement:;
 %%
 
 int yyerror( char* s){
+    printf("%s", s);
     return 1;
 }
 int main() {
