@@ -91,11 +91,23 @@ return_statement
     : RETURN expr ';' ;
     | expr ;
 
-conditional_statement:;
+conditional_statement
+    : IF expr '{' statements '}' or_statements otherwise_statement;
+
+or_statements
+    : or_statement or_statements
+    | ;
+
+or_statement
+    : OR expr '{' statements '}';
+
+otherwise_statement
+    : OTHERWISE expr '{' statements '}'
+    | ;
 
 loop_statement
     : LOOP expr '{' statements '}'
-    | LOOP OVER IDENTIFIER expr TO expr @expr '{' statements '}'
+    | LOOP OVER IDENTIFIER expr TO expr '@' expr '{' statements '}'
     | LOOP OVER IDENTIFIER expr TO expr  '{' statements '}';
 
 load_statement
@@ -105,7 +117,7 @@ play_statement
     : PLAY IDENTIFIER ';';
 
 save_statement
-    : SAVE IDENTIFIER RIGHT_ARROW STRING_LITERAL ';' PLAY expr;
+    : SAVE IDENTIFIER RIGHT_ARROW STRING_LITERAL ';';
 %%
 
 int yyerror( char* s){
