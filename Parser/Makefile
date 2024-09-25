@@ -6,6 +6,11 @@ build:
 	fi
 	gcc -o parser y.tab.c -lm
 
+parser:build
+
+test: parser
+	@make test -C "Tests" --quiet
+
 clean:
 	rm -f parser
 	rm -f y.tab.c
