@@ -1,6 +1,6 @@
 build:
-	@if yacc -d parser.y 2>/dev/null; then \
-		: ; \
+	@if yacc --version > /dev/null 2>/dev/null; then \
+		yacc -d parser.y ; \
 	else \
 		byacc -d parser.y 2>/dev/null; \
 	fi
