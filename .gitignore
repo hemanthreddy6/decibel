@@ -8,3 +8,4 @@ Parser/y.tab.h
 Parser/parser
 Parser/a.out
 .vscode/
+/DS_Store
