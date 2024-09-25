@@ -24,14 +24,16 @@ statement
     | loop_statement
     | load_statement ';'
     | play_statement ';' 
-    | save_statement ';'  ;
-
-import_statement
-    : IMPORT STRING_LITERAL;
+    | save_statement ';'
+    | CONTINUE ';'
+    | BREAK ';';
 
 statements
     : statements statement
     | statement;
+
+import_statement
+    : IMPORT STRING_LITERAL;
 
 declaration_statement
     : IDENTIFIER LEFT_ARROW expr 
