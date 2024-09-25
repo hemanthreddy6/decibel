@@ -6,7 +6,7 @@ WRONG_INPUT_FILES := $(if $(FILE), $(FILE), $(WRONG_TESTS))
 
 test: $(CORRECT_INPUT_FILES)
 	for correct_test in $(CORRECT_INPUT_FILES); do \
-		if (../parser < $$correct_test | grep "syntax error" - > /dev/null); then \
+		if (../parser < $$correct_test | grep "syntax error" - ); then \
 			echo "\033[31m$$(basename $$correct_test) [ FAILED ]\033[0m"; \
 			FAIL=1; \
 		else \
