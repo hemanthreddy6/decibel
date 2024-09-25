@@ -10,6 +10,28 @@
 %token IDENTIFIER INT_LITERAL FLOAT_LITERAL STRING_LITERAL
 %token INVALID_SYMBOL
 
+%right LOAD
+%right '~'
+%right '!'
+%left '^'
+%left '&'
+%left '*'
+%left '/'
+%left '%'
+%left SPEEDUP
+%left SPEEDDOWN
+%nonassoc '+'
+%nonassoc '-'
+%left '|'
+%left '<'
+%left LEQ
+%left '>'
+%left GEQ
+%left EQUALS
+%left NOT_EQUALS
+%left LOGICAL_AND
+%left LOGICAL_OR
+
 %%
 program
     : statements {/* anything that does not have a rule or the rule is empty, please add stuff */};
@@ -104,7 +126,42 @@ play_statement
 save_statement
     : SAVE IDENTIFIER RIGHT_ARROW expr ;
 
-expr:;
+expr
+    : '(' expr ')'
+    | unary_expr
+    | expr '^' expr
+    | expr '&' expr
+    | expr '*' expr
+    | expr '/' expr
+    | expr '%' expr
+    | expr SPEEDUP expr
+    | expr SPEEDDOWN expr
+    | expr '+' expr
+    | expr '-' expr
+    | expr '|' expr
+    | expr '<' expr
+    | expr LEQ expr
+    | expr '>' expr
+    | expr GEQ expr
+    | expr EQUALS expr
+    | expr NOT_EQUALS expr
+    | expr LOGICAL_AND expr
+    | expr LOGICAL_OR expr;
+
+unary_expr
+    : value
+    | '~' value
+    | '!' value
+    | '+' value
+    | '-' value
+
+value
+    : INT_LITERAL
+    | FLOAT_LITERAL
+    | STRING_LITERAL
+    | IDENTIFIER
+    | load_statement
+    | IDENTIFIER '[' FLOAT_LITERAL ':' FLOAT_LITERAL ']'
 %%
 
 int yyerror( char* s){
