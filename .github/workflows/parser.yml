@@ -1,0 +1,32 @@
+name: Parser
+
+on:
+    push:
+        paths:
+        - 'Lex/**'
+        - 'Parser/**'
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+        - uses: actions/checkout@v3
+
+        - name: Install flex
+          run: sudo apt-get install flex
+        
+        - name: Install yacc
+          run: sudo apt-get install yacc
+
+        - name: Build Parser
+          run: cd Parser && make
+    
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+        - uses: actions/checkout@v3
+
+        - name: Run Tests
+          run: cd Parser && make test
