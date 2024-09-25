@@ -38,19 +38,6 @@ parameter_list: non_empty_parameter_list
               | ;
 non_empty_parameter_list: non_empty_parameter_list ',' IDENTIFIER ':' data_type
               | IDENTIFIER ':' data_type;
-inbuilt_functions: highpass_function
-                 | lowpass_function
-                 | eq_function
-                 | sin_function
-                 | cos_functino
-                 | exp_decay_function
-                 | lin_decay_function
-                 | square_function
-                 | saw_function
-                 | triangle_function
-                 | pan_function;
-highpass_function: HIGHPASS '(' expr ',' expr ')'
-expr_that_returns_function:;
 expr:;
 assignment_statement:;
 return_statement:;
