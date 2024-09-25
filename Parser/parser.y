@@ -11,63 +11,32 @@
 %token INVALID_SYMBOL
 
 %%
-<<<<<<< HEAD
-program: statements {/* anything that does not have a rule or the rule is empty, please add stuff */};
-statement: declaration_statement ';'
-         | function_declaration
-         | assignment_statement ';'
-         | return_statement ';'
-         | conditional_statement
-         | loop_statement
-         | load_statement ';'
-         | play_statement ';' 
-         | save_statement ';'  ;
-statements: statements statement
-          | statement;
-declaration_statement: IDENTIFIER LEFT_ARROW expr 
-                     | IDENTIFIER ':' data_type LEFT_ARROW expr 
-                     | CONST IDENTIFIER ':' data_type LEFT_ARROW expr ;
-data_type: INT
-         | LONG
-         | FLOAT
-         | AUDIO
-         | STRING
-         | BOOL;
-function_declaration: FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' data_type '{' statements '}'
-                    | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' data_type IMPLIES expr ';'
-                    | FUNCTION IDENTIFIER LEFT_ARROW expr ';';
-parameter_list: non_empty_parameter_list
-              | ;
-non_empty_parameter_list: non_empty_parameter_list ',' IDENTIFIER ':' data_type
-              | IDENTIFIER ':' data_type;
-
-=======
-program 
+program
     : statements {/* anything that does not have a rule or the rule is empty, please add stuff */};
 
-statement
-    : import_statement
-    | declaration_statement
+statement 
+    : import_statement ';' 
+    | declaration_statement ';'
     | function_declaration
-    | assignment_statement
-    | return_statement
+    | assignment_statement ';'
+    | return_statement ';'
     | conditional_statement
     | loop_statement
-    | load_statement
-    | play_statement
-    | save_statement;
+    | load_statement ';'
+    | play_statement ';' 
+    | save_statement ';'  ;
+
+import_statement
+    : IMPORT STRING_LITERAL;
 
 statements
     : statements statement
     | statement;
 
-import_statement
-    : IMPORT STRING_LITERAL ';'
-
 declaration_statement
-    : IDENTIFIER LEFT_ARROW expr ';'
-    | IDENTIFIER ':' data_type LEFT_ARROW expr ';'
-    | CONST IDENTIFIER ':' data_type LEFT_ARROW expr ';';
+    : IDENTIFIER LEFT_ARROW expr 
+    | IDENTIFIER ':' data_type LEFT_ARROW expr 
+    | CONST IDENTIFIER ':' data_type LEFT_ARROW expr ;
 
 data_type
     : INT
@@ -89,10 +58,9 @@ parameter_list
 non_empty_parameter_list
     : non_empty_parameter_list ',' IDENTIFIER ':' data_type
     | IDENTIFIER ':' data_type;
->>>>>>> 5e10a708a1a1eff4165990a9707ce9856afc28be
 
-expr:;
-assignment_statement: IDENTIFIER '=' expr ';'
+assignment_statement
+    : IDENTIFIER '=' expr ';'
     | IDENTIFIER PLUS_EQUALS expr ';'
     | IDENTIFIER MINUS_EQUALS expr ';'
     | IDENTIFIER MULT_EQUALS expr ';'
@@ -101,8 +69,11 @@ assignment_statement: IDENTIFIER '=' expr ';'
     | IDENTIFIER OR_EQUALS expr ';'
     | IDENTIFIER POWER_EQUALS expr ';'
     | IDENTIFIER DISTORTION_EQUALS expr ';';
-return_statement: RETURN expr
-                | RETURN ;
+
+return_statement
+    : RETURN expr
+    | RETURN ;
+
 conditional_statement
     : IF expr '{' statements '}' or_statements otherwise_statement;
 
@@ -116,13 +87,22 @@ or_statement
 otherwise_statement
     : OTHERWISE expr '{' statements '}'
     | ;
-loop_statement: LOOP expr '{' statements '}'
-              | LOOP OVER IDENTIFIER expr TO expr '@' expr '{' statements '}'
-              | LOOP OVER IDENTIFIER expr TO expr  '{' statements '}';
-load_statement: LOAD expr;
-play_statement: PLAY expr;
+
+loop_statement
+    : LOOP expr '{' statements '}'
+    | LOOP OVER IDENTIFIER expr TO expr '@' expr '{' statements '}'
+    | LOOP OVER IDENTIFIER expr TO expr  '{' statements '}';
+
+load_statement
+    : LOAD expr;
+
+play_statement
+    : PLAY expr;
+
 save_statement
     : SAVE IDENTIFIER RIGHT_ARROW expr ;
+
+expr:;
 %%
 
 int yyerror( char* s){
