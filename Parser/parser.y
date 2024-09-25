@@ -73,6 +73,8 @@ data_type
 function_declaration
     : FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' data_type '{' statements '}'
     | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' data_type IMPLIES expr ';'
+    | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' '{' statements '}'
+    | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' IMPLIES expr ';'
     | FUNCTION IDENTIFIER LEFT_ARROW expr ';';
 
 parameter_list
