@@ -12,19 +12,20 @@
 
 %%
 program: statements {/* anything that does not have a rule or the rule is empty, please add stuff */};
-statement: declaration_statemnt
-         | function_declaration
-         | assignment_statement
-         | return_statement
+statement: declaration_statement ';'
+         | function_declaration 
+         | assignment_statement ';'
+         | return_statement ';'
          | conditional_statement
          | loop_statement
-         | load_statement
-         | play_statement;
+         | load_statement ';'
+         | play_statement ';' 
+         | save_statement ';' ;
 statements: statements statement
           | statement;
-declaration_statement: IDENTIFIER LEFT_ARROW expr ';'
-                     | IDENTIFIER ':' data_type LEFT_ARROW expr ';'
-                     | CONST IDENTIFIER ':' data_type LEFT_ARROW expr ';';
+declaration_statement: IDENTIFIER LEFT_ARROW expr 
+                     | IDENTIFIER ':' data_type LEFT_ARROW expr 
+                     | CONST IDENTIFIER ':' data_type LEFT_ARROW expr ;
 data_type: INT
          | LONG
          | FLOAT
@@ -53,8 +54,12 @@ highpass_function: HIGHPASS '(' expr ',' expr ')'
 expr_that_returns_function:;
 expr:;
 assignment_statement:;
-return_statement:;
-conditional_statement:;
+return_statement: RETURN expr
+                | RETURN ;
+conditional_statement: IF expr '{' statements '}'
+                    | IF expr '{' statements '}' OR '{' statements '}'
+                    | IF expr '{' statements '}' OR '{' statements '}' OTHERWISE '{'statements '}'
+                    | IF expr '{' statements '}' OTHERWISE '{'statements '}' ;
 loop_statement: LOOP expr '{' statements '}'
               | LOOP OVER IDENTIFIER expr TO expr @expr '{' statements '}'
               | LOOP OVER IDENTIFIER expr TO expr  '{' statements '}';
