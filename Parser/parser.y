@@ -51,9 +51,11 @@ expr:;
 assignment_statement:;
 return_statement:;
 conditional_statement:;
-loop_statement:;
-load_statement:;
-play_statement:;
+loop_statement: LOOP expr '{' statements '}'
+              | LOOP OVER IDENTIFIER expr TO expr @expr '{' statements '}'
+              | LOOP OVER IDENTIFIER expr TO expr  '{' statements '}';
+load_statement: LOAD expr;
+play_statement: PLAY expr;
 %%
 
 int yyerror( char* s){
