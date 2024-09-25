@@ -1,0 +1,9 @@
+function main <- () {
+    a <- 10;
+    if (a > 5) {
+        loop over i 1 to 3 {
+            a <- a - 1;
+        }
+    }
+    return a;
+}
