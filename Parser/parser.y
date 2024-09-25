@@ -34,7 +34,10 @@ data_type: INT
 function_declaration: FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' data_type '{' statements '}'
                     | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' data_type IMPLIES expr ';'
                     | FUNCTION IDENTIFIER LEFT_ARROW expr ';';
-parameter_list:;
+parameter_list: non_empty_parameter_list
+              | ;
+non_empty_parameter_list: non_empty_parameter_list ',' IDENTIFIER ':' data_type
+              | IDENTIFIER ':' data_type;
 inbuilt_functions: highpass_function
                  | lowpass_function
                  | eq_function
@@ -46,6 +49,7 @@ inbuilt_functions: highpass_function
                  | saw_function
                  | triangle_function
                  | pan_function;
+highpass_function: HIGHPASS '(' expr ',' expr ')'
 expr_that_returns_function:;
 expr:;
 assignment_statement:;
