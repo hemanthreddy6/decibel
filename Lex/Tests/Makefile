@@ -1,9 +1,18 @@
+.PHONY: build run clean test
+
 TESTS := $(wildcard *.in)
 
 INPUT_FILES := $(if $(FILE), $(FILE).in, $(TESTS))
 
-build:
-	@make build -C "../" --quiet
+build: lexer
+
+../lex.yy.c:
+	@make lex.yy.c -C "../" --quiet
+
+../../Parser/y.tab.c:
+	@make y.tab.c -C "../../Parser" --quiet
+
+lexer: ../lex.yy.c ../../Parser/y.tab.c tester.c
 	@gcc -o lexer tester.c -lm
 
 run: build

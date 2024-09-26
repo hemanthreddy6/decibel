@@ -4,7 +4,10 @@ WRONG_TESTS := $(wildcard *.wrong)
 CORRECT_INPUT_FILES := $(if $(FILE), $(FILE), $(CORRECT_TESTS))
 WRONG_INPUT_FILES := $(if $(FILE), $(FILE), $(WRONG_TESTS))
 
-test: $(CORRECT_INPUT_FILES)
+build:
+	@make build -C "../" --quiet
+
+test: build $(CORRECT_INPUT_FILES)
 	@for correct_test in $(CORRECT_INPUT_FILES); do \
 		if (../parser < $$correct_test | grep "syntax error" - ); then \
 			echo "\033[31m$$(basename $$correct_test) [ FAILED ]\033[0m"; \

@@ -1,7 +1,7 @@
 %{
     #include <stdio.h>
     #include "../Lex/lex.yy.c"
-    int yyerror(char*);
+    int yyerror(const char*);
 %}
 %define parse.error verbose
 
@@ -87,15 +87,15 @@ non_empty_parameter_list
     | IDENTIFIER ':' data_type;
 
 assignment_statement
-    : IDENTIFIER '=' expr ';'
-    | IDENTIFIER PLUS_EQUALS expr ';'
-    | IDENTIFIER MINUS_EQUALS expr ';'
-    | IDENTIFIER MULT_EQUALS expr ';'
-    | IDENTIFIER DIVIDE_EQUALS expr ';'
-    | IDENTIFIER MOD_EQUALS expr ';'
-    | IDENTIFIER OR_EQUALS expr ';'
-    | IDENTIFIER POWER_EQUALS expr ';'
-    | IDENTIFIER DISTORTION_EQUALS expr ';';
+    : IDENTIFIER '=' expr
+    | IDENTIFIER PLUS_EQUALS expr
+    | IDENTIFIER MINUS_EQUALS expr
+    | IDENTIFIER MULT_EQUALS expr
+    | IDENTIFIER DIVIDE_EQUALS expr
+    | IDENTIFIER MOD_EQUALS expr
+    | IDENTIFIER OR_EQUALS expr
+    | IDENTIFIER POWER_EQUALS expr
+    | IDENTIFIER DISTORTION_EQUALS expr ;
 
 return_statement
     : RETURN expr
@@ -167,7 +167,7 @@ value
     | IDENTIFIER '[' FLOAT_LITERAL ':' FLOAT_LITERAL ']'
 %%
 
-int yyerror( char* s){
+int yyerror(const char* s){
     printf("Line %lld: %s\n", yylval.line_no, s);
     return 1;
 }
