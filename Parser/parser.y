@@ -21,8 +21,8 @@
 %left '%'
 %left SPEEDUP
 %left SPEEDDOWN
-%nonassoc '+'
-%nonassoc '-'
+%left '+'
+%left '-'
 %left '|'
 %left '<'
 %left LEQ
