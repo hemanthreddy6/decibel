@@ -7,7 +7,7 @@
         long long line_no;
         char* text;
     };
-    typedef struct Stype  YYSTYPE;
+    #define YYSTYPE struct Stype
     # define YYSTYPE_IS_TRIVIAL 1
     # define YYSTYPE_IS_DECLARED 1
     #endif

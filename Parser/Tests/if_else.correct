@@ -1,0 +1,22 @@
+if audio_1[1:2] > audio_2[1:2] {
+    audio_3[1:2] = audio_1[1:2];
+    if audio_1[2:3] > HIGHPASS(audio_2)[2:3] {
+        audio_3[2:3] = audio_2[2:3];
+    }
+    otherwise {
+        audio_3[2] = audio_1[2];
+    }
+}
+or audio_1[2:3] > audio_2[2:3] {
+    audio_3[2:3] = audio_1[2:3];
+    if audio_1[2:3] > HIGHPASS(audio_2)[2:3] {
+        audio_3[2:3] = audio_2[2:3];
+    }
+    otherwise {
+        audio_3[1:2] = audio_1[1:2];
+    }
+} 
+otherwise
+{
+    audio_3[1:100] = audio_1[1:100]+audio_2[1:100];
+}
