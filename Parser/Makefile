@@ -22,4 +22,5 @@ clean:
 	rm -f parser
 	rm -f y.tab.c
 	rm -f y.tab.h
-
+	rm -f parser.tab.c
+	rm -f parser.tab.h
