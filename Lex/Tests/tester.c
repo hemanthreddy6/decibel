@@ -1,4 +1,5 @@
 #include "../lex.yy.c"
+YYSTYPE yylval;
 #include <stdio.h>
 
 int main() {

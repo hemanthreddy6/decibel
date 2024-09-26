@@ -1,1 +1,9 @@
-fdjks fdskl fdksl jfklds lklskdlflsdk flkdsj flkds lfjdls fd9so8f7 9sd8f9s8d79f7d 8f]sdf[sd][f]s
+function main <- () {
+    a <- 10;
+    if (a > 5) {
+        loop over i 1 to 3 {
+            a <- a - 1
+        }
+    }
+    return a;
+}

@@ -168,7 +168,7 @@ value
 %%
 
 int yyerror( char* s){
-    printf("%s", s);
+    printf("Line %lld: %s\n", yylval.line_no, s);
     return 1;
 }
 int main() {

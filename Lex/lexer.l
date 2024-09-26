@@ -2,10 +2,16 @@
     #include <stdio.h>
     #include <string.h>
     #include <math.h>
+    struct Stype{
+        long long line_no;
+        char* text;
+    };
+    #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
+    typedef struct Stype  YYSTYPE;
+    # define YYSTYPE_IS_TRIVIAL 1
+    # define YYSTYPE_IS_DECLARED 1
+    #endif
     #include "../Parser/y.tab.h"
-    void token(char* str) {
-        printf("%s\n",str);
-    }
     double frequency_to_semitones(char* str) {
         size_t len = strlen(str);
         str[len-2] = '\0';
@@ -28,6 +34,19 @@
         sscanf(str, "%lf", &ms);
         return ms;
     }
+    long long line_no = 1;
+    void count_newlines(const char* s){
+        for(int i = 0; i < strlen(s); i++){
+            if (s[i] == '\n')
+                line_no++;
+        }
+    }
+    struct Stype token(char* str) {
+        struct Stype lval;
+        lval.line_no = line_no;
+        lval.text = str;
+        return lval;
+    }
 %}
 
 alpha [a-zA-Z]
@@ -36,108 +55,108 @@ multiline_comment_start \/\*
 multiline_comment_end \*+\/
 
 %%
-"import"        { return IMPORT; }
-"const"         { return CONST; }
-"load"          { return LOAD; }
-"save"          { return SAVE; }
-"play"          { return PLAY; }
-"function"      { return FUNCTION; }
-"if"            { return IF; }
-"or"            { return OR; }
-"otherwise"     { return OTHERWISE; }
-"loop"          { return LOOP; }
-"over"          { return OVER; }
-"long"          { return LONG; }
-"int"           { return INT; }
-"float"         { return FLOAT; }
-"string"        { return STRING; }
-"audio"         { return AUDIO; }
-"bool"          { return BOOL; }
-"true"          { return TRUE; }
-"false"         { return FALSE; }
-"continue"      { return CONTINUE; }
-"break"         { return BREAK; }
-"return"        { return RETURN; }
-"HIGHPASS"      { return HIGHPASS; }
-"LOWPASS"       { return LOWPASS; }
-"EQ"            { return EQ; }
-"SIN"           { return SIN; }
-"COS"           { return COS; }
-"EXP_DECAY"     { return EXP_DECAY; }
-"LIN_DECAY"     { return LIN_DECAY; }
-"SQUARE"        { return SQUARE; }
-"SAW"           { return SAW; }
-"TRIANGLE"      { return TRIANGLE; }
-"PAN"           { return PAN; }
-"to"            { return TO; }
+"import"        { yylval = token(yytext); return IMPORT; }
+"const"         { yylval = token(yytext); return CONST; }
+"load"          { yylval = token(yytext); return LOAD; }
+"save"          { yylval = token(yytext); return SAVE; }
+"play"          { yylval = token(yytext); return PLAY; }
+"function"      { yylval = token(yytext); return FUNCTION; }
+"if"            { yylval = token(yytext); return IF; }
+"or"            { yylval = token(yytext); return OR; }
+"otherwise"     { yylval = token(yytext); return OTHERWISE; }
+"loop"          { yylval = token(yytext); return LOOP; }
+"over"          { yylval = token(yytext); return OVER; }
+"long"          { yylval = token(yytext); return LONG; }
+"int"           { yylval = token(yytext); return INT; }
+"float"         { yylval = token(yytext); return FLOAT; }
+"string"        { yylval = token(yytext); return STRING; }
+"audio"         { yylval = token(yytext); return AUDIO; }
+"bool"          { yylval = token(yytext); return BOOL; }
+"true"          { yylval = token(yytext); return TRUE; }
+"false"         { yylval = token(yytext); return FALSE; }
+"continue"      { yylval = token(yytext); return CONTINUE; }
+"break"         { yylval = token(yytext); return BREAK; }
+"return"        { yylval = token(yytext); return RETURN; }
+"HIGHPASS"      { yylval = token(yytext); return HIGHPASS; }
+"LOWPASS"       { yylval = token(yytext); return LOWPASS; }
+"EQ"            { yylval = token(yytext); return EQ; }
+"SIN"           { yylval = token(yytext); return SIN; }
+"COS"           { yylval = token(yytext); return COS; }
+"EXP_DECAY"     { yylval = token(yytext); return EXP_DECAY; }
+"LIN_DECAY"     { yylval = token(yytext); return LIN_DECAY; }
+"SQUARE"        { yylval = token(yytext); return SQUARE; }
+"SAW"           { yylval = token(yytext); return SAW; }
+"TRIANGLE"      { yylval = token(yytext); return TRIANGLE; }
+"PAN"           { yylval = token(yytext); return PAN; }
+"to"            { yylval = token(yytext); return TO; }
 
-"~" { return '~'; }
-"!" { return '!'; }
+"~" { yylval = token(yytext); return '~'; }
+"!" { yylval = token(yytext); return '!'; }
 
-"^" { return '^'; }
+"^" { yylval = token(yytext); return '^'; }
 
-"&" { return '&'; }
+"&" { yylval = token(yytext); return '&'; }
 
-"*" { return '*'; }
-"/" { return '/'; }
-"%" { return '%'; }
-">>" { return SPEEDUP; }
-"<<" { return SPEEDDOWN; }
+"*" { yylval = token(yytext); return '*'; }
+"/" { yylval = token(yytext); return '/'; }
+"%" { yylval = token(yytext); return '%'; }
+">>" { yylval = token(yytext); return SPEEDUP; }
+"<<" { yylval = token(yytext); return SPEEDDOWN; }
 
-"+" { return '+'; }
-"-" { return '-'; }
-"|" { return '|'; }
+"+" { yylval = token(yytext); return '+'; }
+"-" { yylval = token(yytext); return '-'; }
+"|" { yylval = token(yytext); return '|'; }
 
-"<" { return '<'; }
-"<=" { return LEQ; }
-">" { return '>'; }
-">=" { return GEQ; }
-"==" { return EQUALS; }
-"!=" { return NOT_EQUALS; }
+"<" { yylval = token(yytext); return '<'; }
+"<=" { yylval = token(yytext); return LEQ; }
+">" { yylval = token(yytext); return '>'; }
+">=" { yylval = token(yytext); return GEQ; }
+"==" { yylval = token(yytext); return EQUALS; }
+"!=" { yylval = token(yytext); return NOT_EQUALS; }
 
-"&&" { return LOGICAL_AND; }
-"||" { return LOGICAL_OR; }
+"&&" { yylval = token(yytext); return LOGICAL_AND; }
+"||" { yylval = token(yytext); return LOGICAL_OR; }
 
-"=" { return '='; }
-"^=" { return POWER_EQUALS; }
-"&=" { return DISTORTION_EQUALS; }
-"*=" { return MULT_EQUALS; }
-"/=" { return DIVIDE_EQUALS; }
-"%=" { return MOD_EQUALS; }
-"+=" { return PLUS_EQUALS; }
-"-=" { return MINUS_EQUALS; }
-"|=" { return OR_EQUALS; }
-"->" { return RIGHT_ARROW; }
-"<-" { return LEFT_ARROW; } 
+"=" { yylval = token(yytext); return '='; }
+"^=" { yylval = token(yytext); return POWER_EQUALS; }
+"&=" { yylval = token(yytext); return DISTORTION_EQUALS; }
+"*=" { yylval = token(yytext); return MULT_EQUALS; }
+"/=" { yylval = token(yytext); return DIVIDE_EQUALS; }
+"%=" { yylval = token(yytext); return MOD_EQUALS; }
+"+=" { yylval = token(yytext); return PLUS_EQUALS; }
+"-=" { yylval = token(yytext); return MINUS_EQUALS; }
+"|=" { yylval = token(yytext); return OR_EQUALS; }
+"->" { yylval = token(yytext); return RIGHT_ARROW; }
+"<-" { yylval = token(yytext); return LEFT_ARROW; } 
 
-";" { return ';'; }
-"{" { return '{'; }
-"}" { return '}'; }
-"[" { return '['; }
-"]" { return ']'; }
-"(" { return '('; }
-")" { return ')'; }
-":" { return ':'; }
-"@" { return '@'; }
-"_" { return '_'; }
-"," { return ','; }
-"=>" { return IMPLIES; }
+";" { yylval = token(yytext); return ';'; }
+"{" { yylval = token(yytext); return '{'; }
+"}" { yylval = token(yytext); return '}'; }
+"[" { yylval = token(yytext); return '['; }
+"]" { yylval = token(yytext); return ']'; }
+"(" { yylval = token(yytext); return '('; }
+")" { yylval = token(yytext); return ')'; }
+":" { yylval = token(yytext); return ':'; }
+"@" { yylval = token(yytext); return '@'; }
+"_" { yylval = token(yytext); return '_'; }
+"," { yylval = token(yytext); return ','; }
+"=>" { yylval = token(yytext); return IMPLIES; }
 
-{alpha}({alpha}|{digit}|_)* { return IDENTIFIER; }
-{digit}+ { return INT_LITERAL; } 
-({digit}*"."{digit}+|{digit}+"."{digit}*) { return FLOAT_LITERAL; }
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(hz|HZ|hZ|Hz) { return FLOAT_LITERAL; }
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(ms|Ms|MS|mS) { return FLOAT_LITERAL; }
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(s|S) { return FLOAT_LITERAL; }
-\"[^"]*\" { return STRING_LITERAL; }
-\'[^']*\' { return STRING_LITERAL; }
+{alpha}({alpha}|{digit}|_)* { yylval = token(yytext); return IDENTIFIER; }
+{digit}+ { yylval = token(yytext); return INT_LITERAL; } 
+({digit}*"."{digit}+|{digit}+"."{digit}*) { yylval = token(yytext); return FLOAT_LITERAL; }
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(hz|HZ|hZ|Hz) { yylval = token(yytext); return FLOAT_LITERAL; }
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(ms|Ms|MS|mS) { yylval = token(yytext); return FLOAT_LITERAL; }
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(s|S) { yylval = token(yytext); return FLOAT_LITERAL; }
+\"[^"]*\" { count_newlines(yytext); yylval = token(yytext); return STRING_LITERAL; }
+\'[^']*\' { count_newlines(yytext); yylval = token(yytext); return STRING_LITERAL; }
 
-\/\/(.*)(\n)? ;
-{multiline_comment_start}([^\*]|\*+[^\/\*])*{multiline_comment_end}(\n)? ;
+\/\/(.*) ;
+{multiline_comment_start}([^\*]|\*+[^\/\*])*{multiline_comment_end} ;
 
-\n { ; }
+\n { line_no++; }
 [\t ] { ; }
-. { return INVALID_SYMBOL; }
+. { /*printf("Invalid Symbol on line %ld: %c\n", line_no, *yytext);*/ yylval = token(yytext); return INVALID_SYMBOL; }
 %%
 
 int yywrap(void) {
