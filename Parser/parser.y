@@ -35,21 +35,38 @@
 
 %%
 program
-    : statements {/* anything that does not have a rule or the rule is empty, please add stuff */};
+    : import_statements statements {/* anything that does not have a rule or the rule is empty, please add stuff */};
+
+import_statements
+    : import_statements import_statement ';'
+    | ;
+
+returnable_statements
+    : returnable_statements returnable_statement 
+    | ;
+
+returnable_statement
+    : statement
+    | return_statement ';' ;
+
+loopable_statements
+    : loopable_statements loopable_statement
+    | ;
+
+loopable_statement
+    : statement
+    | CONTINUE ';'
+    | BREAK ';' ;
 
 statement 
-    : import_statement ';' 
-    | declaration_statement ';'
+    : declaration_statement ';'
     | function_declaration
     | assignment_statement ';'
-    | return_statement ';'
     | conditional_statement
     | loop_statement
     | load_statement ';'
     | play_statement ';' 
-    | save_statement ';'
-    | CONTINUE ';'
-    | BREAK ';';
+    | save_statement ';' ;
 
 statements
     : statements statement
@@ -72,9 +89,9 @@ data_type
     | BOOL;
 
 function_declaration
-    : FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' data_type '{' statements '}'
+    : FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' data_type '{' returnable_statements '}'
     | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' data_type IMPLIES expr ';'
-    | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' '{' statements '}'
+    | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' '{' returnable_statements '}'
     | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' IMPLIES expr ';'
     | FUNCTION IDENTIFIER LEFT_ARROW expr ';';
 
@@ -102,23 +119,23 @@ return_statement
     | RETURN ;
 
 conditional_statement
-    : IF expr '{' statements '}' or_statements otherwise_statement;
+    : IF expr '{' loopable_statements '}' or_statements otherwise_statement;
 
 or_statements
     : or_statement or_statements
     | ;
 
 or_statement
-    : OR expr '{' statements '}';
+    : OR expr '{' loopable_statements '}';
 
 otherwise_statement
-    : OTHERWISE expr '{' statements '}'
+    : OTHERWISE expr '{' loopable_statements '}'
     | ;
 
 loop_statement
-    : LOOP expr '{' statements '}'
-    | LOOP OVER IDENTIFIER expr TO expr '@' expr '{' statements '}'
-    | LOOP OVER IDENTIFIER expr TO expr  '{' statements '}';
+    : LOOP expr '{' loopable_statements '}'
+    | LOOP OVER IDENTIFIER expr TO expr '@' expr '{' loopable_statements '}'
+    | LOOP OVER IDENTIFIER expr TO expr  '{' loopable_statements '}';
 
 load_statement
     : LOAD expr;
@@ -164,7 +181,39 @@ value
     | STRING_LITERAL
     | IDENTIFIER
     | load_statement
-    | IDENTIFIER '[' FLOAT_LITERAL ':' FLOAT_LITERAL ']'
+    | function_call
+    | IDENTIFIER '[' expr ':' expr ']'
+
+function_call
+    : function_name function_arguments
+
+function_name
+    : IDENTIFIER
+    | AUDIO
+    | HIGHPASS
+    | LOWPASS 
+    | EQ 
+    | SIN 
+    | COS 
+    | EXP_DECAY 
+    | LIN_DECAY 
+    | SQUARE 
+    | SAW 
+    | TRIANGLE 
+    | PAN ;
+
+function_arguments
+    : function_arguments '(' argument_list ')'
+    | '(' argument_list ')';
+
+argument_list
+    : non_empty_argument_list
+    | ;
+
+non_empty_argument_list
+    : non_empty_argument_list ',' expr
+    | expr ;
+
 %%
 
 int yyerror(const char* s){
