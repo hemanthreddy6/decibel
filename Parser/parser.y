@@ -71,7 +71,7 @@ statement
 
 statements
     : statements statement
-    | statement;
+    | ;
 
 import_statement
     : IMPORT STRING_LITERAL;
