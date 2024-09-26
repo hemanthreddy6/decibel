@@ -62,6 +62,7 @@ statement
     : declaration_statement ';'
     | function_declaration
     | assignment_statement ';'
+    | function_call ';'
     | conditional_statement
     | loop_statement
     | load_statement ';'
