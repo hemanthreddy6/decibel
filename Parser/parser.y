@@ -212,7 +212,9 @@ argument_list
 
 non_empty_argument_list
     : non_empty_argument_list ',' expr
-    | expr ;
+    | non_empty_argument_list ',' '_'
+    | expr 
+    | '_';
 
 %%
 
