@@ -2,11 +2,11 @@
     #include <stdio.h>
     #include <string.h>
     #include <math.h>
+    #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
     struct Stype{
         long long line_no;
         char* text;
     };
-    #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
     typedef struct Stype  YYSTYPE;
     # define YYSTYPE_IS_TRIVIAL 1
     # define YYSTYPE_IS_DECLARED 1
