@@ -250,10 +250,10 @@ non_empty_argument_list
 %%
 
 int yyerror(const char* s){
-    printf("%s\n", input_file[yylval.line_no-1]);
-    for(int i = 0; i < yylval.col_no-1;i++) printf(" ");
-    printf("^\n");
     printf("Line %lld, Column %lld: %s\n", yylval.line_no, yylval.col_no, s);
+    printf("|%s\n|", input_file[yylval.line_no-1]);
+    for(int i = 0; i < yylval.col_no-1;i++) printf(" ");
+    printf("\x1b[31m^\x1b[39m\n\n");
     return 1;
 }
 int main() {
