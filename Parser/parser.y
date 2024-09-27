@@ -35,10 +35,15 @@
 
 %%
 program
-    : import_statements statements {/* anything that does not have a rule or the rule is empty, please add stuff */};
+    : import_statements global_statements {/* anything that does not have a rule or the rule is empty, please add stuff */};
 
 import_statements
     : import_statements import_statement ';'
+    | ;
+
+global_statements
+    : global_statements declaration_statement ';'
+    | global_statements function_declaration 
     | ;
 
 returnable_statements

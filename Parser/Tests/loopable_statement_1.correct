@@ -1,0 +1,6 @@
+function main <- () {
+    loop until a {
+        continue;
+        break;
+    }
+}

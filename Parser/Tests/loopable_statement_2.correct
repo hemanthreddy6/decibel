@@ -1,0 +1,11 @@
+function main <- () {
+    function output <- () {
+        // nothing here
+    }
+    loop 25 {
+        loop -25 {
+            continue;
+        }
+        break;
+    }
+}
