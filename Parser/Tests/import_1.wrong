@@ -1,4 +1,4 @@
-function main : int <- (): int {
+function main <- (): int {
     import "my_file.dbl";
     return 0;
 }
