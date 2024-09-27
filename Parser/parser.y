@@ -67,6 +67,7 @@ loopable_statements
 
 loopable_statement
     : statement
+    | return_statement ';'
     | CONTINUE ';'
     | BREAK ';' 
     | error
