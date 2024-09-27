@@ -6,7 +6,7 @@
 %define parse.error verbose
 
 %start program
-%token IMPORT CONST LOAD SAVE PLAY FUNCTION IF OR OTHERWISE LOOP OVER LONG INT FLOAT STRING AUDIO BOOL TRUE FALSE CONTINUE BREAK RETURN HIGHPASS LOWPASS EQ SIN COS EXP_DECAY LIN_DECAY SQUARE SAW TRIANGLE PAN TO
+%token IMPORT CONST LOAD SAVE PLAY FUNCTION IF OR OTHERWISE LOOP OVER UNTIL LONG INT FLOAT STRING AUDIO BOOL TRUE FALSE CONTINUE BREAK RETURN HIGHPASS LOWPASS EQ SIN COS EXP_DECAY LIN_DECAY SQUARE SAW TRIANGLE PAN TO
 %token SPEEDUP SPEEDDOWN LEQ GEQ EQUALS NOT_EQUALS LOGICAL_AND LOGICAL_OR POWER_EQUALS DISTORTION_EQUALS MULT_EQUALS DIVIDE_EQUALS MOD_EQUALS PLUS_EQUALS MINUS_EQUALS OR_EQUALS RIGHT_ARROW LEFT_ARROW IMPLIES
 %token IDENTIFIER INT_LITERAL FLOAT_LITERAL STRING_LITERAL
 %token INVALID_SYMBOL
@@ -82,6 +82,14 @@ declaration_statement
     | CONST IDENTIFIER ':' data_type LEFT_ARROW expr ;
 
 data_type
+    : data_type '[' expr ']'
+    | primitive_data_type ;
+
+generic_data_type
+    : generic_data_type '[' ']'
+    | primitive_data_type ;
+
+primitive_data_type
     : INT
     | LONG
     | FLOAT
@@ -90,8 +98,8 @@ data_type
     | BOOL;
 
 function_declaration
-    : FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' data_type '{' returnable_statements '}'
-    | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' data_type IMPLIES expr ';'
+    : FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' generic_data_type '{' returnable_statements '}'
+    | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' generic_data_type IMPLIES expr ';'
     | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' '{' returnable_statements '}'
     | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' IMPLIES expr ';'
     | FUNCTION IDENTIFIER LEFT_ARROW expr ';';
@@ -101,19 +109,19 @@ parameter_list
     | ;
 
 non_empty_parameter_list
-    : non_empty_parameter_list ',' IDENTIFIER ':' data_type
-    | IDENTIFIER ':' data_type;
+    : non_empty_parameter_list ',' IDENTIFIER ':' generic_data_type
+    | IDENTIFIER ':' generic_data_type;
 
 assignment_statement
-    : IDENTIFIER '=' expr
-    | IDENTIFIER PLUS_EQUALS expr
-    | IDENTIFIER MINUS_EQUALS expr
-    | IDENTIFIER MULT_EQUALS expr
-    | IDENTIFIER DIVIDE_EQUALS expr
-    | IDENTIFIER MOD_EQUALS expr
-    | IDENTIFIER OR_EQUALS expr
-    | IDENTIFIER POWER_EQUALS expr
-    | IDENTIFIER DISTORTION_EQUALS expr ;
+    : assignable_value '=' expr
+    | assignable_value PLUS_EQUALS expr
+    | assignable_value MINUS_EQUALS expr
+    | assignable_value MULT_EQUALS expr
+    | assignable_value DIVIDE_EQUALS expr
+    | assignable_value MOD_EQUALS expr
+    | assignable_value OR_EQUALS expr
+    | assignable_value POWER_EQUALS expr
+    | assignable_value DISTORTION_EQUALS expr ;
 
 return_statement
     : RETURN expr
@@ -135,8 +143,9 @@ otherwise_statement
 
 loop_statement
     : LOOP expr '{' loopable_statements '}'
-    | LOOP OVER IDENTIFIER expr TO expr '@' expr '{' loopable_statements '}'
-    | LOOP OVER IDENTIFIER expr TO expr  '{' loopable_statements '}';
+    | LOOP UNTIL expr '{' loopable_statements '}'
+    | LOOP OVER assignable_value expr TO expr '@' expr '{' loopable_statements '}'
+    | LOOP OVER assignable_value expr TO expr  '{' loopable_statements '}';
 
 load_statement
     : LOAD expr;
@@ -145,7 +154,7 @@ play_statement
     : PLAY expr;
 
 save_statement
-    : SAVE IDENTIFIER RIGHT_ARROW expr ;
+    : SAVE assignable_value RIGHT_ARROW expr ;
 
 expr
     : '(' expr ')'
@@ -180,10 +189,16 @@ value
     : INT_LITERAL
     | FLOAT_LITERAL
     | STRING_LITERAL
-    | IDENTIFIER
+    | TRUE
+    | FALSE
+    | assignable_value
     | load_statement
     | function_call
-    | IDENTIFIER '[' expr ':' expr ']'
+
+assignable_value
+    : assignable_value '[' expr ']'
+    | assignable_value '[' expr ':' expr ']'
+    | IDENTIFIER ;
 
 function_call
     : function_name function_arguments

@@ -1,10 +1,9 @@
 import "hi"; 
 
-function input <-() {
-    /* do nothing */
-}
-
 function solve <-() {
+    function input <-() {
+        /* do nothing */
+    }
     n: long <- input();
     m: long <- input();
     my_music: audio <- AUDIO(SIN(), 440hz, n*m);
