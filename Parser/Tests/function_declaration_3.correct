@@ -1,0 +1,15 @@
+function main <-(a: int, b: float, c: int[][]) {
+    expr <- c[3:arr[34][32][34][1]-fnuo*fbei][fe];
+    function main2 <-() {
+        function main3 <- () {
+            function main4 <- () {
+                main2();
+                // new semantic error
+            }
+            main4();
+        }
+    }
+    function main5 <-(id1: string, id2: bool) {
+        a: int <- -09;
+    }
+}
