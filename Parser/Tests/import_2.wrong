@@ -1,0 +1,5 @@
+function main <-() {
+    a: int <- 25;
+}
+
+import "nothing.dbl";
