@@ -1,0 +1,17 @@
+function main <- () {
+    if !(a>b) {
+        return true;
+        loop until a{
+            a -= 1;
+            if ~(b > 0){
+                break;
+            } or b > 5{
+                continue;
+            } otherwise {
+                a = 0;
+            }
+        }
+    } otherwise {
+        return false;
+    }
+}

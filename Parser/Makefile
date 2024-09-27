@@ -1,4 +1,4 @@
-.PHONY: build test clean
+.PHONY: build test clean run
 
 build: parser
 
@@ -17,6 +17,9 @@ parser: y.tab.c ../Lex/lex.yy.c
 
 test: parser
 	@make test -C "Tests" --quiet
+
+run: parser
+	@./parser
 
 clean:
 	rm -f parser
