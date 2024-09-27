@@ -82,7 +82,7 @@ declaration_statement
     | CONST IDENTIFIER ':' data_type LEFT_ARROW expr ;
 
 data_type
-    : data_type '[' expr ']'
+    : data_type '[' INT_LITERAL ']'
     | primitive_data_type ;
 
 generic_data_type
