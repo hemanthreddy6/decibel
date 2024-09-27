@@ -1,6 +1,6 @@
 improt "frr" ;
 import "frr" ; ; 
-function func_2 <- (a: int ,b: int , float string) : int {
+function func_2 <- (a: int ,b: int) : int {
     int a=b;
     if (i*===0) {
         // cry
