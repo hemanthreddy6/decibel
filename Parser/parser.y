@@ -71,7 +71,7 @@ statement
 
 statements
     : statements statement
-    | statement;
+    | ;
 
 import_statement
     : IMPORT STRING_LITERAL;
@@ -130,7 +130,7 @@ or_statement
     : OR expr '{' loopable_statements '}';
 
 otherwise_statement
-    : OTHERWISE expr '{' loopable_statements '}'
+    : OTHERWISE '{' loopable_statements '}'
     | ;
 
 loop_statement

@@ -1,4 +1,4 @@
-import "bfr";
+import "hi"; 
 
 function input() <-() {
     /* do nothing */
