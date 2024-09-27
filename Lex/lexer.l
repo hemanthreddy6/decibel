@@ -66,6 +66,7 @@ multiline_comment_end \*+\/
 "otherwise"     { yylval = token(yytext); return OTHERWISE; }
 "loop"          { yylval = token(yytext); return LOOP; }
 "over"          { yylval = token(yytext); return OVER; }
+"until"         { yylval = token(yytext); return UNTIL; }
 "long"          { yylval = token(yytext); return LONG; }
 "int"           { yylval = token(yytext); return INT; }
 "float"         { yylval = token(yytext); return FLOAT; }
