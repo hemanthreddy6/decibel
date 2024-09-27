@@ -1,6 +1,9 @@
 import "main1.c";
 import "main2.c";
-a
+
+function main <- () {
+    a
 =
 2
 ;
+}

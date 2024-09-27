@@ -74,10 +74,6 @@ statement
     | play_statement ';' 
     | save_statement ';' ;
 
-statements
-    : statements statement
-    | ;
-
 import_statement
     : IMPORT STRING_LITERAL;
 
