@@ -41,6 +41,9 @@ import_statements
     : import_statements import_statement ';'
     | ;
 
+import_statement
+    : IMPORT STRING_LITERAL;
+
 global_statements
     : global_statements global_statement
     | global_statement ;
@@ -50,28 +53,6 @@ global_statement
     | function_declaration 
     | error
     | error ';' ;
-
-returnable_statements
-    : returnable_statements returnable_statement 
-    | ;
-
-returnable_statement
-    : statement
-    | return_statement ';' 
-    | error
-    | error ';' ;
-
-loopable_statements
-    : loopable_statements loopable_statement
-    | ;
-
-loopable_statement
-    : statement
-    | return_statement ';'
-    | CONTINUE ';'
-    | BREAK ';' 
-    | error
-    | error ';';
 
 statement 
     : declaration_statement ';'
@@ -83,9 +64,6 @@ statement
     | load_statement ';'
     | play_statement ';' 
     | save_statement ';' ;
-
-import_statement
-    : IMPORT STRING_LITERAL;
 
 declaration_statement
     : IDENTIFIER LEFT_ARROW expr 
@@ -125,6 +103,71 @@ non_empty_parameter_list
     : non_empty_parameter_list ',' IDENTIFIER ':' generic_data_type
     | IDENTIFIER ':' generic_data_type;
 
+returnable_statements
+    : returnable_statements returnable_statement 
+    | ;
+
+returnable_statement
+    : statement
+    | return_statement ';' 
+    | error
+    | error ';' ;
+
+return_statement
+    : RETURN expr
+    | RETURN ;
+    
+function_call
+    : function_name function_arguments;
+
+function_name
+    : IDENTIFIER
+    | AUDIO
+    | HIGHPASS
+    | LOWPASS 
+    | EQ 
+    | SIN 
+    | COS 
+    | EXP_DECAY 
+    | LIN_DECAY 
+    | SQUARE 
+    | SAW 
+    | TRIANGLE 
+    | PAN ;
+
+function_arguments
+    : function_arguments '(' argument_list ')'
+    | '(' argument_list ')'
+    | error ;
+
+argument_list
+    : non_empty_argument_list
+    | ;
+
+non_empty_argument_list
+    : non_empty_argument_list ',' expr
+    | non_empty_argument_list ',' '_'
+    | expr 
+    | '_';
+
+loop_statement
+    : LOOP expr '{' loopable_statements '}'
+    | LOOP UNTIL expr '{' loopable_statements '}'
+    | LOOP OVER assignable_value expr TO expr '@' expr '{' loopable_statements '}'
+    | LOOP OVER assignable_value expr TO expr  '{' loopable_statements '}';
+
+loopable_statements
+    : loopable_statements loopable_statement
+    | ;
+
+loopable_statement
+    : statement
+    | return_statement ';'
+    | CONTINUE ';'
+    | BREAK ';' 
+    | error
+    | error ';';
+
 assignment_statement
     : assignable_value '=' expr
     | assignable_value PLUS_EQUALS expr
@@ -135,10 +178,6 @@ assignment_statement
     | assignable_value OR_EQUALS expr
     | assignable_value POWER_EQUALS expr
     | assignable_value DISTORTION_EQUALS expr ;
-
-return_statement
-    : RETURN expr
-    | RETURN ;
 
 conditional_statement
     : IF expr '{' loopable_statements '}' or_statements otherwise_statement;
@@ -153,12 +192,6 @@ or_statement
 otherwise_statement
     : OTHERWISE '{' loopable_statements '}'
     | ;
-
-loop_statement
-    : LOOP expr '{' loopable_statements '}'
-    | LOOP UNTIL expr '{' loopable_statements '}'
-    | LOOP OVER assignable_value expr TO expr '@' expr '{' loopable_statements '}'
-    | LOOP OVER assignable_value expr TO expr  '{' loopable_statements '}';
 
 load_statement
     : LOAD expr;
@@ -214,38 +247,6 @@ assignable_value
     | assignable_value '[' expr ':' expr ']'
     | IDENTIFIER ;
 
-function_call
-    : function_name function_arguments;
-
-function_name
-    : IDENTIFIER
-    | AUDIO
-    | HIGHPASS
-    | LOWPASS 
-    | EQ 
-    | SIN 
-    | COS 
-    | EXP_DECAY 
-    | LIN_DECAY 
-    | SQUARE 
-    | SAW 
-    | TRIANGLE 
-    | PAN ;
-
-function_arguments
-    : function_arguments '(' argument_list ')'
-    | '(' argument_list ')'
-    | error ;
-
-argument_list
-    : non_empty_argument_list
-    | ;
-
-non_empty_argument_list
-    : non_empty_argument_list ',' expr
-    | non_empty_argument_list ',' '_'
-    | expr 
-    | '_';
 
 %%
 
