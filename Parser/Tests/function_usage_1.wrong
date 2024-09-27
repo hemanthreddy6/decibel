@@ -1,0 +1,11 @@
+function func <- (a:int , file: audio, time :float): audio {
+    return EXP_DECAY(file,time);
+}
+
+function main <- ()  
+{
+    wave: audio <- load "file.wav";
+    time: float <- 3.142;
+    result: audio <- func(_, wave , time: float);
+    play result;
+}
