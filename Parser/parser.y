@@ -35,7 +35,7 @@
 
 %%
 program
-    : import_statements global_statements {/* anything that does not have a rule or the rule is empty, please add stuff */};
+    : import_statements global_statements ;
 
 import_statements
     : import_statements import_statement ';'
