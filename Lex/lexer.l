@@ -5,6 +5,7 @@
     #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
     struct Stype{
         long long line_no;
+        long long col_no;
         char* text;
     };
     #define YYSTYPE struct Stype
@@ -35,16 +36,25 @@
         return ms;
     }
     long long line_no = 1;
-    void count_newlines(const char* s){
-        for(int i = 0; i < strlen(s); i++){
-            if (s[i] == '\n')
-                line_no++;
+    long long col_no = 1;
+    void newline(){
+        col_no = 1;
+        line_no++;
+    }
+    void count_newlines(char* s){
+        for(; *s != '\0'; s++){
+            if (*s == '\n')
+                newline();
+            else
+                col_no++;
         }
     }
     struct Stype token(char* str) {
         struct Stype lval;
         lval.line_no = line_no;
         lval.text = str;
+        lval.col_no = col_no;
+        count_newlines(str);
         return lval;
     }
 %}
@@ -148,14 +158,14 @@ multiline_comment_end \*+\/
 ({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(hz|HZ|hZ|Hz) { yylval = token(yytext); return FLOAT_LITERAL; }
 ({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(ms|Ms|MS|mS) { yylval = token(yytext); return FLOAT_LITERAL; }
 ({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(s|S) { yylval = token(yytext); return FLOAT_LITERAL; }
-\"[^"]*\" { count_newlines(yytext); yylval = token(yytext); return STRING_LITERAL; }
-\'[^']*\' { count_newlines(yytext); yylval = token(yytext); return STRING_LITERAL; }
+\"[^"]*\" { yylval = token(yytext); return STRING_LITERAL; }
+\'[^']*\' { yylval = token(yytext); return STRING_LITERAL; }
 
-\/\/(.*) ;
-{multiline_comment_start}([^\*]|\*+[^\/\*])*{multiline_comment_end} ;
+\/\/(.*) {count_newlines(yytext);};
+{multiline_comment_start}([^\*]|\*+[^\/\*])*{multiline_comment_end} {count_newlines(yytext);};
 
-\n { line_no++; }
-[\t ] { ; }
+\n { newline();}
+[\t ] { col_no++; }
 . { /*printf("Invalid Symbol on line %ld: %c\n", line_no, *yytext);*/ yylval = token(yytext); return INVALID_SYMBOL; }
 %%
 
