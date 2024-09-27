@@ -1,0 +1,4 @@
+function main <- (){
+    song: audio <- load "wave.mp4";
+    play song;
+}
