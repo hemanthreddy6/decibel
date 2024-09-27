@@ -235,7 +235,7 @@ non_empty_argument_list
 %%
 
 int yyerror(const char* s){
-    printf("Line %lld: %s\n", yylval.line_no, s);
+    printf("Line %lld, Column %lld: %s\n", yylval.line_no, yylval.col_no, s);
     return 1;
 }
 int main() {
