@@ -1,0 +1,13 @@
+improt "frr" ;
+import "frr" ; ; 
+function func_2 <- (a: int ,b: int , float) : int {
+    return a+b+c;
+}
+
+function func_1 <- func_2(_ , 4321", _);
+
+
+function main <- () {
+    a: int <- 4;
+    int s = 2;
+}

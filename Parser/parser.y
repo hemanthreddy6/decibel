@@ -39,7 +39,8 @@ program
 
 import_statements
     : import_statements import_statement ';'
-    | ;
+    | 
+    | error ';' ;
 
 global_statements
     : global_statements declaration_statement ';'
@@ -72,7 +73,8 @@ statement
     | loop_statement
     | load_statement ';'
     | play_statement ';' 
-    | save_statement ';' ;
+    | save_statement ';'
+    | error ';' ;
 
 import_statement
     : IMPORT STRING_LITERAL;
@@ -184,7 +186,7 @@ unary_expr
     | '~' value
     | '!' value
     | '+' value
-    | '-' value
+    | '-' value;
 
 value
     : INT_LITERAL
@@ -194,7 +196,7 @@ value
     | FALSE
     | assignable_value
     | load_statement
-    | function_call
+    | function_call;
 
 assignable_value
     : assignable_value '[' expr ']'
@@ -202,7 +204,7 @@ assignable_value
     | IDENTIFIER ;
 
 function_call
-    : function_name function_arguments
+    : function_name function_arguments;
 
 function_name
     : IDENTIFIER
