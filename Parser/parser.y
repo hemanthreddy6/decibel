@@ -220,6 +220,9 @@ non_empty_argument_list
 %%
 
 int yyerror(const char* s){
+    printf("%s\n", input_file[yylval.line_no-1]);
+    for(int i = 0; i < yylval.col_no-1;i++) printf(" ");
+    printf("^\n");
     printf("Line %lld, Column %lld: %s\n", yylval.line_no, yylval.col_no, s);
     return 1;
 }

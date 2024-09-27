@@ -2,6 +2,7 @@
     #include <stdio.h>
     #include <string.h>
     #include <math.h>
+    #include <stdlib.h>
     #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
     struct Stype{
         long long line_no;
@@ -37,16 +38,29 @@
     }
     long long line_no = 1;
     long long col_no = 1;
+    char line_buffer[32768];
+    char *input_file[32768];
     void newline(){
+        input_file[line_no-1] = (char*)malloc(col_no);
+        if (!input_file[line_no-1]){
+            printf("allocation failed??\n");
+        }
+        line_buffer[col_no-1] = '\0';
+        strcpy(input_file[line_no-1], line_buffer);
         col_no = 1;
         line_no++;
+        input_file[line_no-1] = line_buffer;
     }
     void count_newlines(char* s){
         for(; *s != '\0'; s++){
             if (*s == '\n')
                 newline();
-            else
+            else{
+                line_buffer[col_no-1] = *s;
+                line_buffer[col_no] = '\0';
+                input_file[line_no-1] = line_buffer;
                 col_no++;
+            }
         }
     }
     struct Stype token(char* str) {
@@ -165,7 +179,7 @@ multiline_comment_end \*+\/
 {multiline_comment_start}([^\*]|\*+[^\/\*])*{multiline_comment_end} {count_newlines(yytext);};
 
 \n { newline();}
-[\t ] { col_no++; }
+[\t ] { count_newlines(yytext);}
 . { /*printf("Invalid Symbol on line %ld: %c\n", line_no, *yytext);*/ yylval = token(yytext); return INVALID_SYMBOL; }
 %%
 
