@@ -1,0 +1,5 @@
+function main <-() {
+    track1: audio <- load "song1.wav";
+    play track1;
+    save track1 -> "output.wav";
+}

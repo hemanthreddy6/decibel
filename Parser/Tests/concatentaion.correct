@@ -1,0 +1,6 @@
+function main <-() {
+    track1: audio <- load "song1.wav";
+    track2: audio <- load "song2.wav";
+    combinedTrack: audio <- track1 + track2;
+    play combinedTrack;
+}

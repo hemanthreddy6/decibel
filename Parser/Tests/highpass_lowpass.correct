@@ -1,0 +1,9 @@
+function main <-() {
+    track1: audio <- load "song1.wav";
+    filteredTrack1: audio <- HIGHPASS(track1, 200.0);  
+    play filteredTrack1;
+
+    track2: audio <- load "song1.wav";
+    filteredTrack2: audio <- LOWPASS(track2, 150.0);  
+    play filteredTrack2;
+}

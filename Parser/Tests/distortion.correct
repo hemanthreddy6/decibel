@@ -1,0 +1,10 @@
+function distort <- (value: int): int {
+    return value * 2; 
+}
+
+
+function main<-(){
+    track1: audio <- load "song1.wav";
+    distortedTrack: audio <- track1 & distort;
+    play distortedTrack;
+}
