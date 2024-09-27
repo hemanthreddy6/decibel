@@ -1,0 +1,8 @@
+function main <-() {
+    id1 <- 25;
+    id2: int <- 243705;
+    const id3: float <- 35.46;
+    id4096 <- "String";
+    di04 <- 29.2929;
+    var1 <- id1 + id3 - id5;
+}

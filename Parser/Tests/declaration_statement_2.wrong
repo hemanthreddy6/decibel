@@ -1,0 +1,3 @@
+function main <-() {
+    string s = "compilers2";
+}
