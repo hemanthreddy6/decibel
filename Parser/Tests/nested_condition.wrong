@@ -1,0 +1,8 @@
+function main <-() {
+    freq: float <- 500;
+    if freq > 400 {
+        if freq < 600 {
+            play audio(SAW(), freq, 5s);
+        }
+    }
+}

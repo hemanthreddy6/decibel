@@ -1,0 +1,5 @@
+function main <-() {
+    samples: array[10] of audio;
+    samples[0 <- audio(SIN(), 500hz, 1s);
+    play samples[0];
+}

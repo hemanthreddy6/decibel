@@ -1,0 +1,12 @@
+function processAudio <- (files: array[3] of audio): audio {
+    return MIX(files[0], files[1], files[2]);
+}
+
+function main <-() {
+    tracks: array[3] of audio;
+    tracks[0] <- load "track1.wav";
+    tracks[1] <- load "track2.wav";
+    tracks[2] <- load "track3.wav";
+    finalTrack <- processAudio(tracks);
+    play finalTrack;
+}
