@@ -12,7 +12,7 @@ y.tab.c: parser.y
 parser: y.tab.c ../Lex/lex.yy.c
 	gcc -o parser y.tab.c -lm
 
-../Lex/lex.yy.c:
+../Lex/lex.yy.c: ../Lex/lexer.l
 	@make build -C "../Lex" --quiet
 
 test: parser

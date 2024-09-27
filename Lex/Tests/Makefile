@@ -6,10 +6,10 @@ INPUT_FILES := $(if $(FILE), $(FILE).in, $(TESTS))
 
 build: lexer
 
-../lex.yy.c:
+../lex.yy.c: ../lexer.l
 	@make lex.yy.c -C "../" --quiet
 
-../../Parser/y.tab.c:
+../../Parser/y.tab.c: ../../Parser/parser.y
 	@make y.tab.c -C "../../Parser" --quiet
 
 lexer: ../lex.yy.c ../../Parser/y.tab.c tester.c
