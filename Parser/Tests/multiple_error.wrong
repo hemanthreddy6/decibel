@@ -1,7 +1,12 @@
 improt "frr" ;
 import "frr" ; ; 
-function func_2 <- (a: int ,b: int , float) : int {
-    return a+b+c;
+function func_2 <- (a: int ,b: int , float string) : int {
+    int a=b;
+    if (i*===0) {
+        // cry
+    }
+    int b=c;
+    return a+b+*****c;
 }
 
 function func_1 <- func_2(_ , 4321", _);

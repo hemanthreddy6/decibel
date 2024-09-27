@@ -39,13 +39,17 @@ program
 
 import_statements
     : import_statements import_statement ';'
-    | 
-    | error ';' ;
+    | ;
 
 global_statements
-    : global_statements declaration_statement ';'
-    | global_statements function_declaration 
-    | ;
+    : global_statements global_statement
+    | global_statement ;
+
+global_statement
+    : declaration_statement ';'
+    | function_declaration 
+    | error
+    | error ';' ;
 
 returnable_statements
     : returnable_statements returnable_statement 
@@ -53,7 +57,9 @@ returnable_statements
 
 returnable_statement
     : statement
-    | return_statement ';' ;
+    | return_statement ';' 
+    | error
+    | error ';' ;
 
 loopable_statements
     : loopable_statements loopable_statement
@@ -62,7 +68,9 @@ loopable_statements
 loopable_statement
     : statement
     | CONTINUE ';'
-    | BREAK ';' ;
+    | BREAK ';' 
+    | error
+    | error ';';
 
 statement 
     : declaration_statement ';'
@@ -73,8 +81,7 @@ statement
     | loop_statement
     | load_statement ';'
     | play_statement ';' 
-    | save_statement ';'
-    | error ';' ;
+    | save_statement ';' ;
 
 import_statement
     : IMPORT STRING_LITERAL;
@@ -86,11 +93,13 @@ declaration_statement
 
 data_type
     : data_type '[' INT_LITERAL ']'
-    | primitive_data_type ;
+    | primitive_data_type 
+    | error;
 
 generic_data_type
     : generic_data_type '[' ']'
-    | primitive_data_type ;
+    | primitive_data_type 
+    | error;
 
 primitive_data_type
     : INT
@@ -179,7 +188,8 @@ expr
     | expr EQUALS expr
     | expr NOT_EQUALS expr
     | expr LOGICAL_AND expr
-    | expr LOGICAL_OR expr;
+    | expr LOGICAL_OR expr
+    | error ;
 
 unary_expr
     : value
@@ -223,7 +233,8 @@ function_name
 
 function_arguments
     : function_arguments '(' argument_list ')'
-    | '(' argument_list ')';
+    | '(' argument_list ')'
+    | error ;
 
 argument_list
     : non_empty_argument_list
