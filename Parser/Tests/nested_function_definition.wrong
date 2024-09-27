@@ -1,0 +1,16 @@
+function main <- (
+    function main3 <- () {
+            function main4 <- () {
+                a: string <- "very creative test";
+            }
+        }
+    ) {
+    function main2 <- () {
+        return;
+    }
+    function main3 <- () {
+        function main4 <- () {
+            a: string <- "very creative test";
+        }
+    }
+}

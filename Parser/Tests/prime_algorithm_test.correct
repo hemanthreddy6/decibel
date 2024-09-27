@@ -1,0 +1,30 @@
+// Sieve of Eratosthenes to check for primes, written in Decibel
+
+function sieve <- (n: int) : int[]{
+    i: int <- 1;
+    primes: int[1000] <- 96;
+    loop until i >= n{
+        primes[i] = 0;
+    }
+    loop until i * i > n{
+        if primes[i] == 1{
+            continue;
+        }
+        j: int <- i * i;
+        loop over j i * i to n @i{
+            primes[j] = 1;
+        }
+        i += 1;
+    }
+    return primes;
+}
+
+function main <- (){
+    primes: int[1000] <- sieve (1000);
+    loop until i >= 1000{
+        if primes[i] == 1{
+            a: audio <- load "abc" + i + ".mp4";
+            play a;
+        }
+    }
+}
