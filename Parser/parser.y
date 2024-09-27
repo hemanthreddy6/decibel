@@ -183,10 +183,10 @@ expr
 
 unary_expr
     : value
-    | '~' value
-    | '!' value
-    | '+' value
-    | '-' value;
+    | '~' expr
+    | '!' expr
+    | '+' expr
+    | '-' expr;
 
 value
     : INT_LITERAL
