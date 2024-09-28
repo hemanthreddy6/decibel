@@ -1,9 +1,8 @@
 function checkFrequency <- (freq: float): bool {
-    if freq > 440 {
+    if freq > 440 
         return true;
-    } otherwise {
+    otherwise 
         return false;
-    }
 }
 
 function main <-() {
