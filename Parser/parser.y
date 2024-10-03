@@ -1,5 +1,6 @@
 %{
     #include <stdio.h>
+    #include <stdbool.h>
     #include "../Lex/lex.yy.c"
     int yyerror(const char*);
 %}
@@ -11,27 +12,27 @@
 %token IDENTIFIER INT_LITERAL FLOAT_LITERAL STRING_LITERAL
 %token INVALID_SYMBOL
 
-%right LOAD
-%right '~'
-%right '!'
-%left '^'
-%left '&'
-%left '*'
-%left '/'
-%left '%'
-%left SPEEDUP
-%left SPEEDDOWN
-%left '+'
-%left '-'
-%left '|'
-%left '<'
-%left LEQ
-%left '>'
-%left GEQ
-%left EQUALS
-%left NOT_EQUALS
-%left LOGICAL_AND
 %left LOGICAL_OR
+%left LOGICAL_AND
+%left NOT_EQUALS
+%left EQUALS
+%left GEQ
+%left '>'
+%left LEQ
+%left '<'
+%left '|'
+%left '-'
+%left '+'
+%left SPEEDDOWN
+%left SPEEDUP
+%left '%'
+%left '/'
+%left '*'
+%left '&'
+%left '^'
+%right '!'
+%right '~'
+%right LOAD
 
 %%
 program
@@ -50,13 +51,11 @@ global_statements
 
 global_statement
     : declaration_statement ';'
-    | function_declaration 
     | error
     | error ';' ;
 
 statement 
     : declaration_statement ';'
-    | function_declaration
     | assignment_statement ';'
     | function_call ';'
     | conditional_statement
@@ -71,37 +70,34 @@ declaration_statement
     | CONST IDENTIFIER ':' data_type LEFT_ARROW expr ;
 
 data_type
-    : data_type '[' INT_LITERAL ']'
-    | primitive_data_type 
+    : primitive_data_type 
+    | '(' data_type_list ')'
+    | '(' data_type_list ')' ':' data_type
     | error;
 
-generic_data_type
-    : generic_data_type '[' ']'
-    | primitive_data_type 
-    | error;
+data_type_list: non_empty_data_type_list
+              |;
+
+non_empty_data_type_list: non_empty_data_type_list ',' data_type
+                        | data_type;
 
 primitive_data_type
-    : INT
+    : primitive_data_type '[' INT_LITERAL ']'
+    | primitive_data_type '[' ']'
+    | INT
     | LONG
     | FLOAT
     | AUDIO
     | STRING
     | BOOL;
 
-function_declaration
-    : FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' generic_data_type '{' returnable_statements '}'
-    | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' ':' generic_data_type IMPLIES expr ';'
-    | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' '{' returnable_statements '}'
-    | FUNCTION IDENTIFIER LEFT_ARROW '(' parameter_list ')' IMPLIES expr ';'
-    | FUNCTION IDENTIFIER LEFT_ARROW expr ';';
-
 parameter_list
     : non_empty_parameter_list
     | ;
 
 non_empty_parameter_list
-    : non_empty_parameter_list ',' IDENTIFIER ':' generic_data_type
-    | IDENTIFIER ':' generic_data_type;
+    : non_empty_parameter_list ',' IDENTIFIER ':' data_type
+    | IDENTIFIER ':' data_type;
 
 returnable_statements
     : returnable_statements returnable_statement 
@@ -118,7 +114,8 @@ return_statement
     | RETURN ;
     
 function_call
-    : function_name function_arguments;
+    : function_name function_arguments
+    | '(' expr ')' function_arguments;
 
 function_name
     : IDENTIFIER
@@ -204,6 +201,10 @@ save_statement
 
 expr
     : '(' expr ')'
+    | '(' parameter_list ')' ':' data_type IMPLIES expr ';'
+    | '(' parameter_list ')' ':' data_type '{' returnable_statements '}'
+    | '(' parameter_list ')' IMPLIES expr ';'
+    | '(' parameter_list ')' '{' returnable_statements '}'
     | unary_expr
     | expr '^' expr
     | expr '&' expr
@@ -250,14 +251,26 @@ assignable_value
 
 %%
 
+char error_statement[1024];
+long long error_line_no;
+long long error_col_no;
+bool is_error = false;
+
 int yyerror(const char* s){
-    printf("Line %lld, Column %lld: %s\n", yylval.line_no, yylval.col_no, s);
-    printf("|%s\n|", input_file[yylval.line_no-1]);
-    for(int i = 0; i < yylval.col_no-1;i++) printf(" ");
-    printf("\x1b[31m^\x1b[39m\n\n");
+    if (is_error){
+        printf("Line %lld, Column %lld: %s\n", error_line_no, error_col_no, error_statement);
+        printf("%6lld | %s\n       | ", error_line_no, input_file[error_line_no-1]);
+        for(int i = 0; i < error_col_no-1;i++) printf(" ");
+        printf("\x1b[31m^\x1b[39m\n\n");
+    }
+    is_error = true;
+    strncpy(error_statement, s, 1023);
+    error_line_no = yylval.line_no;
+    error_col_no = yylval.col_no;
     return 1;
 }
 int main() {
     yyparse();
+    yyerror("");
     return 1;
 }
