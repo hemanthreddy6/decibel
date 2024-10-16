@@ -108,6 +108,15 @@ int main() {
     case TO:
       printf("TO\n");
       break;
+    case MAIN:
+      printf("MAIN\n");
+      break;
+    case READ:
+      printf("READ\n");
+      break;
+    case PRINT:
+      printf("PRINT\n");
+      break;
 
     case SPEEDUP:
       printf(">>\n");

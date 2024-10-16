@@ -114,6 +114,9 @@ multiline_comment_end \*+\/
 "TRIANGLE"      { yylval = token(yytext); return TRIANGLE; }
 "PAN"           { yylval = token(yytext); return PAN; }
 "to"            { yylval = token(yytext); return TO; }
+"main"          { yylval = token(yytext); return MAIN; }
+"read"          { yylval = token(yytext); return READ; }
+"print"         { yylval = token(yytext); return PRINT; }
 
 "~" { yylval = token(yytext); return '~'; }
 "!" { yylval = token(yytext); return '!'; }

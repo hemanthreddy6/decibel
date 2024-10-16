@@ -7,7 +7,8 @@
 %define parse.error verbose
 
 %start program
-%token IMPORT CONST LOAD SAVE PLAY FUNCTION IF OR OTHERWISE LOOP OVER UNTIL LONG INT FLOAT STRING AUDIO BOOL TRUE FALSE CONTINUE BREAK RETURN HIGHPASS LOWPASS EQ SIN COS EXP_DECAY LIN_DECAY SQUARE SAW TRIANGLE PAN TO
+%token IMPORT CONST LOAD SAVE PLAY FUNCTION IF OR OTHERWISE LOOP OVER UNTIL LONG INT FLOAT STRING AUDIO BOOL TRUE FALSE CONTINUE BREAK RETURN HIGHPASS LOWPASS EQ SIN COS EXP_DECAY LIN_DECAY SQUARE SAW TRIANGLE PAN TO MAIN
+%token READ PRINT
 %token SPEEDUP SPEEDDOWN LEQ GEQ EQUALS NOT_EQUALS LOGICAL_AND LOGICAL_OR POWER_EQUALS DISTORTION_EQUALS MULT_EQUALS DIVIDE_EQUALS MOD_EQUALS PLUS_EQUALS MINUS_EQUALS OR_EQUALS RIGHT_ARROW LEFT_ARROW IMPLIES
 %token IDENTIFIER INT_LITERAL FLOAT_LITERAL STRING_LITERAL
 %token INVALID_SYMBOL
@@ -36,23 +37,17 @@
 
 %%
 program
-    : import_statements global_statements ;
+    : statements main_block statements;
 
-import_statements
-    : import_statements import_statement ';'
-    | ;
+main_block
+    : MAIN '{' statements '}';
 
 import_statement
     : IMPORT STRING_LITERAL;
 
-global_statements
-    : global_statements global_statement
-    | global_statement ;
-
-global_statement
-    : declaration_statement ';'
-    | error
-    | error ';' ;
+statements
+    : statements statement
+    | ;
 
 statement 
     : declaration_statement ';'
@@ -62,7 +57,16 @@ statement
     | loop_statement
     | load_statement ';'
     | play_statement ';' 
-    | save_statement ';' ;
+    | save_statement ';'
+    | read_statement ';'
+    | print_statement ';'
+    | import_statement ';' {yyerror("Import statements can only be at the start of the file before any other statements.");};
+
+read_statement
+    : READ assignable_value;
+
+print_statement
+    : PRINT expr;
 
 declaration_statement
     : IDENTIFIER LEFT_ARROW expr 
