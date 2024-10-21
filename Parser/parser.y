@@ -52,50 +52,50 @@ statements
     | { $$ = new Stype(); $$->node_type = NODE_STATEMENTS;};
 
 statement 
-    : declaration_statement ';'
-    | assignment_statement ';'
-    | function_call ';'
-    | conditional_statement
-    | loop_statement
-    | load_statement ';'
-    | play_statement ';' 
-    | save_statement ';'
-    | read_statement ';'
-    | print_statement ';'
+    : declaration_statement ';' {$$ = $1;}
+    | assignment_statement ';' {$$ = $1;}
+    | function_call ';' {$$ = $1;}
+    | conditional_statement {$$ = $1;}
+    | loop_statement {$$ = $1;}
+    | load_statement ';' {$$ = $1;}
+    | play_statement ';'  {$$ = $1;}
+    | save_statement ';' {$$ = $1;}
+    | read_statement ';' {$$ = $1;}
+    | print_statement ';' {$$ = $1;}
     | import_statement ';' {yyerror("Import statements can only be at the start of the file before any other statements.");};
 
 read_statement
-    : READ assignable_value;
+    : READ assignable_value {$$ = new Stype(); $$->node_type = NODE_READ_STATEMENT; $$->children.push_back($2);};
 
 print_statement
-    : PRINT expr;
+    : PRINT expr {$$ = new Stype(); $$->node_type = NODE_PRINT_STATEMENT; $$->children.push_back($2);};
 
 declaration_statement
-    : IDENTIFIER LEFT_ARROW expr 
-    | IDENTIFIER ':' data_type LEFT_ARROW expr 
-    | CONST IDENTIFIER ':' data_type LEFT_ARROW expr ;
+    : IDENTIFIER LEFT_ARROW expr {$$ = new Stype(); $$->node_type = NODE_DECLARATION_STATEMENT; $$->children.push_back($1); $$->children.push_back($3);}
+    | IDENTIFIER ':' data_type LEFT_ARROW expr {$$ = new Stype(); $$->node_type = NODE_DECLARATION_STATEMENT_WITH_TYPE; $$->children.push_back($1); $$->children.push_back($5); $$->children.push_back($3);}
+    | CONST IDENTIFIER ':' data_type LEFT_ARROW expr {$$ = new Stype(); $$->node_type = NODE_CONST_DECLARATION_STATEMENT; $$->children.push_back($2); $$->children.push_back($6); $$->children.push_back($4);};
 
 data_type
-    : primitive_data_type 
-    | '(' data_type_list ')'
-    | '(' data_type_list ')' ':' data_type
+    : primitive_data_type {$$ = $1;}
+    | '(' data_type_list ')' {$$ = $2; $$->data_type->return_type = NULL;}
+    | '(' data_type_list ')' ':' data_type {$$ = $2; $$->data_type->return_type = $5->data_type;}
     | error;
 
-data_type_list: non_empty_data_type_list
-              |;
+data_type_list: non_empty_data_type_list {$$ = $1;}
+              | {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(); $$->data_type->is_primitive = false;};
 
-non_empty_data_type_list: non_empty_data_type_list ',' data_type
-                        | data_type;
+non_empty_data_type_list: non_empty_data_type_list ',' data_type {$$ = $1; $$->data_type->parameters.push_back($3->data_type);}
+                        | data_type {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(); $$->data_type->is_primitive = false; $$->data_type->parameters.push_back($1->data_type);};
 
 primitive_data_type
-    : primitive_data_type '[' INT_LITERAL ']'
-    | primitive_data_type '[' ']'
-    | INT
-    | LONG
-    | FLOAT
-    | AUDIO
-    | STRING
-    | BOOL;
+    : primitive_data_type '[' INT_LITERAL ']' { $$ = $1; $$->data_type = new DataType($$->data_type, 0);}
+    | primitive_data_type '[' ']' { $$ = $1; $$->data_type = new DataType($$->data_type, 0);}
+    | INT {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(INT);}
+    | LONG {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(LONG);}
+    | FLOAT {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(FLOAT);}
+    | AUDIO {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(AUDIO);}
+    | STRING {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(STRING);}
+    | BOOL {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(BOOL);};
 
 parameter_list
     : non_empty_parameter_list

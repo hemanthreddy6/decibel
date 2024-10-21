@@ -9,6 +9,12 @@
         NODE_ROOT,
         NODE_STATEMENTS,
         NODE_MAIN_BLOCK,
+        NODE_READ_STATEMENT,
+        NODE_PRINT_STATEMENT,
+        NODE_DECLARATION_STATEMENT,
+        NODE_DECLARATION_STATEMENT_WITH_TYPE,
+        NODE_CONST_DECLARATION_STATEMENT,
+        NODE_DATA_TYPE,
         NODE_INT_LITERAL,
         NODE_FLOAT_LITERAL,
         NODE_STRING_LITERAL,
@@ -19,11 +25,24 @@
         bool is_primitive;
         // if it's primitive:
         bool is_vector;
+        int vector_size;
         struct DataType* vector_data_type;
         int basic_data_type; // INT, LONG, FLOAT, AUDIO, STRING, or BOOL
         // if it's not primitive:
         std::vector<struct DataType*> parameters;
         struct DataType* return_type;
+        DataType(){}
+        DataType(int type){
+            is_primitive = true;
+            is_vector = false;
+            basic_data_type = type;
+        }
+        DataType(struct DataType* vector_type, int size){
+            is_primitive = true;
+            is_vector = true;
+            vector_data_type = vector_type;
+            vector_size = size;
+        }
     };
 
     // Use this function to check if two data types are the same type
@@ -55,7 +74,7 @@
         char* text;
         enum NodeType node_type;
         std::vector<struct Stype*> children;
-        struct DataType data_type;
+        struct DataType* data_type;
         Stype(){}
     };
     #define YYSTYPE struct Stype *
