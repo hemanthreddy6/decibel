@@ -3,6 +3,8 @@
     #include <stdbool.h>
     #include "../Lex/lex.yy.c"
     int yyerror(const char*);
+
+    YYSTYPE root = new Stype();
 %}
 %define parse.error verbose
 
@@ -37,17 +39,17 @@
 
 %%
 program
-    : statements main_block statements;
+    : statements main_block statements { root->node_type = NODE_ROOT;root->children.push_back($1);root->children.push_back($2); root->children.push_back($3);};
 
 main_block
-    : MAIN '{' statements '}';
+    : MAIN '{' statements '}' {$$ = new Stype(); $$->node_type = NODE_MAIN_BLOCK; $$->children.push_back($3);};
 
 import_statement
     : IMPORT STRING_LITERAL;
 
 statements
-    : statements statement
-    | ;
+    : statements statement {$$ = $1; $$->children.push_back($2);}
+    | { $$ = new Stype(); $$->node_type = NODE_STATEMENTS;};
 
 statement 
     : declaration_statement ';'
@@ -269,12 +271,16 @@ int yyerror(const char* s){
     }
     is_error = true;
     strncpy(error_statement, s, 1023);
-    error_line_no = yylval.line_no;
-    error_col_no = yylval.col_no;
+    error_line_no = yylval->line_no;
+    error_col_no = yylval->col_no;
     return 1;
 }
 int main() {
     yyparse();
     yyerror("");
+    printf("Finished with syntax\n");
+    #ifdef SEMANTIC
+    semantic();
+    #endif
     return 1;
 }

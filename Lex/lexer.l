@@ -3,16 +3,66 @@
     #include <string.h>
     #include <math.h>
     #include <stdlib.h>
+    #include <vector>
+
+    enum NodeType{
+        NODE_ROOT,
+        NODE_STATEMENTS,
+        NODE_MAIN_BLOCK,
+        NODE_INT_LITERAL,
+        NODE_FLOAT_LITERAL,
+        NODE_STRING_LITERAL,
+        NODE_IDENTIFIER
+    };
+
+    struct DataType{
+        bool is_primitive;
+        // if it's primitive:
+        bool is_vector;
+        struct DataType* vector_data_type;
+        int basic_data_type; // INT, LONG, FLOAT, AUDIO, STRING, or BOOL
+        // if it's not primitive:
+        std::vector<struct DataType*> parameters;
+        struct DataType* return_type;
+    };
+
+    // Use this function to check if two data types are the same type
+    bool are_data_types_equal(struct DataType type1, struct DataType type2){
+        if (type1.is_primitive && type2.is_primitive){
+            if (type1.is_vector && type2.is_vector){
+                return are_data_types_equal(*(type1.vector_data_type), *(type2.vector_data_type));
+            } else if(!type1.is_vector && !type2.is_vector){
+                return type1.basic_data_type == type2.basic_data_type;
+            } else return false;
+        } else if (!type1.is_primitive && !type2.is_primitive){
+            bool are_equal = true;
+            if (type1.parameters.size() == type2.parameters.size()){
+                for(int i = 0; i < type1.parameters.size(); i++){
+                    are_equal = are_equal && are_data_types_equal(*(type1.parameters[i]), *(type2.parameters[i]));
+                }
+            } else {
+                are_equal = false;
+            }
+            are_equal = are_equal && are_data_types_equal(*(type1.return_type), *(type2.return_type));
+            return are_equal;
+        } else return false;
+    }
+
     #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
     struct Stype{
         long long line_no;
         long long col_no;
         char* text;
+        enum NodeType node_type;
+        std::vector<struct Stype*> children;
+        struct DataType data_type;
+        Stype(){}
     };
-    #define YYSTYPE struct Stype
+    #define YYSTYPE struct Stype *
     # define YYSTYPE_IS_TRIVIAL 1
     # define YYSTYPE_IS_DECLARED 1
     #endif
+
     #include "../Parser/y.tab.h"
     double frequency_to_semitones(char* str) {
         size_t len = strlen(str);
@@ -63,11 +113,11 @@
             }
         }
     }
-    struct Stype token(char* str) {
-        struct Stype lval;
-        lval.line_no = line_no;
-        lval.text = str;
-        lval.col_no = col_no;
+    struct Stype* token(char* str) {
+        struct Stype* lval = new Stype();
+        lval->line_no = line_no;
+        lval->text = str;
+        lval->col_no = col_no;
         count_newlines(str);
         return lval;
     }
@@ -170,14 +220,14 @@ multiline_comment_end \*+\/
 "," { yylval = token(yytext); return ','; }
 "=>" { yylval = token(yytext); return IMPLIES; }
 
-{alpha}({alpha}|{digit}|_)* { yylval = token(yytext); return IDENTIFIER; }
-{digit}+ { yylval = token(yytext); return INT_LITERAL; } 
-({digit}*"."{digit}+|{digit}+"."{digit}*) { yylval = token(yytext); return FLOAT_LITERAL; }
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(hz|HZ|hZ|Hz) { yylval = token(yytext); return FLOAT_LITERAL; }
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(ms|Ms|MS|mS) { yylval = token(yytext); return FLOAT_LITERAL; }
-({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(s|S) { yylval = token(yytext); return FLOAT_LITERAL; }
-\"[^"]*\" { yylval = token(yytext); return STRING_LITERAL; }
-\'[^']*\' { yylval = token(yytext); return STRING_LITERAL; }
+{alpha}({alpha}|{digit}|_)* { yylval = token(yytext); yylval->node_type = NODE_IDENTIFIER; return IDENTIFIER; }
+{digit}+ { yylval = token(yytext);  yylval->node_type = NODE_INT_LITERAL; return INT_LITERAL; } 
+({digit}*"."{digit}+|{digit}+"."{digit}*) { yylval = token(yytext); yylval->node_type = NODE_FLOAT_LITERAL; return FLOAT_LITERAL; }
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(hz|HZ|hZ|Hz) { yylval = token(yytext); yylval->node_type = NODE_FLOAT_LITERAL; return FLOAT_LITERAL; }
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(ms|Ms|MS|mS) { yylval = token(yytext); yylval->node_type = NODE_FLOAT_LITERAL; return FLOAT_LITERAL; }
+({digit}*"."{digit}+|{digit}+"."{digit}*|{digit}+)(s|S) { yylval = token(yytext); yylval->node_type = NODE_FLOAT_LITERAL; return FLOAT_LITERAL; }
+\"[^"]*\" { yylval = token(yytext); yylval->node_type = NODE_STRING_LITERAL; return STRING_LITERAL; }
+\'[^']*\' { yylval = token(yytext); yylval->node_type = NODE_STRING_LITERAL; return STRING_LITERAL; }
 
 \/\/(.*) {count_newlines(yytext);};
 {multiline_comment_start}([^\*]|\*+[^\/\*])*{multiline_comment_end} {count_newlines(yytext);};

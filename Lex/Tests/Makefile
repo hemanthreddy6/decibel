@@ -13,7 +13,7 @@ build: lexer
 	@make y.tab.c -C "../../Parser" --quiet
 
 lexer: ../lex.yy.c ../../Parser/y.tab.c tester.c
-	@gcc -o lexer tester.c -lm
+	@g++ -o lexer tester.c -lm
 
 run: build
 	./lexer
