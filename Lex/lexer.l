@@ -18,7 +18,9 @@
         NODE_INT_LITERAL,
         NODE_FLOAT_LITERAL,
         NODE_STRING_LITERAL,
-        NODE_IDENTIFIER
+        NODE_IDENTIFIER,
+
+        NODE_NOT_SET
     };
 
     struct DataType{
@@ -75,7 +77,9 @@
         enum NodeType node_type;
         std::vector<struct Stype*> children;
         struct DataType* data_type;
-        Stype(){}
+        Stype(){
+            node_type = NODE_NOT_SET;
+        }
     };
     #define YYSTYPE struct Stype *
     # define YYSTYPE_IS_TRIVIAL 1

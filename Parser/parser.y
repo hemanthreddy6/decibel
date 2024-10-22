@@ -278,9 +278,10 @@ int yyerror(const char* s){
 int main() {
     yyparse();
     yyerror("");
-    printf("Finished with syntax\n");
+
     #ifdef SEMANTIC
     semantic();
     #endif
+
     return 1;
 }

@@ -11,3 +11,5 @@ Parser/parser.tab.h
 Parser/a.out
 .vscode/
 .DS_Store
+.clang-format
+Semantic/semantic_analyser

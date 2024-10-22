@@ -1,10 +1,81 @@
 #define SEMANTIC 1
 int semantic();
-#include<iostream>
 #include "../Parser/y.tab.c"
+#include <iostream>
 
 using namespace std;
-int semantic(){
-    cout << "Starting semantic phase" << endl;
+
+void traverse_ast(Stype *node) {
+    switch (node->node_type) {
+    case NODE_ROOT:
+        cerr << "Root node" << endl;
+        traverse_ast(node->children[0]);
+        traverse_ast(node->children[1]);
+        traverse_ast(node->children[2]);
+        break;
+    case NODE_STATEMENTS:
+        cerr << "Statements node" << endl;
+        for (Stype *child : node->children) {
+            traverse_ast(child);
+        }
+        break;
+
+    case NODE_MAIN_BLOCK:
+        cerr << "Main block node" << endl;
+        // before traversing the statements node, do stuff to make the scope be
+        // main block and stuff
+        traverse_ast(node->children[0]);
+        break;
+    case NODE_READ_STATEMENT:
+        cerr << "Read statement node" << endl;
+
+        break;
+    case NODE_PRINT_STATEMENT:
+        cerr << "Print statement node" << endl;
+
+        break;
+    case NODE_DECLARATION_STATEMENT:
+        cerr << "Declaration statement node" << endl;
+
+        break;
+    case NODE_DECLARATION_STATEMENT_WITH_TYPE:
+        cerr << "Declaration statement node with type" << endl;
+
+        break;
+    case NODE_CONST_DECLARATION_STATEMENT:
+        cerr << "Const declaration statement node" << endl;
+
+        break;
+    case NODE_DATA_TYPE:
+        cerr << "Data type statement node" << endl;
+
+        break;
+    case NODE_INT_LITERAL:
+        cerr << "Int literal node" << endl;
+
+        break;
+    case NODE_FLOAT_LITERAL:
+        cerr << "Float literal node" << endl;
+
+        break;
+    case NODE_STRING_LITERAL:
+        cerr << "String literal node" << endl;
+
+        break;
+    case NODE_IDENTIFIER:
+        cerr << "node" << endl;
+
+        break;
+    case NODE_NOT_SET:
+        cerr << "Oops, looks like you have an uninitialised Stype somewhere!"
+             << endl;
+        break;
+    default:
+        cerr << "You forgot to handle this node bruh" << endl;
+    }
+}
+
+int semantic() {
+    traverse_ast(root);
     return 0;
 }

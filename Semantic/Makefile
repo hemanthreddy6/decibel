@@ -8,5 +8,8 @@ semantic_analyser: semantic_analyser.cpp make_parser
 make_parser:
 	@make build -C "../Parser" --quiet
 
+test:
+	@echo "TODO: Testing needs to be set up"
+
 clean:
 	rm -f semantic_analyser
