@@ -2,16 +2,30 @@
 int semantic();
 #include "../Parser/y.tab.c"
 #include <iostream>
+#include <map>
+#include <string>
 
 using namespace std;
+
+// Symbol table entry
+struct StEntry {
+    struct DataType *data_type;
+    // more fields to be added here
+} typedef StEntry;
+
+vector<vector<map<string, StEntry>>> symbol_table;
+
+// This is just a reference to easily access symbol_table[0][0]
+map<string, StEntry> *global_scope;
 
 void traverse_ast(Stype *node) {
     switch (node->node_type) {
     case NODE_ROOT:
         cerr << "Root node" << endl;
         traverse_ast(node->children[0]);
-        traverse_ast(node->children[1]);
         traverse_ast(node->children[2]);
+        // main block processed last
+        traverse_ast(node->children[1]);
         break;
     case NODE_STATEMENTS:
         cerr << "Statements node" << endl;
@@ -63,7 +77,7 @@ void traverse_ast(Stype *node) {
 
         break;
     case NODE_IDENTIFIER:
-        cerr << "node" << endl;
+        cerr << "Identifier node" << endl;
 
         break;
     case NODE_NOT_SET:
@@ -76,6 +90,12 @@ void traverse_ast(Stype *node) {
 }
 
 int semantic() {
+    // Initialising the symbol table
+    symbol_table = vector<vector<map<string, StEntry>>>(
+        1, vector<map<string, StEntry>>(1, map<string, StEntry>()));
+
+    global_scope = &symbol_table[0][0];
+
     traverse_ast(root);
     return 0;
 }
