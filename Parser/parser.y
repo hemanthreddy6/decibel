@@ -4,7 +4,7 @@
     #include "../Lex/lex.yy.c"
     int yyerror(const char*);
 
-    YYSTYPE root = new Stype();
+    YYSTYPE root = new Stype(NODE_ROOT);
 %}
 %define parse.error verbose
 
@@ -39,17 +39,17 @@
 
 %%
 program
-    : statements main_block statements { root->node_type = NODE_ROOT;root->children.push_back($1);root->children.push_back($2); root->children.push_back($3);};
+    : statements main_block statements { root->children.push_back($1);root->children.push_back($2); root->children.push_back($3);};
 
 main_block
-    : MAIN '{' statements '}' {$$ = new Stype(); $$->node_type = NODE_MAIN_BLOCK; $$->children.push_back($3);};
+    : MAIN '{' statements '}' {$$ = new Stype(NODE_MAIN_BLOCK); $$->children.push_back($3);};
 
 import_statement
     : IMPORT STRING_LITERAL;
 
 statements
     : statements statement {$$ = $1; $$->children.push_back($2);}
-    | { $$ = new Stype(); $$->node_type = NODE_STATEMENTS;};
+    | { $$ = new Stype(NODE_STATEMENTS);};
 
 statement 
     : declaration_statement ';' {$$ = $1;}
@@ -65,15 +65,15 @@ statement
     | import_statement ';' {yyerror("Import statements can only be at the start of the file before any other statements.");};
 
 read_statement
-    : READ assignable_value {$$ = new Stype(); $$->node_type = NODE_READ_STATEMENT; $$->children.push_back($2);};
+    : READ assignable_value {$$ = new Stype(NODE_READ_STATEMENT); $$->children.push_back($2);};
 
 print_statement
-    : PRINT expr {$$ = new Stype(); $$->node_type = NODE_PRINT_STATEMENT; $$->children.push_back($2);};
+    : PRINT expr {$$ = new Stype(NODE_PRINT_STATEMENT); $$->children.push_back($2);};
 
 declaration_statement
-    : IDENTIFIER LEFT_ARROW expr {$$ = new Stype(); $$->node_type = NODE_DECLARATION_STATEMENT; $$->children.push_back($1); $$->children.push_back($3);}
-    | IDENTIFIER ':' data_type LEFT_ARROW expr {$$ = new Stype(); $$->node_type = NODE_DECLARATION_STATEMENT_WITH_TYPE; $$->children.push_back($1); $$->children.push_back($5); $$->children.push_back($3);}
-    | CONST IDENTIFIER ':' data_type LEFT_ARROW expr {$$ = new Stype(); $$->node_type = NODE_CONST_DECLARATION_STATEMENT; $$->children.push_back($2); $$->children.push_back($6); $$->children.push_back($4);};
+    : IDENTIFIER LEFT_ARROW expr {$$ = new Stype(NODE_DECLARATION_STATEMENT); $$->children.push_back($1); $$->children.push_back($3);}
+    | IDENTIFIER ':' data_type LEFT_ARROW expr {$$ = new Stype(NODE_DECLARATION_STATEMENT_WITH_TYPE); $$->children.push_back($1); $$->children.push_back($5); $$->children.push_back($3);}
+    | CONST IDENTIFIER ':' data_type LEFT_ARROW expr {$$ = new Stype(NODE_CONST_DECLARATION_STATEMENT); $$->children.push_back($2); $$->children.push_back($6); $$->children.push_back($4);};
 
 data_type
     : primitive_data_type {$$ = $1;}
@@ -82,20 +82,20 @@ data_type
     | error;
 
 data_type_list: non_empty_data_type_list {$$ = $1;}
-              | {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(); $$->data_type->is_primitive = false;};
+              | {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(); $$->data_type->is_primitive = false;};
 
 non_empty_data_type_list: non_empty_data_type_list ',' data_type {$$ = $1; $$->data_type->parameters.push_back($3->data_type);}
-                        | data_type {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(); $$->data_type->is_primitive = false; $$->data_type->parameters.push_back($1->data_type);};
+                        | data_type {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(); $$->data_type->is_primitive = false; $$->data_type->parameters.push_back($1->data_type);};
 
 primitive_data_type
     : primitive_data_type '[' INT_LITERAL ']' { $$ = $1; $$->data_type = new DataType($$->data_type, 0);}
     | primitive_data_type '[' ']' { $$ = $1; $$->data_type = new DataType($$->data_type, 0);}
-    | INT {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(INT);}
-    | LONG {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(LONG);}
-    | FLOAT {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(FLOAT);}
-    | AUDIO {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(AUDIO);}
-    | STRING {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(STRING);}
-    | BOOL {$$ = new Stype(); $$->node_type = NODE_DATA_TYPE; $$->data_type = new DataType(BOOL);};
+    | INT {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(INT);}
+    | LONG {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(LONG);}
+    | FLOAT {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(FLOAT);}
+    | AUDIO {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(AUDIO);}
+    | STRING {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(STRING);}
+    | BOOL {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(BOOL);};
 
 parameter_list
     : non_empty_parameter_list

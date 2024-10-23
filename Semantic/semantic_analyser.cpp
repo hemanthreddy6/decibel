@@ -2,8 +2,8 @@
 int semantic();
 #include "../Parser/y.tab.c"
 #include <iostream>
-#include <map>
 #include <string>
+#include <unordered_map>
 
 using namespace std;
 
@@ -13,10 +13,10 @@ struct StEntry {
     // more fields to be added here
 } typedef StEntry;
 
-vector<vector<map<string, StEntry>>> symbol_table;
+vector<vector<unordered_map<string, StEntry>>> symbol_table;
 
 // This is just a reference to easily access symbol_table[0][0]
-map<string, StEntry> *global_scope;
+unordered_map<string, StEntry> *global_scope;
 
 void traverse_ast(Stype *node) {
     switch (node->node_type) {
@@ -91,8 +91,9 @@ void traverse_ast(Stype *node) {
 
 int semantic() {
     // Initialising the symbol table
-    symbol_table = vector<vector<map<string, StEntry>>>(
-        1, vector<map<string, StEntry>>(1, map<string, StEntry>()));
+    symbol_table = vector<vector<unordered_map<string, StEntry>>>(
+        1, vector<unordered_map<string, StEntry>>(
+               1, unordered_map<string, StEntry>()));
 
     global_scope = &symbol_table[0][0];
 

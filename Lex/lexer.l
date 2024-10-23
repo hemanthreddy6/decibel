@@ -77,6 +77,9 @@
         enum NodeType node_type;
         std::vector<struct Stype*> children;
         struct DataType* data_type;
+        Stype(enum NodeType type){
+            node_type = type;
+        }
         Stype(){
             node_type = NODE_NOT_SET;
         }
