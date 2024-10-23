@@ -160,7 +160,6 @@ multiline_comment_end \*+\/
 "load"          { yylval = token(yytext); return LOAD; }
 "save"          { yylval = token(yytext); return SAVE; }
 "play"          { yylval = token(yytext); return PLAY; }
-"function"      { yylval = token(yytext); return FUNCTION; }
 "if"            { yylval = token(yytext); return IF; }
 "or"            { yylval = token(yytext); return OR; }
 "otherwise"     { yylval = token(yytext); return OTHERWISE; }
