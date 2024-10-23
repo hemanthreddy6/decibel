@@ -1,3 +1,5 @@
+MAIN
+{
 IDENTIFIER
 :
 AUDIO
@@ -38,3 +40,4 @@ IDENTIFIER
 ^
 INT_LITERAL
 ;
+}

@@ -1,4 +1,6 @@
-clip: audio = audio(SIN,1.0,440);
-clip = clip + audio(COS,1.0,440);
-clip = clip[5:15];
-play clip^10;
+main {
+    clip: audio = audio(SIN,1.0,440);
+    clip = clip + audio(COS,1.0,440);
+    clip = clip[5:15];
+    play clip^10;
+}

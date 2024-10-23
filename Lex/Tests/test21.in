@@ -1,8 +1,8 @@
 import "old_production.db";
 
-function combine <- (audio1: audio, sound2: audio): audio => (sound1 + sound2);
+combine <- (audio1: audio, sound2: audio): audio => (sound1 + sound2);
 
-function valid_album <- (float: average_length, count: int): bool {
+valid_album <- (float: average_length, count: int): bool {
     if average_length * count > 20 {
         return true;
     } otherwise {
@@ -10,7 +10,7 @@ function valid_album <- (float: average_length, count: int): bool {
     }
 }
 
-function main <- (): int {
+main {
     my_music: audio <- load "song1.wav"; // Taking a song as input
     backing_track: audio <- load "bt.wav";
 
@@ -28,5 +28,4 @@ function main <- (): int {
     play new_track;
     save new_track -> "song2.wav";
 
-    return 0;
 }

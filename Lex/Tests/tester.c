@@ -21,9 +21,6 @@ int main() {
     case PLAY:
       printf("PLAY\n");
       break;
-    case FUNCTION:
-      printf("FUNCTION\n");
-      break;
     case IF:
       printf("IF\n");
       break;

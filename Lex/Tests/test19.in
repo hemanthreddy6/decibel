@@ -1,14 +1,16 @@
-function distort <- (x: int): int {
+distort <- (x: int): int {
     return x * x - 10;
 }
 
-function customWave <- (t: float): int {
+customWave <- (t: float): int {
     return SIN(t) + COS(t);
 }
 
-track: audio <- load "song.wav";
-track = LOWPASS(track, 200hz) & distort;
-track1: audio <- audio(customWave, 440hz, 5s);
-track = track + track1;
+main {
+    track: audio <- load "song.wav";
+    track = LOWPASS(track, 200hz) & distort;
+    track1: audio <- audio(customWave, 440hz, 5s);
+    track = track + track1;
 
-play finalTrack;
+    play finalTrack;
+}

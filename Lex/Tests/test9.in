@@ -1,6 +1,6 @@
 audio_1 = audio_1 | audio_2;
 
-function exp <- (length:float, time: float) {
+exp <- (length:float, time: float) {
 	return 2^(-length*time);
 }
 

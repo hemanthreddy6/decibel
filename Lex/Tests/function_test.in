@@ -1,18 +1,9 @@
-functoin main <- (int a) {
-    fucntoin main2: [
-        // nothing here
-        a: int <- 16#09#2024;
-        b: float <- a+2;
-    ]
-}
-
-
-functoin main <- {
-    // exit
-    exit(0);
-}
-
-function main4(d: string)$ float (
-    b: string <- d;
+main <- (a: int, b: int): float {
+    a: int <- 16#09#2024;
+    b: float <- a+2;
     return b;
-)
+}
+
+main {
+    
+}

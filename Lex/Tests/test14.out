@@ -1,8 +1,4 @@
-FUNCTION
-IDENTIFIER
-<-
-(
-)
+MAIN
 {
 IDENTIFIER
 <-
@@ -28,7 +24,4 @@ INT_LITERAL
 ;
 }
 }
-RETURN
-IDENTIFIER
-;
 }
