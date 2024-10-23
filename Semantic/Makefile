@@ -9,7 +9,7 @@ make_parser:
 	@make build -C "../Parser" --quiet
 
 test:
-	@echo "TODO: Testing needs to be set up"
+	@make test -C "Tests" --quiet
 
 clean:
 	rm -f semantic_analyser

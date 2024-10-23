@@ -21,71 +21,71 @@ map<string, StEntry> *global_scope;
 void traverse_ast(Stype *node) {
     switch (node->node_type) {
     case NODE_ROOT:
-        cerr << "Root node" << endl;
+        cout << "Root node" << endl;
         traverse_ast(node->children[0]);
         traverse_ast(node->children[2]);
         // main block processed last
         traverse_ast(node->children[1]);
         break;
     case NODE_STATEMENTS:
-        cerr << "Statements node" << endl;
+        cout << "Statements node" << endl;
         for (Stype *child : node->children) {
             traverse_ast(child);
         }
         break;
 
     case NODE_MAIN_BLOCK:
-        cerr << "Main block node" << endl;
+        cout << "Main block node" << endl;
         // before traversing the statements node, do stuff to make the scope be
         // main block and stuff
         traverse_ast(node->children[0]);
         break;
     case NODE_READ_STATEMENT:
-        cerr << "Read statement node" << endl;
+        cout << "Read statement node" << endl;
 
         break;
     case NODE_PRINT_STATEMENT:
-        cerr << "Print statement node" << endl;
+        cout << "Print statement node" << endl;
 
         break;
     case NODE_DECLARATION_STATEMENT:
-        cerr << "Declaration statement node" << endl;
+        cout << "Declaration statement node" << endl;
 
         break;
     case NODE_DECLARATION_STATEMENT_WITH_TYPE:
-        cerr << "Declaration statement node with type" << endl;
+        cout << "Declaration statement node with type" << endl;
 
         break;
     case NODE_CONST_DECLARATION_STATEMENT:
-        cerr << "Const declaration statement node" << endl;
+        cout << "Const declaration statement node" << endl;
 
         break;
     case NODE_DATA_TYPE:
-        cerr << "Data type statement node" << endl;
+        cout << "Data type statement node" << endl;
 
         break;
     case NODE_INT_LITERAL:
-        cerr << "Int literal node" << endl;
+        cout << "Int literal node" << endl;
 
         break;
     case NODE_FLOAT_LITERAL:
-        cerr << "Float literal node" << endl;
+        cout << "Float literal node" << endl;
 
         break;
     case NODE_STRING_LITERAL:
-        cerr << "String literal node" << endl;
+        cout << "String literal node" << endl;
 
         break;
     case NODE_IDENTIFIER:
-        cerr << "Identifier node" << endl;
+        cout << "Identifier node" << endl;
 
         break;
     case NODE_NOT_SET:
-        cerr << "Oops, looks like you have an uninitialised Stype somewhere!"
+        cout << "Oops, looks like you have an uninitialised Stype somewhere!"
              << endl;
         break;
     default:
-        cerr << "You forgot to handle this node bruh" << endl;
+        cout << "You forgot to handle this node bruh" << endl;
     }
 }
 

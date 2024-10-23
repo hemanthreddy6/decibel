@@ -12,6 +12,6 @@ clean:
 	@make clean -C "Semantic" --quiet
 
 test:
-	@make test -C "Lex" --quiet
-	@make test -C "Parser" --quiet
-	@make test -C "Semantic" --quiet
+	-@make test -C "Lex" --quiet
+	-@make test -C "Parser" --quiet
+	-@make test -C "Semantic" --quiet
