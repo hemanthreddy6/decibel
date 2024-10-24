@@ -39,17 +39,24 @@
 
 %%
 program
-    : statements main_block statements { root->children.push_back($1);root->children.push_back($2); root->children.push_back($3);};
+    : statements main_block statements { 
+        root->children.push_back($1);
+        root->children.push_back($2); 
+        root->children.push_back($3); };
 
 main_block
-    : MAIN '{' statements '}' {$$ = new Stype(NODE_MAIN_BLOCK); $$->children.push_back($3);};
+    : MAIN '{' statements '}' {
+        $$ = new Stype(NODE_MAIN_BLOCK); 
+        $$->children.push_back($3); };
 
 import_statement
     : IMPORT STRING_LITERAL;
 
 statements
-    : statements statement {$$ = $1; $$->children.push_back($2);}
-    | { $$ = new Stype(NODE_STATEMENTS);};
+    : statements statement {
+        $$ = $1; 
+        $$->children.push_back($2); }
+    | { $$ = new Stype(NODE_STATEMENTS); };
 
 statement 
     : declaration_statement ';' {$$ = $1;}
@@ -65,59 +72,116 @@ statement
     | import_statement ';' {yyerror("Import statements can only be at the start of the file before any other statements.");};
 
 read_statement
-    : READ assignable_value {$$ = new Stype(NODE_READ_STATEMENT); $$->children.push_back($2);};
+    : READ assignable_value {
+        $$ = new Stype(NODE_READ_STATEMENT); 
+        $$->children.push_back($2); };
 
 print_statement
-    : PRINT expr {$$ = new Stype(NODE_PRINT_STATEMENT); $$->children.push_back($2);};
+    : PRINT expr {
+        $$ = new Stype(NODE_PRINT_STATEMENT); 
+        $$->children.push_back($2); };
 
 declaration_statement
-    : IDENTIFIER LEFT_ARROW expr {$$ = new Stype(NODE_DECLARATION_STATEMENT); $$->children.push_back($1); $$->children.push_back($3);}
-    | IDENTIFIER ':' data_type LEFT_ARROW expr {$$ = new Stype(NODE_DECLARATION_STATEMENT_WITH_TYPE); $$->children.push_back($1); $$->children.push_back($5); $$->children.push_back($3);}
-    | CONST IDENTIFIER ':' data_type LEFT_ARROW expr {$$ = new Stype(NODE_CONST_DECLARATION_STATEMENT); $$->children.push_back($2); $$->children.push_back($6); $$->children.push_back($4);};
+    : IDENTIFIER LEFT_ARROW expr {
+        $$ = new Stype(NODE_DECLARATION_STATEMENT); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | IDENTIFIER ':' data_type LEFT_ARROW expr {
+        $$ = new Stype(NODE_DECLARATION_STATEMENT_WITH_TYPE); 
+        $$->children.push_back($1); 
+        $$->children.push_back($5); 
+        $$->children.push_back($3); }
+    | CONST IDENTIFIER ':' data_type LEFT_ARROW expr {
+        $$ = new Stype(NODE_CONST_DECLARATION_STATEMENT); 
+        $$->children.push_back($2); 
+        $$->children.push_back($6); 
+        $$->children.push_back($4); };
 
 data_type
     : primitive_data_type {$$ = $1;}
-    | '(' data_type_list ')' {$$ = $2; $$->data_type->return_type = NULL;}
-    | '(' data_type_list ')' ':' data_type {$$ = $2; $$->data_type->return_type = $5->data_type;}
+    | '(' data_type_list ')' {
+        $$ = $2; 
+        $$->data_type->return_type = NULL; }
+    | '(' data_type_list ')' ':' data_type {
+        $$ = $2; 
+        $$->data_type->return_type = $5->data_type; }
     | error;
 
-data_type_list: non_empty_data_type_list {$$ = $1;}
-              | {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(); $$->data_type->is_primitive = false;};
+data_type_list
+    : non_empty_data_type_list {$$ = $1;}
+    | {
+        $$ = new Stype(NODE_DATA_TYPE); 
+        $$->data_type = new DataType(); 
+        $$->data_type->is_primitive = false; };
 
-non_empty_data_type_list: non_empty_data_type_list ',' data_type {$$ = $1; $$->data_type->parameters.push_back($3->data_type);}
-                        | data_type {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(); $$->data_type->is_primitive = false; $$->data_type->parameters.push_back($1->data_type);};
+non_empty_data_type_list
+    : non_empty_data_type_list ',' data_type {
+        $$ = $1; 
+        $$->data_type->parameters.push_back($3->data_type); }
+    | data_type {
+        $$ = new Stype(NODE_DATA_TYPE); 
+        $$->data_type = new DataType(); 
+        $$->data_type->is_primitive = false; 
+        $$->data_type->parameters.push_back($1->data_type); };
 
 primitive_data_type
-    : primitive_data_type '[' INT_LITERAL ']' { $$ = $1; $$->data_type = new DataType($$->data_type, 0);}
-    | primitive_data_type '[' ']' { $$ = $1; $$->data_type = new DataType($$->data_type, 0);}
-    | INT {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(INT);}
-    | LONG {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(LONG);}
-    | FLOAT {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(FLOAT);}
-    | AUDIO {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(AUDIO);}
-    | STRING {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(STRING);}
-    | BOOL {$$ = new Stype(NODE_DATA_TYPE); $$->data_type = new DataType(BOOL);};
+    : primitive_data_type '[' INT_LITERAL ']' { 
+        $$ = $1; 
+        $$->data_type = new DataType($$->data_type, 0);}
+    | primitive_data_type '[' ']' { 
+        $$ = $1; 
+        $$->data_type = new DataType($$->data_type, 0);}
+    | INT {
+        $$ = new Stype(NODE_DATA_TYPE); 
+        $$->data_type = new DataType(INT);}
+    | LONG {
+        $$ = new Stype(NODE_DATA_TYPE); 
+        $$->data_type = new DataType(LONG);}
+    | FLOAT {
+        $$ = new Stype(NODE_DATA_TYPE); 
+        $$->data_type = new DataType(FLOAT);}
+    | AUDIO {
+        $$ = new Stype(NODE_DATA_TYPE); 
+        $$->data_type = new DataType(AUDIO);}
+    | STRING {
+        $$ = new Stype(NODE_DATA_TYPE); 
+        $$->data_type = new DataType(STRING);}
+    | BOOL {
+        $$ = new Stype(NODE_DATA_TYPE); 
+        $$->data_type = new DataType(BOOL);};
 
 parameter_list
-    : non_empty_parameter_list
-    | ;
+    : non_empty_parameter_list { $$ = $1; }
+    | { $$ = new Stype(NODE_PARAMETER_LIST); };
 
 non_empty_parameter_list
-    : non_empty_parameter_list ',' IDENTIFIER ':' data_type
-    | IDENTIFIER ':' data_type;
+    : non_empty_parameter_list ',' IDENTIFIER ':' data_type { 
+        $$ = $1;
+        $$->children.push_back(new Stype(NODE_PARAMETER));
+        $$->children.back()->children.push_back($3);
+        $$->children.back()->children.push_back($5); }
+    | IDENTIFIER ':' data_type { 
+        $$ = new Stype(NODE_PARAMETER); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); };
 
 returnable_statements
-    : returnable_statements returnable_statement 
-    | ;
+    : returnable_statements returnable_statement { 
+        $$ = $1;
+        $$->children.push_back($2); }
+    | { $$ = new Stype(NODE_RETURNABLE_STATEMENTS); };
 
 returnable_statement
-    : statement
-    | return_statement ';' 
+    : statement { $$ = $1; }
+    | return_statement ';' { $$ = $1; }
     | error
     | error ';' ;
 
 return_statement
-    : RETURN expr
-    | RETURN ;
+    : RETURN expr { 
+        $$ = new Stype(NODE_RETURN_STATEMENT); 
+        $$->children.push_back($2); }
+    | RETURN { $$ = new Stype(NODE_RETURN_STATEMENT); } ;
     
 function_call
     : function_name function_arguments
@@ -139,19 +203,27 @@ function_name
     | PAN ;
 
 function_arguments
-    : function_arguments '(' argument_list ')'
-    | '(' argument_list ')'
+    : function_arguments '(' argument_list ')' { 
+        $$ = $1;
+        $$->children.push_back($3); }
+    | '(' argument_list ')' { 
+        $$ = new Stype(NODE_FUNCTION_ARGUMENTS); 
+        $$->children.push_back($2); }
     | error ;
 
 argument_list
-    : non_empty_argument_list
-    | ;
+    : non_empty_argument_list { $$ = $1; }
+    | { $$ = new Stype(NODE_ARGUMENT_LIST); };
 
 non_empty_argument_list
-    : non_empty_argument_list ',' expr
-    | non_empty_argument_list ',' '_'
-    | expr 
-    | '_';
+    : non_empty_argument_list ',' expr { 
+        $$ = $1; 
+        $$->children.push_back($3); }
+    | non_empty_argument_list ',' '_' { 
+        $$ = $1; 
+        $$->children.push_back(new Stype(NODE_OMITTED_PARAMETER)); }
+    | expr { $$ = $1; }
+    | '_' { $$ = new Stype(NODE_OMITTED_PARAMETER); };
 
 loop_statement
     : LOOP expr '{' loopable_statements '}'
