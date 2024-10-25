@@ -1,4 +1,4 @@
-function main <- () {
+main2 <- (): int {
     return 2;
     return -345;
     return "finero";
@@ -8,4 +8,8 @@ function main <- () {
     return ((((((((((((((((nbcgervos8y459uhgram8g34v30rg4))))))))))))))));
     return ;
     return arr[brr[10:crr[35:arr[36][12][-ntur]]]][(pi*epie-mango)][one:two]-(three*four);
+};
+
+main {
+    
 }

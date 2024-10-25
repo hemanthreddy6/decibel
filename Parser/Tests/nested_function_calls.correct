@@ -1,8 +1,8 @@
-function customAudio <- (baseFreq: float, duration: float): audio {
+customAudio <- (baseFreq: float, duration: float): audio {
     return audio(SIN(), baseFreq, duration);
-}
+};
 
-function main <-() {
+main {
     track <- customAudio(440, 10s);
     play track;
 }

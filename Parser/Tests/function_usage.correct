@@ -1,10 +1,10 @@
-function func_2 <- (a: int ,b: int , c: float) : int {
+func_2 <- (a: int ,b: int , c: float) : int {
     return a+b+c;
-}
+};
 
-function func_1 <- func_2(_ , 23, _);
+func_1 <- func_2(_ , 23, _);
 
 
-function main <- () {
+main {
     func_1(12,34);
 }

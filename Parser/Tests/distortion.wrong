@@ -1,9 +1,9 @@
-function distort <- (bsbs): int {  //Input parameter not valid
+distort <- (bsbs): int {  //Input parameter not valid
     return value * 2;
 }
 
 
-function main<-(){
+main {
     track1: audio <- load "song1.wav";
     distortedTrack: audio <- track1 & distort;
     play distortedTrack;

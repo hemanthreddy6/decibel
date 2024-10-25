@@ -1,4 +1,4 @@
-function main <-() {
+main {
     track: audio <- audio(SQUARE, 220hz 3s);
     play track;
 }

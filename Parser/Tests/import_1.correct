@@ -2,6 +2,6 @@ import "main1.c";
 import 'main2.d';
 import 'frfr';
 
-function main <- () {
+main {
     
 }

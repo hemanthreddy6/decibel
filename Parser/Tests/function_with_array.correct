@@ -1,8 +1,8 @@
-function processAudio <- (files: audio[]): audio {
+processAudio <- (files: audio[]): audio {
     return MIX(files[0], files[1], files[2]);
-}
+};
 
-function main <-() {
+main {
     tracks: audio[3] <- 0;
     tracks[0] = load "track1.wav";
     tracks[1] = load "track2.wav";

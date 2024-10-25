@@ -1,12 +1,12 @@
-function checkFrequency <- (freq: float): bool {
+checkFrequency <- (freq: float): bool {
     if (freq > 440) {
         return true;
     } otherwise {
         return false;
     }
-}
+};
 
-function main <-() {
+main {
     result: bool <- checkFrequency(450);
     if (result) {
         play audio(SIN(), 450hz, 5s);

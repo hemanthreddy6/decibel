@@ -1,8 +1,8 @@
-function customFreq <- (time: float): float {
+customFreq <- (time: float): float {
     return 440 + (time * 20);
-}
+};
 
-function main <-() {
+main {
     track <- audio(SAW(), customFreq, 10s);
     play track;
 }

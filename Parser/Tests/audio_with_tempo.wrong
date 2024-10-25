@@ -1,4 +1,4 @@
-function main <-() {
+main {
     track: audio <- audio(SIN(), 440hz, 10s);
     slowTrack: audio <- TEMPO(track 0.8);
     play slowTrack;

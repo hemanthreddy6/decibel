@@ -1,4 +1,4 @@
-function main <-() {
+main {
     file: audio <- load "song1.wav";
     modified_file: audio <- EQ(file,SIN()+COS());
     modified_file += modified_file + file; 

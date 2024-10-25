@@ -1,4 +1,4 @@
-function main <-() {
+main {
     samples: audio[10] <- 0;
     samples[0] = audio(SIN(), 500hz, 1s);
     samples[1] = audio(SIN(), 600hz, 2s);

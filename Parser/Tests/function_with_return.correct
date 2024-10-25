@@ -1,8 +1,8 @@
-function getDuration <- (freq: float): float {
+getDuration <- (freq: float): float {
     return 5.0 / freq;
-}
+};
 
-function main <-() {
+main {
     duration <- getDuration(440);
     track <- audio(SIN(), 440hz, duration);
     play track;

@@ -1,4 +1,4 @@
-function main <-() {
+main {
     id1 <- 25;
     id2: int <- 243705;
     const id3: float <- 35.46;

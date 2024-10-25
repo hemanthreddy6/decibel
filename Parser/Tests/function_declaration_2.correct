@@ -1,9 +1,9 @@
-function main <- () {
-    function main2 <- (a: int) {
-        a: int <- "giro";
-    }
-}
-
-function main3 <- () {
+main3 <- ():int {
     b: string <- "amazingTestCases";
+};
+
+main {
+    main2 <- (a: int):int {
+        a: int <- "giro";
+    };
 }

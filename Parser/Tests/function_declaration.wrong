@@ -1,4 +1,4 @@
-function main <- () {
+main {
     a <- 10;
     if (a > 5) {
         loop over i 1 to 3 {

@@ -1,7 +1,7 @@
-function main <- () {
-    function output <- () {
+main {
+    output <- () {
         // nothing here
-    }
+    };
     loop 25 {
         loop -25 {
             continue;

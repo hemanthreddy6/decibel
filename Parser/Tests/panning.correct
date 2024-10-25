@@ -1,8 +1,8 @@
-function panFunction <- (time: float): float {
+panFunction <- (time: float): float {
     return time % 2.0 - 1.0;  // Pan between left and right over time.
-}
+};
 
-function main <-() {
+main {
     track1: audio <- load "song1.wav";
     panned_track: audio <- PAN(track1, panFunction);
     play panned_track;

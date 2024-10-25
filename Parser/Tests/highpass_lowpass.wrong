@@ -1,4 +1,4 @@
-function main <-() {
+main {
     track1: audio <- load "song1.wav";
     filteredTrack1: audio <- HIGHPASS(;);  
     play filteredTrack1;

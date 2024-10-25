@@ -1,4 +1,4 @@
-function main <-() {
+main {
     freq: float <- 500;
     if freq > 400 {
         if freq < 600 

@@ -1,5 +1,6 @@
-function main <-() {
+main {
     a: int <- 25;
 }
 
-import "nothing.dbl";
+import "nothing.dbl"
+import "nothing2.dbl";

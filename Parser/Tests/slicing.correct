@@ -1,4 +1,4 @@
-function main <-() {
+main {
     track1: audio <- load "song1.wav";
     slice: audio <- track1[10:25];
     play slice;

@@ -1,4 +1,4 @@
-function main <-() {
+main {
     track: audio <- audio(SAW(), 300hz, 5s);
     echoedTrack: audio <- ECHO(track 0.5);
     play echoedTrack;

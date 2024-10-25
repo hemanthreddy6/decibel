@@ -1,4 +1,4 @@
-function main <- (){
+main {
     a: int <- -10;
     b: float <- -10.0;
 }

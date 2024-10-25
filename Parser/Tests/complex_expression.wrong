@@ -1,4 +1,4 @@
-function main <-() {
+main {
     a: float <- 3 + 2 * (5 - 2;
     b: float <- (a + 4) / (2.5 * (3.5 + a));
     result <- audio(SAW(), b * 100hz, 5s);
