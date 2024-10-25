@@ -194,19 +194,44 @@ function_call
         $$->children.push_back($4); };
 
 function_name
-    : IDENTIFIER
-    | AUDIO
-    | HIGHPASS
-    | LOWPASS 
-    | EQ 
-    | SIN 
-    | COS 
-    | EXP_DECAY 
-    | LIN_DECAY 
-    | SQUARE 
-    | SAW 
-    | TRIANGLE 
-    | PAN ;
+    : IDENTIFIER {
+        $$ = $1; }
+    | AUDIO {
+        $$ = $1;
+        $$->node_type = NODE_IDENTIFIER; }
+    | HIGHPASS {
+        $$ = $1;
+        $$->node_type = NODE_IDENTIFIER; }
+    | LOWPASS {
+        $$ = $1;
+        $$->node_type = NODE_IDENTIFIER; }
+    | EQ {
+        $$ = $1;
+        $$->node_type = NODE_IDENTIFIER; }
+    | SIN {
+        $$ = $1;
+        $$->node_type = NODE_IDENTIFIER; }
+    | COS {
+        $$ = $1;
+        $$->node_type = NODE_IDENTIFIER; }
+    | EXP_DECAY {
+        $$ = $1;
+        $$->node_type = NODE_IDENTIFIER; }
+    | LIN_DECAY {
+        $$ = $1;
+        $$->node_type = NODE_IDENTIFIER; }
+    | SQUARE {
+        $$ = $1;
+        $$->node_type = NODE_IDENTIFIER; }
+    | SAW {
+        $$ = $1;
+        $$->node_type = NODE_IDENTIFIER; }
+    | TRIANGLE {
+        $$ = $1;
+        $$->node_type = NODE_IDENTIFIER; }
+    | PAN {
+        $$ = $1;
+        $$->node_type = NODE_IDENTIFIER; };
 
 function_arguments
     : function_arguments '(' argument_list ')' { 
@@ -498,7 +523,7 @@ assignable_value
         $$->children.back()->children.push_back($5);}
     | IDENTIFIER { 
         $$ = new Stype(NODE_ASSIGNABLE_VALUE);
-        $$->children.push_back(new Stype(NODE_IDENTIFIER)); };
+        $$->children.push_back($1); };
 
 
 %%
