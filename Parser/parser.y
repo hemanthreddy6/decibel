@@ -226,19 +226,44 @@ non_empty_argument_list
     | '_' { $$ = new Stype(NODE_OMITTED_PARAMETER); };
 
 loop_statement
-    : LOOP expr '{' loopable_statements '}'
-    | LOOP UNTIL expr '{' loopable_statements '}'
-    | LOOP OVER assignable_value expr TO expr '@' expr '{' loopable_statements '}'
-    | LOOP OVER assignable_value expr TO expr  '{' loopable_statements '}';
+    : LOOP expr '{' loopable_statements '}' {
+        $$ = new Stype(NODE_LOOP_REPEAT_STATEMENT);
+        $$->children.push_back($2);
+        $$->children.push_back($4);
+    }
+    | LOOP UNTIL expr '{' loopable_statements '}' {
+        $$ = new Stype(NODE_LOOP_UNTIL_STATEMENT);
+        $$->children.push_back($3);
+        $$->children.push_back($5);
+    }
+    | LOOP OVER assignable_value expr TO expr '@' expr '{' loopable_statements '}' {
+        $$ = new Stype(NODE_LOOP_GENERAL_STATEMENT);
+        $$->children.push_back($3);
+        $$->children.push_back($4);
+        $$->children.push_back($6);
+        $$->children.push_back($8);
+        $$->children.push_back($10);
+    }
+    | LOOP OVER assignable_value expr TO expr  '{' loopable_statements '}'; {
+        $$ = new Stype(NODE_LOOP_GENERAL_STATEMENT);
+        $$->children.push_back($3);
+        $$->children.push_back($4);
+        $$->children.push_back($6);
+        $$->children.push_back(new(Stype(NODE_INT_LITERAL)));
+        $$->children.push_back($8);
+    }
 
 loopable_statements
-    : loopable_statements loopable_statement
-    | ;
+    : loopable_statements loopable_statement {
+        $$ = $1;
+        $$->children.push_back($2);
+    }
+    | { $$ = new Stype(NODE_STATEMENTS); };
 
 loopable_statement
-    : statement
-    | return_statement ';'
-    | CONTINUE ';'
+    : statement { $$ = $1; }
+    | return_statement ';' { $$ = $1; }
+    | CONTINUE ';' 
     | BREAK ';' 
     | error
     | error ';';
@@ -255,34 +280,79 @@ assignment_statement
     | assignable_value DISTORTION_EQUALS expr ;
 
 conditional_statement
-    : IF expr '{' loopable_statements '}' or_statements otherwise_statement;
+    : IF expr '{' loopable_statements '}' or_statements otherwise_statement {
+        $$ = new Stype(NODE_IF_STATEMENT);
+        $$->children.push_back($2);
+        $$->children.push_back($4);
+        $$->children.push_back($6);
+        $$->children.push_back($7);
+    };
 
 or_statements
-    : or_statement or_statements
-    | ;
+    : or_statement or_statements { 
+        $$ = $2; 
+        $$->children.push_back($1); }
+    | { $$ = new Stype(NODE_OR_STATEMENT); }; ;
 
 or_statement
-    : OR expr '{' loopable_statements '}';
+    : OR expr '{' loopable_statements '}' {
+        $$ = new Stype(NODE_OR_STATEMENT);
+        $$->children.push_back($2);
+        $$->children.push_back($4);
+    };
 
 otherwise_statement
-    : OTHERWISE '{' loopable_statements '}'
-    | ;
+    : OTHERWISE '{' loopable_statements '}' {
+        $$ = new Stype(NODE_OTHERWISE_STATEMENT);
+        $$->children.push_back($3);
+    }
+    | { $$ = new Stype(NODE_OTHERWISE_STATEMENT); };
 
 load_statement
-    : LOAD expr;
+    : LOAD expr{
+        $$ = new Stype(NODE_LOAD_STATEMENT);
+        $$->children.push_back($2);
+    };
 
 play_statement
-    : PLAY expr;
+    : PLAY expr{
+        $$ = new Stype(NODE_PLAY_STATEMENT);
+        $$.children.push_back($2);
+    };
 
 save_statement
-    : SAVE assignable_value RIGHT_ARROW expr ;
+    : SAVE assignable_value RIGHT_ARROW expr {
+        $$ = new Stype(NODE_SAVE_STATEMENT);
+        $$.children.push_back($2);
+        $$.children.push_back($4);
+    };
 
 expr
-    : '(' expr ')'
-    | '(' parameter_list ')' ':' data_type IMPLIES expr ';'
-    | '(' parameter_list ')' ':' data_type '{' returnable_statements '}'
-    | '(' parameter_list ')' IMPLIES expr ';'
-    | '(' parameter_list ')' '{' returnable_statements '}'
+    : '(' expr ')' {$$ = new Stype(NODE_EXPRESSION_STATEMENT); $$->children.push_back($2);}
+    | '(' parameter_list ')' ':' data_type IMPLIES expr ';' {
+        $$ = new Stype(NODE_EXPRESSION_STATEMENT);
+        $$->children.push_back($2);
+        $$->children.push_back($5);
+        $$->children.push_back($7);
+    }
+    | '(' parameter_list ')' ':' data_type '{' returnable_statements '}' {
+        $$ = new Stype(NODE_EXPRESSION_STATEMENT);
+        $$->children.push_back($2);
+        $$->children.push_back($5);
+        $$->children.push_back($7);
+    }
+    | '(' parameter_list ')' IMPLIES expr ';' {
+        $$ = new Stype(NODE_EXPRESSION_STATEMENT);
+        $$->children.push_back($2);
+        $$->children.push_back(new Stype(NODE_DATA_TYPE));
+        $$->children.push_back($4);
+    }
+    | '(' parameter_list ')' '{' returnable_statements '}' {
+        $$ = new Stype(NODE_EXPRESSION_STATEMENT);
+        $$->children.push_back($2);
+        $$->children.push_back(new Stype(NODE_DATA_TYPE));
+        $$->children.push_back($4);
+    }
     | unary_expr
     | expr '^' expr
     | expr '&' expr
