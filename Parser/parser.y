@@ -184,8 +184,14 @@ return_statement
     | RETURN { $$ = new Stype(NODE_RETURN_STATEMENT); } ;
     
 function_call
-    : function_name function_arguments
-    | '(' expr ')' function_arguments;
+    : function_name function_arguments { 
+        $$ = new Stype(NODE_FUNCTION_CALL);
+        $$->children.push_back($1);
+        $$->children.push_back($2); }
+    | '(' expr ')' function_arguments { 
+        $$ = new Stype(NODE_FUNCTION_CALL);
+        $$->children.push_back($2);
+        $$->children.push_back($4); };
 
 function_name
     : IDENTIFIER
@@ -244,15 +250,42 @@ loopable_statement
     | error ';';
 
 assignment_statement
-    : assignable_value '=' expr
-    | assignable_value PLUS_EQUALS expr
-    | assignable_value MINUS_EQUALS expr
-    | assignable_value MULT_EQUALS expr
-    | assignable_value DIVIDE_EQUALS expr
-    | assignable_value MOD_EQUALS expr
-    | assignable_value OR_EQUALS expr
-    | assignable_value POWER_EQUALS expr
-    | assignable_value DISTORTION_EQUALS expr ;
+    : assignable_value '=' expr { 
+        $$ = new Stype(NODE_NORMAL_ASSIGNMENT_STATEMENT);
+        $$->children.push_back($1);
+        $$->children.push_back($3); }
+    | assignable_value PLUS_EQUALS expr { 
+        $$ = new Stype(NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT);
+        $$->children.push_back($1);
+        $$->children.push_back($3); }
+    | assignable_value MINUS_EQUALS expr { 
+        $$ = new Stype(NODE_MINUS_EQUALS_ASSIGNMENT_STATEMENT);
+        $$->children.push_back($1);
+        $$->children.push_back($3); }
+    | assignable_value MULT_EQUALS expr { 
+        $$ = new Stype(NODE_MULT_EQUALS_ASSIGNMENT_STATEMENT);
+        $$->children.push_back($1);
+        $$->children.push_back($3); }
+    | assignable_value DIVIDE_EQUALS expr { 
+        $$ = new Stype(NODE_DIVIDE_EQUALS_ASSIGNMENT_STATEMENT);
+        $$->children.push_back($1);
+        $$->children.push_back($3); }
+    | assignable_value MOD_EQUALS expr { 
+        $$ = new Stype(NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT);
+        $$->children.push_back($1);
+        $$->children.push_back($3); }
+    | assignable_value OR_EQUALS expr { 
+        $$ = new Stype(NODE_OR_EQUALS_ASSIGNMENT_STATEMENT);
+        $$->children.push_back($1);
+        $$->children.push_back($3); }
+    | assignable_value POWER_EQUALS expr { 
+        $$ = new Stype(NODE_POWER_EQUALS_ASSIGNMENT_STATEMENT);
+        $$->children.push_back($1);
+        $$->children.push_back($3); }
+    | assignable_value DISTORTION_EQUALS expr { 
+        $$ = new Stype(NODE_DISTORTION_EQUALS_ASSIGNMENT_STATEMENT);
+        $$->children.push_back($1);
+        $$->children.push_back($3); } ;
 
 conditional_statement
     : IF expr '{' loopable_statements '}' or_statements otherwise_statement;
