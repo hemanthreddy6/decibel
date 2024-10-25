@@ -250,14 +250,14 @@ loop_statement
         $$->children.push_back($8);
         $$->children.push_back($10);
     }
-    | LOOP OVER assignable_value expr TO expr  '{' loopable_statements '}'; {
+    | LOOP OVER assignable_value expr TO expr  '{' loopable_statements '}' {
         $$ = new Stype(NODE_LOOP_GENERAL_STATEMENT);
         $$->children.push_back($3);
         $$->children.push_back($4);
         $$->children.push_back($6);
-        $$->children.push_back(new(Stype(NODE_INT_LITERAL)));
+        $$->children.push_back(new Stype(NODE_INT_LITERAL));
         $$->children.push_back($8);
-    }
+    };
 
 loopable_statements
     : loopable_statements loopable_statement {
@@ -269,8 +269,8 @@ loopable_statements
 loopable_statement
     : statement { $$ = $1; }
     | return_statement ';' { $$ = $1; }
-    | CONTINUE ';' 
-    | BREAK ';' 
+    | CONTINUE ';' { $$ = new Stype(NODE_CONTINUE_STATEMENT); }
+    | BREAK ';' { $$ = new Stype(NODE_BREAK_STATEMENT); }
     | error
     | error ';';
 
@@ -322,10 +322,10 @@ conditional_statement
     };
 
 or_statements
-    : or_statement or_statements { 
-        $$ = $2; 
-        $$->children.push_back($1); }
-    | { $$ = new Stype(NODE_OR_STATEMENT); }; ;
+    : or_statements or_statement { 
+        $$ = $1; 
+        $$->children.push_back($2); }
+    | { $$ = new Stype(NODE_OR_STATEMENTS); };
 
 or_statement
     : OR expr '{' loopable_statements '}' {
@@ -350,84 +350,155 @@ load_statement
 play_statement
     : PLAY expr{
         $$ = new Stype(NODE_PLAY_STATEMENT);
-        $$.children.push_back($2);
+        $$->children.push_back($2);
     };
 
 save_statement
     : SAVE assignable_value RIGHT_ARROW expr {
         $$ = new Stype(NODE_SAVE_STATEMENT);
-        $$.children.push_back($2);
-        $$.children.push_back($4);
+        $$->children.push_back($2);
+        $$->children.push_back($4);
     };
 
 expr
-    : '(' expr ')' {$$ = new Stype(NODE_EXPRESSION_STATEMENT); $$->children.push_back($2);}
+    : '(' expr ')' { $$ = $2; }
     | '(' parameter_list ')' ':' data_type IMPLIES expr ';' {
-        $$ = new Stype(NODE_EXPRESSION_STATEMENT);
+        $$ = new Stype(NODE_INLINE_FUNCTION);
         $$->children.push_back($2);
         $$->children.push_back($5);
         $$->children.push_back($7);
     }
     | '(' parameter_list ')' ':' data_type '{' returnable_statements '}' {
-        $$ = new Stype(NODE_EXPRESSION_STATEMENT);
+        $$ = new Stype(NODE_NORMAL_FUNCTION);
         $$->children.push_back($2);
         $$->children.push_back($5);
         $$->children.push_back($7);
     }
     | '(' parameter_list ')' IMPLIES expr ';' {
-        $$ = new Stype(NODE_EXPRESSION_STATEMENT);
+        $$ = new Stype(NODE_INLINE_FUNCTION);
         $$->children.push_back($2);
         $$->children.push_back(new Stype(NODE_DATA_TYPE));
         $$->children.push_back($4);
     }
     | '(' parameter_list ')' '{' returnable_statements '}' {
-        $$ = new Stype(NODE_EXPRESSION_STATEMENT);
+        $$ = new Stype(NODE_NORMAL_FUNCTION);
         $$->children.push_back($2);
         $$->children.push_back(new Stype(NODE_DATA_TYPE));
         $$->children.push_back($4);
     }
-    | unary_expr
-    | expr '^' expr
-    | expr '&' expr
-    | expr '*' expr
-    | expr '/' expr
-    | expr '%' expr
-    | expr SPEEDUP expr
-    | expr SPEEDDOWN expr
-    | expr '+' expr
-    | expr '-' expr
-    | expr '|' expr
-    | expr '<' expr
-    | expr LEQ expr
-    | expr '>' expr
-    | expr GEQ expr
-    | expr EQUALS expr
-    | expr NOT_EQUALS expr
-    | expr LOGICAL_AND expr
-    | expr LOGICAL_OR expr
+    | unary_expr { $$ = $1; }
+    | expr '^' expr { 
+        $$ = new Stype(NODE_POWER_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr '&' expr { 
+        $$ = new Stype(NODE_DISTORTION_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr '*' expr { 
+        $$ = new Stype(NODE_MULT_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr '/' expr { 
+        $$ = new Stype(NODE_DIVIDE_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr '%' expr { 
+        $$ = new Stype(NODE_MOD_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr SPEEDUP expr { 
+        $$ = new Stype(NODE_SPEEDUP_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr SPEEDDOWN expr { 
+        $$ = new Stype(NODE_SPEEDDOWN_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr '+' expr { 
+        $$ = new Stype(NODE_PLUS_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr '-' expr { 
+        $$ = new Stype(NODE_MINUS_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr '|' expr { 
+        $$ = new Stype(NODE_SUPERPOSITION_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr '<' expr { 
+        $$ = new Stype(NODE_LE_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr LEQ expr { 
+        $$ = new Stype(NODE_LEQ_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr '>' expr { 
+        $$ = new Stype(NODE_GE_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr GEQ expr { 
+        $$ = new Stype(NODE_GEQ_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr EQUALS expr { 
+        $$ = new Stype(NODE_EQUALS_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr NOT_EQUALS expr { 
+        $$ = new Stype(NODE_NOT_EQUALS_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr LOGICAL_AND expr { 
+        $$ = new Stype(NODE_LOGICAL_AND_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
+    | expr LOGICAL_OR expr { 
+        $$ = new Stype(NODE_LOGICAL_OR_EXPR); 
+        $$->children.push_back($1); 
+        $$->children.push_back($3); }
     | error ;
 
 unary_expr
-    : value
-    | '~' expr
-    | '!' expr
-    | '+' expr
-    | '-' expr;
+    : value { $$ = $1; }
+    | '~' expr { 
+        $$ = new Stype(NODE_UNARY_INVERSE_EXPR); 
+        $$->children.push_back($2); }
+    | '!' expr {
+        $$ = new Stype(NODE_UNARY_LOGICAL_NOT_EXPR);
+        $$->children.push_back($2); }
+    | '+' expr {
+        $$ = new Stype(NODE_UNARY_PLUS_EXPR); 
+        $$->children.push_back($2); }
+    | '-' expr {
+        $$ = new Stype(NODE_UNARY_MINUS_EXPR); 
+        $$->children.push_back($2); };
 
 value
-    : INT_LITERAL
-    | FLOAT_LITERAL
-    | STRING_LITERAL
-    | TRUE
-    | FALSE
-    | assignable_value
-    | load_statement
-    | function_call;
+    : INT_LITERAL { $$ = new Stype(NODE_INT_LITERAL); }
+    | FLOAT_LITERAL { $$ = new Stype(NODE_FLOAT_LITERAL); }
+    | STRING_LITERAL { $$ = new Stype(NODE_STRING_LITERAL); }
+    | TRUE { $$ = new Stype(NODE_BOOL_LITERAL); }
+    | FALSE { $$ = new Stype(NODE_BOOL_LITERAL); }
+    | assignable_value { $$ = $1; }
+    | load_statement { $$ = $1; }
+    | function_call { $$ = $1; };
 
 assignable_value
-    : assignable_value '[' expr ']'
-    | assignable_value '[' expr ':' expr ']'
-    | IDENTIFIER ;
+    : assignable_value '[' expr ']' { 
+        $$ = $1;
+        $$->children.push_back(new Stype(NODE_INDEX));
+        $$->children.back()->children.push_back($3); }
+    | assignable_value '[' expr ':' expr ']' { 
+        $$ = $1;
+        $$->children.push_back(new Stype(NODE_SLICE));
+        $$->children.back()->children.push_back($3);
+        $$->children.back()->children.push_back($5);}
+    | IDENTIFIER { 
+        $$ = new Stype(NODE_ASSIGNABLE_VALUE);
+        $$->children.push_back(new Stype(NODE_IDENTIFIER)); };
 
 
 %%

@@ -84,8 +84,6 @@ void traverse_ast(Stype *node) {
         cout << "Oops, looks like you have an uninitialised Stype somewhere!"
              << endl;
         break;
-    default:
-        cout << "You forgot to handle this node bruh" << endl;
     }
 }
 
