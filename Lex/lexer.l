@@ -79,6 +79,29 @@
         NODE_NOT_SET
     };
 
+
+    #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
+    struct Stype{
+        long long line_no;
+        long long col_no;
+        char* text;
+        enum NodeType node_type;
+        std::vector<struct Stype*> children;
+        struct DataType* data_type;
+        Stype(enum NodeType type){
+            node_type = type;
+        }
+        Stype(){
+            node_type = NODE_NOT_SET;
+        }
+    };
+    #define YYSTYPE struct Stype *
+    # define YYSTYPE_IS_TRIVIAL 1
+    # define YYSTYPE_IS_DECLARED 1
+    #endif
+
+    #include "../Parser/y.tab.h"
+
     struct DataType{
         bool is_primitive;
         // if it's primitive:
@@ -130,27 +153,6 @@
         } else return false;
     }
 
-    #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-    struct Stype{
-        long long line_no;
-        long long col_no;
-        char* text;
-        enum NodeType node_type;
-        std::vector<struct Stype*> children;
-        struct DataType* data_type;
-        Stype(enum NodeType type){
-            node_type = type;
-        }
-        Stype(){
-            node_type = NODE_NOT_SET;
-        }
-    };
-    #define YYSTYPE struct Stype *
-    # define YYSTYPE_IS_TRIVIAL 1
-    # define YYSTYPE_IS_DECLARED 1
-    #endif
-
-    #include "../Parser/y.tab.h"
     double frequency_to_semitones(char* str) {
         size_t len = strlen(str);
         str[len-2] = '\0';
