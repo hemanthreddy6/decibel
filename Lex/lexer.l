@@ -85,11 +85,15 @@
         bool is_vector;
         int vector_size;
         struct DataType* vector_data_type;
-        int basic_data_type; // INT, LONG, FLOAT, AUDIO, STRING, or BOOL
+        int basic_data_type; // INT, LONG, FLOAT, AUDIO, STRING, BOOL, or UNSET_DATA_TYPE
         // if it's not primitive:
         std::vector<struct DataType*> parameters;
         struct DataType* return_type;
-        DataType(){}
+        DataType(){
+            is_primitive = true;
+            is_vector = false;
+            basic_data_type = UNSET_DATA_TYPE;
+        }
         DataType(int type){
             is_primitive = true;
             is_vector = false;
@@ -105,6 +109,7 @@
 
     // Use this function to check if two data types are the same type
     bool are_data_types_equal(struct DataType type1, struct DataType type2){
+        // TODO: handle unset data type
         if (type1.is_primitive && type2.is_primitive){
             if (type1.is_vector && type2.is_vector){
                 return are_data_types_equal(*(type1.vector_data_type), *(type2.vector_data_type));
