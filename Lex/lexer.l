@@ -1,6 +1,7 @@
 %{
     #include <stdio.h>
     #include <string.h>
+    #include <string>
     #include <math.h>
     #include <stdlib.h>
     #include <vector>
@@ -84,7 +85,7 @@
     struct Stype{
         long long line_no;
         long long col_no;
-        char* text;
+        std::string text;
         enum NodeType node_type;
         std::vector<struct Stype*> children;
         struct DataType* data_type;
@@ -128,30 +129,7 @@
             vector_data_type = vector_type;
             vector_size = size;
         }
-    };
-
-    // Use this function to check if two data types are the same type
-    bool are_data_types_equal(struct DataType type1, struct DataType type2){
-        // TODO: handle unset data type
-        if (type1.is_primitive && type2.is_primitive){
-            if (type1.is_vector && type2.is_vector){
-                return are_data_types_equal(*(type1.vector_data_type), *(type2.vector_data_type));
-            } else if(!type1.is_vector && !type2.is_vector){
-                return type1.basic_data_type == type2.basic_data_type;
-            } else return false;
-        } else if (!type1.is_primitive && !type2.is_primitive){
-            bool are_equal = true;
-            if (type1.parameters.size() == type2.parameters.size()){
-                for(int i = 0; i < type1.parameters.size(); i++){
-                    are_equal = are_equal && are_data_types_equal(*(type1.parameters[i]), *(type2.parameters[i]));
-                }
-            } else {
-                are_equal = false;
-            }
-            are_equal = are_equal && are_data_types_equal(*(type1.return_type), *(type2.return_type));
-            return are_equal;
-        } else return false;
-    }
+    } typedef DataType;
 
     double frequency_to_semitones(char* str) {
         size_t len = strlen(str);

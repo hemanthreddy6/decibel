@@ -2,10 +2,10 @@
 
 build: semantic_analyser
 
-semantic_analyser: semantic_analyser.cpp make_parser
+semantic_analyser: semantic_analyser.cpp ../Parser/y.tab.c 
 	g++ semantic_analyser.cpp -o semantic_analyser
 
-make_parser:
+../Parser/y.tab.c: ../Parser/parser.y ../Lex/lexer.l
 	@make build -C "../Parser" --quiet
 
 test:

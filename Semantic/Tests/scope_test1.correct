@@ -1,0 +1,7 @@
+a <- 10;
+const b:float <- 20;
+main{
+    a <- 40;
+    print a;
+    const b:int <- 30;
+}

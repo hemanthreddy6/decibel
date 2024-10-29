@@ -549,11 +549,12 @@ int yyerror(const char* s){
 }
 int main() {
     yyparse();
-    yyerror("");
 
     #ifdef SEMANTIC
     semantic();
     #endif
+    
+    yyerror("");
 
     return 1;
 }

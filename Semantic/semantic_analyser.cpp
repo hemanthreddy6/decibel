@@ -1,3 +1,4 @@
+#include <cstddef>
 #define SEMANTIC 1
 int semantic();
 #include "../Parser/y.tab.c"
@@ -7,16 +8,152 @@ int semantic();
 
 using namespace std;
 
+// Use this function to check if two data types are the same type
+bool are_data_types_equal(DataType *type1, DataType *type2) {
+    // TODO: handle unset data type
+    if (type1->is_primitive && type2->is_primitive) {
+        if (type1->is_vector && type2->is_vector) {
+            return are_data_types_equal(type1->vector_data_type,
+                                        type2->vector_data_type);
+        } else if (!type1->is_vector && !type2->is_vector) {
+            return type1->basic_data_type == type2->basic_data_type;
+        } else
+            return false;
+    } else if (!type1->is_primitive && !type2->is_primitive) {
+        bool are_equal = true;
+        if (type1->parameters.size() == type2->parameters.size()) {
+            for (int i = 0; i < type1->parameters.size(); i++) {
+                are_equal =
+                    are_equal && are_data_types_equal(type1->parameters[i],
+                                                      type2->parameters[i]);
+            }
+        } else {
+            are_equal = false;
+        }
+        are_equal = are_equal && are_data_types_equal(type1->return_type,
+                                                      type2->return_type);
+        return are_equal;
+    } else
+        return false;
+}
+
+// this function is used to see if type1 can be implicitly converted to type2.
+bool can_implicitly_convert(DataType *type1, DataType *type2) {
+    // check if both data types are basic.
+    if (type1->is_primitive && type2->is_primitive && !type1->is_vector &&
+        !type2->is_vector) {
+        // true if they're equal
+        if (type1->basic_data_type == type2->basic_data_type)
+            return true;
+        // can't inter-convert audio
+        if (type1->basic_data_type == AUDIO || type2->basic_data_type == AUDIO)
+            return false;
+        // other than the previously handled cases, the rest can be converted to
+        // string
+        if (type2->basic_data_type == STRING)
+            return true;
+        // string can't implicitly convert to anything
+        if (type1->basic_data_type == STRING)
+            return false;
+        // int, long, bool and float can all inter-convert
+        return true;
+    } else
+        // if both are not basic, they have to be equal
+        return are_data_types_equal(type1, type2);
+}
+
 // Symbol table entry
 struct StEntry {
-    struct DataType *data_type;
+    DataType *data_type;
+    bool is_const;
     // more fields to be added here
+
+    StEntry() {
+        data_type = NULL;
+        is_const = false;
+    }
+
+    StEntry(DataType *dtype, bool is_const) {
+        data_type = dtype;
+        this->is_const = is_const;
+    }
 } typedef StEntry;
 
 vector<vector<unordered_map<string, StEntry>>> symbol_table;
 
 // This is just a reference to easily access symbol_table[0][0]
-unordered_map<string, StEntry> *global_scope;
+unordered_map<string, StEntry> *global_scope = NULL;
+
+// this is the first index into the symbol table. when it's 0, it is the scope
+// table of global statements and statements in the main block.
+// the other scope tables are for function declarations
+int current_scope_table = 0;
+// this is the scope level inside a specific scope table. This will increase
+// when we go inside an if statement or something.
+int current_scope = 0;
+
+// function to do semantic checks for all declaration statements. has_dtype
+// should be true if the data type was explicitly declared by the user. is_const
+// is for const declarations.
+int handle_declaration(Stype *node, bool has_dtype, bool is_const) {
+    // if it's already in the current scope level, then it's a redeclaration.
+    if (symbol_table[current_scope_table][current_scope].count(
+            node->children[0]->text)) {
+        // this is just for error handling and printing the error with the
+        // correct line number
+        yylval = node->children[0];
+        yyerror("Semantic error: redeclaration of variable!");
+        return 1;
+    }
+    // if data type was explicitly declared and the assigned type does not
+    // match/cannot be implicitly converted
+    if (has_dtype && !can_implicitly_convert(node->children[1]->data_type,
+                                             node->children[2]->data_type)) {
+        yyerror("Semantic error: cannot convert this data type to this "
+                "other one");
+        return 1;
+    }
+    DataType *dtype;
+    if (has_dtype)
+        // if data type was explicitly declared, set the variable's data type to
+        // the declared type
+        dtype = node->children[2]->data_type;
+    else
+        // otherwise set it to the data type of the expression
+        dtype = node->children[1]->data_type;
+    // insert to symbol table
+    symbol_table[current_scope_table][current_scope].insert(
+        {node->children[0]->text, StEntry(dtype, is_const)});
+    return 0;
+}
+
+// This function checks if the referenced identifier exists in the symbol table
+int handle_identifier_reference(Stype *node) {
+    bool found = false;
+    StEntry entry;
+    // start at the highest scope and go higher and higher until it's found
+    for (int scope = current_scope; scope >= 0; scope--) {
+        if (symbol_table[current_scope_table][scope].count(node->text)) {
+            found = true;
+            entry = symbol_table[current_scope_table][scope][node->text];
+            break;
+        }
+    }
+    // also check global scope
+    if (!found && global_scope->count(node->text)) {
+        found = true;
+        entry = (*global_scope)[node->text];
+    }
+    if (found)
+        node->data_type = entry.data_type;
+    else {
+        yylval = node;
+        yyerror(
+            ("Semantic error: undefined reference to " + node->text).c_str());
+        return 1;
+    }
+    return 0;
+}
 
 void traverse_ast(Stype *node) {
     switch (node->node_type) {
@@ -38,7 +175,10 @@ void traverse_ast(Stype *node) {
         cout << "Main block node" << endl;
         // before traversing the statements node, do stuff to make the scope be
         // main block and stuff
+        symbol_table[0].push_back(unordered_map<string, StEntry>());
+        current_scope = 1;
         traverse_ast(node->children[0]);
+        current_scope = 0;
         break;
     case NODE_READ_STATEMENT:
         cout << "Read statement node" << endl;
@@ -50,35 +190,47 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_DECLARATION_STATEMENT:
         cout << "Declaration statement node" << endl;
+        // traverse the expression first
+        traverse_ast(node->children[1]);
 
+        if (handle_declaration(node, false, false))
+            break;
         break;
     case NODE_DECLARATION_STATEMENT_WITH_TYPE:
         cout << "Declaration statement node with type" << endl;
+        // traverse the expression first
+        traverse_ast(node->children[1]);
 
+        if (handle_declaration(node, true, false))
+            break;
         break;
     case NODE_CONST_DECLARATION_STATEMENT:
         cout << "Const declaration statement node" << endl;
+        // traverse the expression first
+        traverse_ast(node->children[1]);
 
+        if (handle_declaration(node, true, true))
+            break;
         break;
     case NODE_DATA_TYPE:
         cout << "Data type statement node" << endl;
-
         break;
     case NODE_INT_LITERAL:
         cout << "Int literal node" << endl;
-
+        node->data_type = new DataType(INT);
         break;
     case NODE_FLOAT_LITERAL:
         cout << "Float literal node" << endl;
-
+        node->data_type = new DataType(FLOAT);
         break;
     case NODE_STRING_LITERAL:
         cout << "String literal node" << endl;
-
+        node->data_type = new DataType(STRING);
         break;
     case NODE_IDENTIFIER:
         cout << "Identifier node" << endl;
-
+        if (handle_identifier_reference(node))
+            break;
         break;
     case NODE_PARAMETER_LIST:
         cout << "NODE_PARAMETER_LIST" << endl;
@@ -106,6 +258,12 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_NORMAL_ASSIGNMENT_STATEMENT:
         cout << "NODE_NORMAL_ASSIGNMENT_STATEMENT" << endl;
+        // traverse the expression first
+        traverse_ast(node->children[1]);
+        // then, traverse the assignable value to check if it's a valid
+        // reference to a variable
+        traverse_ast(node->children[0]);
+        // TODO: check if data types match/can convert using the function
         break;
     case NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT:
         cout << "NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT" << endl;
@@ -250,6 +408,8 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_ASSIGNABLE_VALUE:
         cout << "NODE_ASSIGNABLE_VALUE" << endl;
+        traverse_ast(node->children[0]);
+        // TODO: handle vector index and slice
         break;
     case NODE_NOT_SET:
         cout << "Oops, looks like you have an uninitialised Stype somewhere!"
