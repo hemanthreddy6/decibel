@@ -383,7 +383,7 @@ void traverse_ast(Stype *node) {
         cout << "NODE_SUPERPOSITION_EXPR" << endl;
         break;
     case NODE_LE_EXPR:
-        cout << "NODE_LE_EXPR" << endl;
+        cout << "nœud le expression" << endl;
         break;
     case NODE_LEQ_EXPR:
         cout << "NODE_LEQ_EXPR" << endl;
