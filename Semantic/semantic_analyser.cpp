@@ -528,6 +528,7 @@ void traverse_ast(Stype *node) {
     case NODE_ASSIGNABLE_VALUE:
         cout << "NODE_ASSIGNABLE_VALUE" << endl;
         traverse_ast(node->children[0]);
+        node->data_type = node->children[0]->data_type;
         // TODO: handle vector index and slice
         break;
     case NODE_NOT_SET:
