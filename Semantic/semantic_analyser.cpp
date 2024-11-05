@@ -5,6 +5,7 @@ int semantic();
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <bits/stdc++.h>
 
 using namespace std;
 
@@ -96,8 +97,6 @@ int current_scope_table = 0;
 // when we go inside an if statement or something.
 int current_scope = 0;
 
-DataType* current_return_type;
-
 // function to do semantic checks for all declaration statements. has_dtype
 // should be true if the data type was explicitly declared by the user. is_const
 // is for const declarations.
@@ -180,21 +179,17 @@ int handle_identifier_reference(Stype *node) {
 void handle_function_expression(Stype* node) {
     int last_scope_table = current_scope_table;
     int last_scope = current_scope;
-    DataType* last_return_type = current_return_type;
 
     int least_unused_scope_table = symbol_table.size();
     current_scope_table = least_unused_scope_table;
     current_scope = 0;
-    current_return_type = node->children[1]->data_type;
     symbol_table.push_back(vector<unordered_map<string, StEntry>>());
 
     traverse_ast(node->children[0]);
     traverse_ast(node->children[2]);
 
-    node->data_type = current_return_type;
     current_scope_table = last_scope_table;
     current_scope = last_scope;
-    current_return_type = last_return_type;
     return;
 }
 
@@ -283,6 +278,8 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_PARAMETER:
         cout << "NODE_PARAMETER" << endl;
+        traverse_ast(node->children[0]);
+        traverse_ast(node->children[1]);
         if(handle_parameter_declaration(node->children[0], node->children[1])) {
             break;
         }
