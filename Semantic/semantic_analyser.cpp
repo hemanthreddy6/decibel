@@ -8,9 +8,13 @@ int semantic();
 
 using namespace std;
 
+void traverse_ast(Stype *node);
+
 // Use this function to check if two data types are the same type
 bool are_data_types_equal(DataType *type1, DataType *type2) {
-    // TODO: handle unset data type
+    if(type1->basic_data_type == UNSET_DATA_TYPE || type2->basic_data_type == UNSET_DATA_TYPE) {
+        return false;
+    }
     if (type1->is_primitive && type2->is_primitive) {
         if (type1->is_vector && type2->is_vector) {
             return are_data_types_equal(type1->vector_data_type,
@@ -92,6 +96,8 @@ int current_scope_table = 0;
 // when we go inside an if statement or something.
 int current_scope = 0;
 
+DataType* current_return_type;
+
 // function to do semantic checks for all declaration statements. has_dtype
 // should be true if the data type was explicitly declared by the user. is_const
 // is for const declarations.
@@ -127,6 +133,19 @@ int handle_declaration(Stype *node, bool has_dtype, bool is_const) {
     return 0;
 }
 
+// Function for parameter declarations in function definitions
+// - Checks for re-declaration
+// - Pushes to symbol table
+int handle_parameter_declaration(Stype* identifier, Stype* data_type) {
+    if (symbol_table[current_scope_table][current_scope].count(identifier->text)) {
+        yylval = identifier;
+        yyerror("Semantic error: Redeclaration of variable");
+        return 1;
+    }
+    symbol_table[current_scope_table][current_scope].insert({identifier->text, StEntry(data_type->data_type, false)});
+    return 0;
+}
+
 // This function checks if the referenced identifier exists in the symbol table
 int handle_identifier_reference(Stype *node) {
     bool found = false;
@@ -153,6 +172,30 @@ int handle_identifier_reference(Stype *node) {
         return 1;
     }
     return 0;
+}
+
+// Function to handle function definitions in expressions
+// - Takes the function node as parameter
+// - Creates a new symbol table for the function and assigns appropriate return type
+void handle_function_expression(Stype* node) {
+    int last_scope_table = current_scope_table;
+    int last_scope = current_scope;
+    DataType* last_return_type = current_return_type;
+
+    int least_unused_scope_table = symbol_table.size();
+    current_scope_table = least_unused_scope_table;
+    current_scope = 0;
+    current_return_type = node->children[1]->data_type;
+    symbol_table.push_back(vector<unordered_map<string, StEntry>>());
+
+    traverse_ast(node->children[0]);
+    traverse_ast(node->children[2]);
+
+    node->data_type = current_return_type;
+    current_scope_table = last_scope_table;
+    current_scope = last_scope;
+    current_return_type = last_return_type;
+    return;
 }
 
 void traverse_ast(Stype *node) {
@@ -234,9 +277,15 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_PARAMETER_LIST:
         cout << "NODE_PARAMETER_LIST" << endl;
+        for(Stype* parameter: node->children) {
+            traverse_ast(parameter);
+        }
         break;
     case NODE_PARAMETER:
         cout << "NODE_PARAMETER" << endl;
+        if(handle_parameter_declaration(node->children[0], node->children[1])) {
+            break;
+        }
         break;
     case NODE_RETURNABLE_STATEMENTS:
         cout << "NODE_RETURNABLE_STATEMENTS" << endl;
@@ -327,9 +376,11 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_NORMAL_FUNCTION:
         cout << "NODE_NORMAL_FUNCTION" << endl;
+        handle_function_expression(node);
         break;
     case NODE_INLINE_FUNCTION:
         cout << "NODE_INLINE_FUNCTION" << endl;
+        handle_function_expression(node);
         break;
     case NODE_UNARY_INVERSE_EXPR:
         cout << "NODE_UNARY_INVERSE_EXPR" << endl;

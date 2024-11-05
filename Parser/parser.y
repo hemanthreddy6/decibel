@@ -128,7 +128,7 @@ non_empty_data_type_list
 primitive_data_type
     : primitive_data_type '[' INT_LITERAL ']' { 
         $$ = $1; 
-        $$->data_type = new DataType($$->data_type, 0);}
+        $$->data_type = new DataType($$->data_type, stoi($3->text));}
     | primitive_data_type '[' ']' { 
         $$ = $1; 
         $$->data_type = new DataType($$->data_type, 0);}
@@ -162,9 +162,10 @@ non_empty_parameter_list
         $$->children.back()->children.push_back($3);
         $$->children.back()->children.push_back($5); }
     | IDENTIFIER ':' data_type { 
-        $$ = new Stype(NODE_PARAMETER); 
-        $$->children.push_back($1); 
-        $$->children.push_back($3); };
+        $$ = new Stype(NODE_PARAMETER_LIST);
+        $$->children.push_back(new Stype(NODE_PARAMETER));
+        $$->children.back()->children.push_back($1);
+        $$->children.back()->children.push_back($3); };
 
 returnable_statements
     : returnable_statements returnable_statement { 
