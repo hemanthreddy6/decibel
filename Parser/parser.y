@@ -393,11 +393,11 @@ save_statement
 
 expr
     : '(' expr ')' { $$ = $2; }
-    | '(' parameter_list ')' ':' data_type IMPLIES expr ';' {
+    | '(' parameter_list ')' ':' data_type IMPLIES '(' expr ')' {
         $$ = new Stype(NODE_INLINE_FUNCTION);
         $$->children.push_back($2);
         $$->children.push_back($5);
-        $$->children.push_back($7);
+        $$->children.push_back($8);
     }
     | '(' parameter_list ')' ':' data_type '{' returnable_statements '}' {
         $$ = new Stype(NODE_NORMAL_FUNCTION);
@@ -405,17 +405,17 @@ expr
         $$->children.push_back($5);
         $$->children.push_back($7);
     }
-    | '(' parameter_list ')' IMPLIES expr ';' {
+    | '(' parameter_list ')' IMPLIES '(' expr ')' {
         $$ = new Stype(NODE_INLINE_FUNCTION);
         $$->children.push_back($2);
         $$->children.push_back(new Stype(NODE_DATA_TYPE));
-        $$->children.push_back($4);
+        $$->children.push_back($6);
     }
     | '(' parameter_list ')' '{' returnable_statements '}' {
         $$ = new Stype(NODE_NORMAL_FUNCTION);
         $$->children.push_back($2);
         $$->children.push_back(new Stype(NODE_DATA_TYPE));
-        $$->children.push_back($4);
+        $$->children.push_back($5);
     }
     | unary_expr { $$ = $1; }
     | expr '^' expr { 

@@ -97,6 +97,8 @@ int current_scope_table = 0;
 // when we go inside an if statement or something.
 int current_scope = 0;
 
+DataType* current_return_type;
+
 // function to do semantic checks for all declaration statements. has_dtype
 // should be true if the data type was explicitly declared by the user. is_const
 // is for const declarations.
@@ -178,21 +180,76 @@ int handle_identifier_reference(Stype *node) {
 // Function to handle function definitions in expressions
 // - Takes the function node as parameter
 // - Creates a new symbol table for the function and assigns appropriate return type
-void handle_function_expression(Stype* node) {
+int handle_function_expression(Stype* node) {
+    // Storing global variables
     int last_scope_table = current_scope_table;
     int last_scope = current_scope;
+    DataType* last_return_type = current_return_type;
+    unordered_map<string, StEntry>* last_global_scope = global_scope;
 
+    // Setting global variables for traversal
     int least_unused_scope_table = symbol_table.size();
     current_scope_table = least_unused_scope_table;
     current_scope = 0;
-    symbol_table.push_back(vector<unordered_map<string, StEntry>>());
 
+    // Setting current_return_type to return type of the function
+    if(node->children[1]->data_type != NULL) {
+        current_return_type = node->children[1]->data_type;
+    } else {
+        // When return type is "void"
+        current_return_type = NULL;
+    }
+
+    // Creating a new table and creating a new scope
+    symbol_table.push_back(vector<unordered_map<string, StEntry>>());
+    symbol_table.back().push_back(unordered_map<string, StEntry>());
+    global_scope = &symbol_table.back().back();
+
+    // Traversing the children nodes
     traverse_ast(node->children[0]);
     traverse_ast(node->children[2]);
+    
+    // Return type check for inline functions
+    if(node->node_type == NODE_INLINE_FUNCTION)
+    {
+        if(current_return_type == NULL)
+        {
+            if(node->children[2]->data_type != NULL)
+            {
+                yylval = node;
+                yyerror("Semantic error: Incompatible return types");
+                return 1;
+            }
+        }
+        else
+        {
+            if(node->children[2]->data_type == NULL)
+            {
+                yylval = node;
+                yyerror("Semantic error: Incompatible return types");
+                return 1;
+            }
+            else if(!can_implicitly_convert(node->children[2]->data_type, current_return_type))
+            {
+                yylval = node;
+                yyerror("Semantic error: Incompatible return types");
+                return 1;
+            }
+        }
+    }
 
+    // Assigning correct data_type to function node
+    node->data_type = new DataType();
+    node->data_type->is_primitive = false;
+    node->data_type->parameters = node->children[0]->data_type->parameters;
+    node->data_type->return_type = current_return_type;
+
+    // Restoring global variables
     current_scope_table = last_scope_table;
     current_scope = last_scope;
-    return;
+    current_return_type = last_return_type;
+    global_scope = last_global_scope;
+    return 0;
 }
 
 void traverse_ast(Stype *node) {
@@ -289,17 +346,20 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_PARAMETER_LIST:
         cout << "NODE_PARAMETER_LIST" << endl;
+        node->data_type = new DataType();
+        node->data_type->is_primitive = false;
         for(Stype* parameter: node->children) {
             traverse_ast(parameter);
+            node->data_type->parameters.push_back(parameter->data_type);
         }
         break;
     case NODE_PARAMETER:
         cout << "NODE_PARAMETER" << endl;
-        traverse_ast(node->children[0]);
         traverse_ast(node->children[1]);
         if(handle_parameter_declaration(node->children[0], node->children[1])) {
             break;
         }
+        node->data_type = node->children[1]->data_type;
         break;
     case NODE_RETURNABLE_STATEMENTS:
         cout << "NODE_RETURNABLE_STATEMENTS" << endl;
@@ -312,14 +372,26 @@ void traverse_ast(Stype *node) {
         if (!node->children.size()){
             if (current_return_type != NULL){
                 // error
+                yylval = node;
                 yyerror("Semantic error: Expecting Return Value got no return value");
                 break;
+            } else {
+                node->data_type = NULL;
             }
-        }
-        traverse_ast(node->children[0]);
-        if (!can_implicitly_convert(node->data_type, current_return_type)){
-            yyerror("Semantic error: Incompatible return type");
-            break;
+        } else {
+            if(current_return_type == NULL) {
+                yylval = node;
+                yyerror("Semantic error: void function cannot return non-void types");
+                break;
+            } else {
+                traverse_ast(node->children[0]);
+                node->data_type = node->children[0]->data_type;
+                if (node->data_type && !can_implicitly_convert(node->data_type, current_return_type)){
+                    yylval = node;
+                    yyerror("Semantic error: Incompatible return type");
+                    break;
+                }
+            }
         }
         break;
     case NODE_FUNCTION_ARGUMENTS:

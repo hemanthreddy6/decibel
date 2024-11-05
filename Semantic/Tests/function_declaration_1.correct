@@ -1,0 +1,6 @@
+a <- (b: int, c: int): int {
+    return b;
+};
+main{
+
+}

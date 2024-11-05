@@ -1,0 +1,6 @@
+main{
+
+}
+codeforces <- (rating: int): int {
+    return performance;
+};

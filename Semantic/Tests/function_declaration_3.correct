@@ -1,0 +1,7 @@
+main{
+
+}
+c <- (a: int): string {
+    b <- 5;
+    return "awesome";
+};

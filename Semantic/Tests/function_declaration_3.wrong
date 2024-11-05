@@ -1,0 +1,5 @@
+main{
+    a <- (b: int, c: float, d: audio) {
+        return d;
+    };
+}
