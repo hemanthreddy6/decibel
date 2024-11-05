@@ -102,6 +102,8 @@ int current_scope = 0;
 // is for const declarations.
 int handle_declaration(Stype *node, bool has_dtype, bool is_const) {
     // if it's already in the current scope level, then it's a redeclaration.
+    cout << "hello: " << current_scope_table << " " << current_scope << endl;
+    cout << "node-text: " << node->children[0]->text << endl;
     if (symbol_table[current_scope_table][current_scope].count(
             node->children[0]->text)) {
         // this is just for error handling and printing the error with the
@@ -220,10 +222,25 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_READ_STATEMENT:
         cout << "Read statement node" << endl;
-
+        traverse_ast(node->children[0]);
+        if (node->data_type->is_primitive && !node->data_type->is_vector) {
+            if (node->data_type->basic_data_type == AUDIO) {
+                yyerror("Semantic error: Cannot read audio. Use load statement instead");
+            }
+        } else {
+            yyerror("Semantic error: Cannot read non-primitive data types");
+        }
         break;
     case NODE_PRINT_STATEMENT:
         cout << "Print statement node" << endl;
+        traverse_ast(node->children[0]);
+        if (node->children[0]->data_type->is_primitive) {
+            if (node->children[0]->data_type->basic_data_type == AUDIO) {
+                yyerror("Semantic error: Cannot print audio. Use play statement instead");
+            }
+        } else {
+            yyerror("Semantic error: Cannot print non-primitive data types");
+        }
 
         break;
     case NODE_DECLARATION_STATEMENT:
@@ -286,22 +303,73 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_RETURNABLE_STATEMENTS:
         cout << "NODE_RETURNABLE_STATEMENTS" << endl;
+        for (Stype *child : node->children) {
+            traverse_ast(child);
+        }   
         break;
     case NODE_RETURN_STATEMENT:
         cout << "NODE_RETURN_STATEMENT" << endl;
+        if (!node->children.size()){
+            if (current_return_type != NULL){
+                // error
+                yyerror("Semantic error: Expecting Return Value got no return value");
+                break;
+            }
+        }
+        traverse_ast(node->children[0]);
+        if (!can_implicitly_convert(node->data_type, current_return_type)){
+            yyerror("Semantic error: Incompatible return type");
+            break;
+        }
         break;
     case NODE_FUNCTION_ARGUMENTS:
         cout << "NODE_FUNCTION_ARGUMENTS" << endl;
+        for (Stype *child : node->children) {
+            traverse_ast(child);
+        }
         break;
     case NODE_ARGUMENT_LIST:
         cout << "NODE_ARGUMENT_LIST" << endl;
+        for (Stype* child: node->children) {
+            traverse_ast(child);
+        }
         break;
     case NODE_OMITTED_PARAMETER:
         cout << "NODE_OMITTED_PARAMETER" << endl;
         break;
     case NODE_FUNCTION_CALL:
+    {
         cout << "NODE_FUNCTION_CALL" << endl;
+        traverse_ast(node->children[0]);
+        traverse_ast(node->children[1]);
+        if (node->data_type->is_primitive){
+            yyerror("Semantic error: Cannot call a non-function  ");
+        }
+        std::vector<DataType*> parameters = node->data_type->parameters;
+        std::vector<DataType*> new_parameters;
+        for (int i = 0; i < node->children[1]->children.size(); i++){
+            
+            Stype* argument_list = node->children[1]->children[i];
+            if (argument_list->children.size() != parameters.size()){
+                yyerror("Semantic error: Incorrect number of parameters passed");
+            }
+            for (int j = 0 ; j < argument_list->children.size(); j++){
+            
+                if (argument_list->children[j]->node_type == NODE_OMITTED_PARAMETER){
+                    new_parameters.push_back(parameters[j]);
+                }
+                else if (!can_implicitly_convert(argument_list->children[j]->data_type, parameters[j])){
+                    yyerror("Semantic error: Incompatible argument type");
+                }
+            }
+            parameters = new_parameters;
+            new_parameters.clear();
+            if (!can_implicitly_convert(node->children[1]->children[i]->data_type, node->data_type->parameters[i])){
+                yyerror("Semantic error: Incompatible argument type");
+            }
+        }
         break;
+    }
     case NODE_NORMAL_ASSIGNMENT_STATEMENT:
         cout << "NODE_NORMAL_ASSIGNMENT_STATEMENT" << endl;
         // traverse the expression first
@@ -457,6 +525,7 @@ void traverse_ast(Stype *node) {
     case NODE_ASSIGNABLE_VALUE:
         cout << "NODE_ASSIGNABLE_VALUE" << endl;
         traverse_ast(node->children[0]);
+        node->data_type = node->children[0]->data_type;
         // TODO: handle vector index and slice
         break;
     case NODE_NOT_SET:

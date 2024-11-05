@@ -255,8 +255,12 @@ non_empty_argument_list
     | non_empty_argument_list ',' '_' { 
         $$ = $1; 
         $$->children.push_back(new Stype(NODE_OMITTED_PARAMETER)); }
-    | expr { $$ = $1; }
-    | '_' { $$ = new Stype(NODE_OMITTED_PARAMETER); };
+    | expr { $$ = new Stype(NODE_ARGUMENT_LIST);
+            $$->children.push_back($1);
+     }
+    | '_' { $$ = new Stype(NODE_ARGUMENT_LIST);
+        $$->children.push_back(new Stype(NODE_OMITTED_PARAMETER));
+     };
 
 loop_statement
     : LOOP expr '{' loopable_statements '}' {
