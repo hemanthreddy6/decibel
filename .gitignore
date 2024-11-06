@@ -13,3 +13,4 @@ Parser/a.out
 .DS_Store
 .clang-format
 Semantic/semantic_analyser
+Makefile.inc
