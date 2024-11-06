@@ -1,4 +1,5 @@
-include ../Makefile.inc
+-include ../Makefile.inc
+COMPILER := $(if $(COMPILER),$(COMPILER),g++)
 .PHONY: build clean test make_parser
 
 build: semantic_analyser

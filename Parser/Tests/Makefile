@@ -1,4 +1,5 @@
-include ../../Makefile.inc
+-include ../../Makefile.inc
+COMPILER := $(if $(COMPILER),$(COMPILER),g++)
 CORRECT_TESTS := $(wildcard *.correct)
 WRONG_TESTS := $(wildcard *.wrong)
 FILE_DECLARED := $(if $(FILE), true, false)
