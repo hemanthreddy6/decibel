@@ -1,3 +1,4 @@
+include ../../Makefile.inc
 CORRECT_TESTS := $(wildcard *.correct)
 WRONG_TESTS := $(wildcard *.wrong)
 FILE_DECLARED := $(if $(FILE), true, false)

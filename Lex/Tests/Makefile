@@ -1,3 +1,4 @@
+include ../../Makefile.inc
 .PHONY: build run clean test
 
 TESTS := $(wildcard *.in)
@@ -13,7 +14,7 @@ build: lexer
 	@make y.tab.c -C "../../Parser" --quiet
 
 lexer: ../lex.yy.c ../../Parser/y.tab.c tester.c
-	@g++ -o lexer tester.c -lm
+	@$(COMPILER) -o lexer tester.c -lm
 
 run: build
 	./lexer

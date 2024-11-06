@@ -272,7 +272,7 @@ void traverse_ast(Stype *node) {
         cout << "Main block node" << endl;
         // before traversing the statements node, do stuff to make the scope be
         // main block and stuff
-        symbol_table[0].push_back(unordered_map<string, StEntry>());
+        symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
         current_scope = 1;
         traverse_ast(node->children[0]);
         current_scope = 0;
@@ -483,24 +483,70 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_LOOP_REPEAT_STATEMENT:
         cout << "NODE_LOOP_REPEAT_STATEMENT" << endl;
+        current_scope++;
+        symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
+        traverse_ast(node->children[0]);
+        traverse_ast(node->children[1]);
+        symbol_table[current_scope_table].pop_back();
+        current_scope--;
         break;
     case NODE_LOOP_UNTIL_STATEMENT:
         cout << "NODE_LOOP_UNTIL_STATEMENT" << endl;
+        current_scope++;
+        symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
+        traverse_ast(node->children[0]);
+        traverse_ast(node->children[1]);
+        symbol_table[current_scope_table].pop_back();
+        current_scope--;
         break;
     case NODE_LOOP_GENERAL_STATEMENT:
         cout << "NODE_LOOP_GENERAL_STATEMENT" << endl;
+        current_scope++;
+        symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
+        traverse_ast(node->children[0]);
+        traverse_ast(node->children[1]);
+        traverse_ast(node->children[2]);
+        traverse_ast(node->children[3]);
+        symbol_table[current_scope_table].pop_back();
+        current_scope--;
         break;
     case NODE_IF_STATEMENT:
         cout << "NODE_IF_STATEMENT" << endl;
+        current_scope++;
+        symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
+        traverse_ast(node->children[0]);
+        traverse_ast(node->children[1]);
+        traverse_ast(node->children[2]);
+        traverse_ast(node->children[3]);
+        symbol_table[current_scope_table].pop_back();
+        current_scope--;
         break;
     case NODE_OR_STATEMENTS:
         cout << "NODE_OR_STATEMENTS" << endl;
+        for (Stype *child : node->children) {
+            traverse_ast(child);
+        }
         break;
     case NODE_OR_STATEMENT:
         cout << "NODE_OR_STATEMENT" << endl;
+        current_scope++;
+        symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
+        traverse_ast(node->children[0]);
+        traverse_ast(node->children[1]);
+        symbol_table[current_scope_table].pop_back();
+        current_scope--;
         break;
     case NODE_OTHERWISE_STATEMENT:
         cout << "NODE_OTHERWISE_STATEMENT" << endl;
+        if (node->children.size() == 0) {
+            // do nothing
+        } else {
+            current_scope++;
+            symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
+            traverse_ast(node->children[0]);
+            symbol_table[current_scope_table].pop_back();
+            current_scope--;
+        }
         break;
     case NODE_LOAD_STATEMENT:
         cout << "NODE_LOAD_STATEMENT" << endl;
