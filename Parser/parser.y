@@ -181,9 +181,10 @@ returnable_statement
 
 return_statement
     : RETURN expr { 
-        $$ = new Stype(NODE_RETURN_STATEMENT); 
+        $$ = $1;
+        $$->node_type = NODE_RETURN_STATEMENT; 
         $$->children.push_back($2); }
-    | RETURN { $$ = new Stype(NODE_RETURN_STATEMENT); } ;
+    | RETURN { $$ = $1; $$->node_type = NODE_RETURN_STATEMENT; } ;
     
 function_call
     : function_name function_arguments { 
@@ -508,11 +509,11 @@ unary_expr
         $$->children.push_back($2); };
 
 value
-    : INT_LITERAL { $$ = new Stype(NODE_INT_LITERAL); }
-    | FLOAT_LITERAL { $$ = new Stype(NODE_FLOAT_LITERAL); }
-    | STRING_LITERAL { $$ = new Stype(NODE_STRING_LITERAL); }
-    | TRUE { $$ = new Stype(NODE_BOOL_LITERAL); }
-    | FALSE { $$ = new Stype(NODE_BOOL_LITERAL); }
+    : INT_LITERAL { $$ = $1; $$->node_type = NODE_INT_LITERAL; }
+    | FLOAT_LITERAL { $$ = $1; $$->node_type = NODE_FLOAT_LITERAL; }
+    | STRING_LITERAL { $$ = $1; $$->node_type = NODE_STRING_LITERAL; }
+    | TRUE { $$ = $1; $$->node_type = NODE_BOOL_LITERAL; }
+    | FALSE { $$ = $1; $$->node_type = NODE_BOOL_LITERAL; }
     | assignable_value { $$ = $1; }
     | load_statement { $$ = $1; }
     | function_call { $$ = $1; };

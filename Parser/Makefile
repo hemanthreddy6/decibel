@@ -1,3 +1,4 @@
+include ../Makefile.inc
 .PHONY: build test clean run
 
 build: parser
@@ -10,7 +11,7 @@ y.tab.c: parser.y
 	fi
 
 parser: y.tab.c ../Lex/lex.yy.c
-	g++ -o parser y.tab.c -lm
+	$(COMPILER) -o parser y.tab.c -lm
 
 ../Lex/lex.yy.c: ../Lex/lexer.l
 	@make build -C "../Lex" --quiet
