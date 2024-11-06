@@ -527,19 +527,27 @@ void traverse_ast(Stype *node) {
         symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
         bool is_int = false;
         bool is_float = false;
+        DataType* type2 = new DataType(INT);
         traverse_ast(node->children[1]);
         traverse_ast(node->children[2]);
         traverse_ast(node->children[3]);
-        if (is_type(node->children[1]->data_type, INT) && is_type(node->children[2]->data_type, INT) && is_type(node->children[3]->data_type, INT)){
+        if (can_implicitly_convert(node->children[1]->data_type, type2) && can_implicitly_convert(node->children[2]->data_type, type2) && can_implicitly_convert(node->children[3]->data_type, type2)){
             is_int = true;
-        }
-        else if (is_type(node->children[1]->data_type, FLOAT) || is_type(node->children[2]->data_type, FLOAT) || is_type(node->children[3]->data_type, FLOAT)){
-            is_float = true;
+            if (is_basic_type(node->children[1]->data_type, FLOAT) || is_basic_type(node->children[2]->data_type, FLOAT) || is_basic_type(node->children[3]->data_type, FLOAT)){
+                is_float = true;
+            }
         }
         else {
-            yyerror("Semantic error: Loop expects all integer or all float values");
+            yyerror("Semantic error: Loop expects integer or float values");
         }
-        traverse_ast(node->children[0]);
+        if (is_float){
+            node->children[0]->data_type = new DataType(FLOAT);
+        }
+        else if (is_int){
+            node->children[0]->data_type = new DataType(INT);
+        }
+        symbol_table[current_scope_table][current_scope].insert({node->children[0]->text, StEntry(node->children[0]->data_type, false)});
+        traverse_ast(node->children[4]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
         break;
