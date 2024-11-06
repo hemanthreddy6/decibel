@@ -1,11 +1,11 @@
-#include <cstddef>
+// #include <cstddef>
 #define SEMANTIC 1
 int semantic();
 #include "../Parser/y.tab.c"
 #include <iostream>
 #include <string>
 #include <unordered_map>
-#include <bits/stdc++.h>
+// #include <bits/stdc++.h>
 
 using namespace std;
 
@@ -216,7 +216,7 @@ int handle_function_expression(Stype* node) {
         {
             if(node->children[2]->data_type != NULL)
             {
-                yylval = node;
+                yylval = node->children[2];
                 yyerror("Semantic error: Incompatible return types");
                 return 1;
             }
@@ -225,13 +225,13 @@ int handle_function_expression(Stype* node) {
         {
             if(node->children[2]->data_type == NULL)
             {
-                yylval = node;
+                yylval = node->children[2];
                 yyerror("Semantic error: Incompatible return types");
                 return 1;
             }
             else if(!can_implicitly_convert(node->children[2]->data_type, current_return_type))
             {
-                yylval = node;
+                yylval = node->children[2];
                 yyerror("Semantic error: Incompatible return types");
                 return 1;
             }
