@@ -536,6 +536,7 @@ void traverse_ast(Stype *node) {
         break;
     }
     case NODE_LOOP_GENERAL_STATEMENT:
+    {
         cout << "NODE_LOOP_GENERAL_STATEMENT" << endl;
         current_scope++;
         symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
@@ -565,6 +566,7 @@ void traverse_ast(Stype *node) {
         symbol_table[current_scope_table].pop_back();
         current_scope--;
         break;
+    }
     case NODE_IF_STATEMENT:
         cout << "NODE_IF_STATEMENT" << endl;
         current_scope++;

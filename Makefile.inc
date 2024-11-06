@@ -1,1 +1,1 @@
-COMPILER=g++
+COMPILER=g++-14
