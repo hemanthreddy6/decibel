@@ -203,7 +203,6 @@ int handle_function_expression(Stype* node) {
     // Creating a new table and creating a new scope
     symbol_table.push_back(vector<unordered_map<string, StEntry>>());
     symbol_table.back().push_back(unordered_map<string, StEntry>());
-    global_scope = &symbol_table.back().back();
 
     // Traversing the children nodes
     traverse_ast(node->children[0]);
@@ -248,8 +247,11 @@ int handle_function_expression(Stype* node) {
     current_scope_table = last_scope_table;
     current_scope = last_scope;
     current_return_type = last_return_type;
-    global_scope = last_global_scope;
     return 0;
+}
+
+bool is_basic_type(DataType* type, int token) {
+    return (type != NULL && type->is_primitive && !type->is_vector && type->basic_data_type == token);
 }
 
 void traverse_ast(Stype *node) {
@@ -521,9 +523,18 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_UNARY_INVERSE_EXPR:
         cout << "NODE_UNARY_INVERSE_EXPR" << endl;
+        traverse_ast(node->children[0]);
+        node->data_type = node->children[0]->data_type;
+        if(!is_basic_type(node->data_type, AUDIO))
+        {
+            yylval = node->children[0];
+            yyerror("Semantic error: Inverse operator invoked on non-audio data types");
+            break;
+        }
         break;
     case NODE_UNARY_LOGICAL_NOT_EXPR:
         cout << "NODE_UNARY_LOGICAL_NOT_EXPR" << endl;
+
         break;
     case NODE_UNARY_PLUS_EXPR:
         cout << "NODE_UNARY_PLUS_EXPR" << endl;
@@ -601,11 +612,11 @@ void traverse_ast(Stype *node) {
         // TODO: handle vector index and slice
         break;
     case NODE_NOT_SET:
-        cout << "Oops, looks like you have an uninitialised Stype somewhere!"
+        cout << "Big bad error: Oops, looks like you have an uninitialised Stype somewhere!"
              << endl;
         break;
     default:
-        cout << "bruh you forgot to handle this node" << endl;
+        cout << "Big bad error: bruh you forgot to handle this node" << endl;
     }
 }
 

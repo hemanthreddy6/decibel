@@ -495,16 +495,16 @@ expr
 unary_expr
     : value { $$ = $1; }
     | '~' expr { 
-        $$ = new Stype(NODE_UNARY_INVERSE_EXPR); 
+        $$ = new Stype(NODE_UNARY_INVERSE_EXPR);
         $$->children.push_back($2); }
     | '!' expr {
         $$ = new Stype(NODE_UNARY_LOGICAL_NOT_EXPR);
         $$->children.push_back($2); }
     | '+' expr {
-        $$ = new Stype(NODE_UNARY_PLUS_EXPR); 
+        $$ = new Stype(NODE_UNARY_PLUS_EXPR);
         $$->children.push_back($2); }
     | '-' expr {
-        $$ = new Stype(NODE_UNARY_MINUS_EXPR); 
+        $$ = new Stype(NODE_UNARY_MINUS_EXPR);
         $$->children.push_back($2); };
 
 value
@@ -518,16 +518,16 @@ value
     | function_call { $$ = $1; };
 
 assignable_value
-    : assignable_value '[' expr ']' { 
+    : assignable_value '[' expr ']' {
         $$ = $1;
         $$->children.push_back(new Stype(NODE_INDEX));
         $$->children.back()->children.push_back($3); }
-    | assignable_value '[' expr ':' expr ']' { 
+    | assignable_value '[' expr ':' expr ']' {
         $$ = $1;
         $$->children.push_back(new Stype(NODE_SLICE));
         $$->children.back()->children.push_back($3);
         $$->children.back()->children.push_back($5);}
-    | IDENTIFIER { 
+    | IDENTIFIER {
         $$ = new Stype(NODE_ASSIGNABLE_VALUE);
         $$->children.push_back($1); };
 
