@@ -1,4 +1,6 @@
 // #include <cstddef>
+#include <algorithm>
+#include <type_traits>
 #define SEMANTIC 1
 int semantic();
 #include "../Parser/y.tab.c"
@@ -482,31 +484,60 @@ void traverse_ast(Stype *node) {
         cout << "NODE_BREAK_STATEMENT" << endl;
         break;
     case NODE_LOOP_REPEAT_STATEMENT:
+    {
         cout << "NODE_LOOP_REPEAT_STATEMENT" << endl;
         current_scope++;
         symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
         traverse_ast(node->children[0]);
+        DataType *type2 = new DataType(INT);
+        if (node->children[0]->data_type == NULL){
+            yyerror("Semantic error: Repeat statement expects an integer, recieved void");
+        }
+        if (!can_implicitly_convert(node->children[0]->data_type,  type2)) {
+            yyerror("Semantic error: Repeat statement expects an integer");
+        }
         traverse_ast(node->children[1]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
         break;
+    }
     case NODE_LOOP_UNTIL_STATEMENT:
+    {
         cout << "NODE_LOOP_UNTIL_STATEMENT" << endl;
         current_scope++;
         symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
         traverse_ast(node->children[0]);
+        DataType* type2 = new DataType(INT);
+        if (node->children[0]->data_type == NULL){
+            yyerror("Semantic error: Repeat statement expects an integer, recieved void");
+        }
+        if (!can_implicitly_convert(node->children[0]->data_type,  type2)) {
+            yyerror("Semantic error: Repeat statement expects an integer");
+        }
         traverse_ast(node->children[1]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
         break;
+    }
     case NODE_LOOP_GENERAL_STATEMENT:
         cout << "NODE_LOOP_GENERAL_STATEMENT" << endl;
         current_scope++;
         symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
-        traverse_ast(node->children[0]);
+        bool is_int = false;
+        bool is_float = false;
         traverse_ast(node->children[1]);
         traverse_ast(node->children[2]);
         traverse_ast(node->children[3]);
+        if (is_type(node->children[1]->data_type, INT) && is_type(node->children[2]->data_type, INT) && is_type(node->children[3]->data_type, INT)){
+            is_int = true;
+        }
+        else if (is_type(node->children[1]->data_type, FLOAT) || is_type(node->children[2]->data_type, FLOAT) || is_type(node->children[3]->data_type, FLOAT)){
+            is_float = true;
+        }
+        else {
+            yyerror("Semantic error: Loop expects all integer or all float values");
+        }
+        traverse_ast(node->children[0]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
         break;
@@ -516,10 +547,10 @@ void traverse_ast(Stype *node) {
         symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
         traverse_ast(node->children[0]);
         traverse_ast(node->children[1]);
-        traverse_ast(node->children[2]);
-        traverse_ast(node->children[3]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
+        traverse_ast(node->children[2]);
+        traverse_ast(node->children[3]);
         break;
     case NODE_OR_STATEMENTS:
         cout << "NODE_OR_STATEMENTS" << endl;
