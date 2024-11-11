@@ -1,0 +1,3 @@
+main{
+    a: float <- 4.65 * true;
+}

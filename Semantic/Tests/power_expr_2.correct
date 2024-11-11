@@ -1,0 +1,4 @@
+main {
+    a <- "compilers2";
+    b: string <- a ^ 4.5;
+}

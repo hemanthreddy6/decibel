@@ -1,0 +1,3 @@
+main{
+    a: long <- 5 ^ true; 
+}

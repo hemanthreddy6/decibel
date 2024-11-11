@@ -1,0 +1,9 @@
+main{
+    fib1 <- (a: int): int {
+        return 5;
+    };
+    fib2: (int):int <- (b: int): int {
+        return 6;
+    };
+    fib3 <- fib1 / fib2;
+}

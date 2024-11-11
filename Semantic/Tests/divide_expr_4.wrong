@@ -1,0 +1,9 @@
+main{
+    f1 <- (): string {
+        return "hi";
+    };
+    f2 <- (): string {
+        return "bye";
+    };
+    f3 <- f1/f2;
+}

@@ -1,0 +1,6 @@
+main{
+
+}
+a: int <- 4 ^ 4;
+b: long <- 6;
+c: float <- a*b*b*a*b;

@@ -1,0 +1,4 @@
+main{
+    a: string <- "good";
+    b <- 4.67 ^ a; 
+}

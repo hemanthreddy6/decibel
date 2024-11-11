@@ -1,0 +1,6 @@
+main{
+    func1 <- (a: int, b: int): int{
+        return (a*b);
+    };
+    c: (int,int):int <- func1 * 5;
+}

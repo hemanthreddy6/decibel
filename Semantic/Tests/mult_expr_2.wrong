@@ -1,0 +1,4 @@
+main{
+    a: string <- "topr";
+    b <- 45 * a;
+}

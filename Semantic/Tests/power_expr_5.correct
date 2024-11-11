@@ -1,0 +1,3 @@
+main{
+    a: string <- 2 ^ 4; 
+}

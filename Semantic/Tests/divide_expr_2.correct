@@ -1,0 +1,6 @@
+main{
+    func1 <- (a: int): int{
+        return a;
+    };
+    a <- 2/func1;
+}

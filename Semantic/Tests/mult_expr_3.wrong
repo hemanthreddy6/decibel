@@ -1,0 +1,9 @@
+main{
+    func1 <- (a: int, b: int): int{
+        return (a*b);
+    };
+    func2 <- (c: float): int {
+        return 2;
+    };
+    func3 <- func1 * func2;
+}

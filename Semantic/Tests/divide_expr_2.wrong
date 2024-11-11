@@ -1,0 +1,6 @@
+main{
+    f1 <- (): string {
+        return "topr";
+    };
+    a <- f1/3;
+}

@@ -1,0 +1,13 @@
+main{
+    f1 <- (): float {
+        return 0;
+    };
+    f2 <- (): float {
+        return 4.5;
+    };
+    f3 <- (): float {
+        return 5.6;
+    };
+    f4 <- f3*f1/f2;
+    f5 <- f3/f1*f2;
+}
