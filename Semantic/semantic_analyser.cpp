@@ -1,4 +1,6 @@
 // #include <cstddef>
+#include <algorithm>
+#include <type_traits>
 #define SEMANTIC 1
 int semantic();
 #include "../Parser/y.tab.c"
@@ -41,6 +43,8 @@ bool are_data_types_equal(DataType *type1, DataType *type2) {
 
 // this function is used to see if type1 can be implicitly converted to type2.
 bool can_implicitly_convert(DataType *type1, DataType *type2) {
+    if (!type1 || !type2)
+        return false;
     // check if both data types are basic.
     if (type1->is_primitive && type2->is_primitive && !type1->is_vector &&
         !type2->is_vector) {
@@ -94,15 +98,13 @@ int current_scope_table = 0;
 // when we go inside an if statement or something.
 int current_scope = 0;
 
-DataType* current_return_type;
+DataType *current_return_type;
 
 // function to do semantic checks for all declaration statements. has_dtype
 // should be true if the data type was explicitly declared by the user. is_const
 // is for const declarations.
 int handle_declaration(Stype *node, bool has_dtype, bool is_const) {
     // if it's already in the current scope level, then it's a redeclaration.
-    cout << "hello: " << current_scope_table << " " << current_scope << endl;
-    cout << "node-text: " << node->children[0]->text << endl;
     if (symbol_table[current_scope_table][current_scope].count(
             node->children[0]->text)) {
         // this is just for error handling and printing the error with the
@@ -136,13 +138,15 @@ int handle_declaration(Stype *node, bool has_dtype, bool is_const) {
 // Function for parameter declarations in function definitions
 // - Checks for re-declaration
 // - Pushes to symbol table
-int handle_parameter_declaration(Stype* identifier, Stype* data_type) {
-    if (symbol_table[current_scope_table][current_scope].count(identifier->text)) {
+int handle_parameter_declaration(Stype *identifier, Stype *data_type) {
+    if (symbol_table[current_scope_table][current_scope].count(
+            identifier->text)) {
         yylval = identifier;
         yyerror("Semantic error: Redeclaration of variable");
         return 1;
     }
-    symbol_table[current_scope_table][current_scope].insert({identifier->text, StEntry(data_type->data_type, false)});
+    symbol_table[current_scope_table][current_scope].insert(
+        {identifier->text, StEntry(data_type->data_type, false)});
     return 0;
 }
 
@@ -176,13 +180,14 @@ int handle_identifier_reference(Stype *node) {
 
 // Function to handle function definitions in expressions
 // - Takes the function node as parameter
-// - Creates a new symbol table for the function and assigns appropriate return type
-int handle_function_expression(Stype* node) {
+// - Creates a new symbol table for the function and assigns appropriate return
+// type
+int handle_function_expression(Stype *node) {
     // Storing global variables
     int last_scope_table = current_scope_table;
     int last_scope = current_scope;
-    DataType* last_return_type = current_return_type;
-    unordered_map<string, StEntry>* last_global_scope = global_scope;
+    DataType *last_return_type = current_return_type;
+    unordered_map<string, StEntry> *last_global_scope = global_scope;
 
     // Setting global variables for traversal
     int least_unused_scope_table = symbol_table.size();
@@ -190,7 +195,7 @@ int handle_function_expression(Stype* node) {
     current_scope = 0;
 
     // Setting current_return_type to return type of the function
-    if(node->children[1]->data_type != NULL) {
+    if (node->children[1]->data_type != NULL) {
         current_return_type = node->children[1]->data_type;
     } else {
         // When return type is "void"
@@ -204,29 +209,22 @@ int handle_function_expression(Stype* node) {
     // Traversing the children nodes
     traverse_ast(node->children[0]);
     traverse_ast(node->children[2]);
-    
+
     // Return type check for inline functions
-    if(node->node_type == NODE_INLINE_FUNCTION)
-    {
-        if(current_return_type == NULL)
-        {
-            if(node->children[2]->data_type != NULL)
-            {
+    if (node->node_type == NODE_INLINE_FUNCTION) {
+        if (current_return_type == NULL) {
+            if (node->children[2]->data_type != NULL) {
                 yylval = node->children[2];
                 yyerror("Semantic error: Incompatible return types");
                 return 1;
             }
-        }
-        else
-        {
-            if(node->children[2]->data_type == NULL)
-            {
+        } else {
+            if (node->children[2]->data_type == NULL) {
                 yylval = node->children[2];
                 yyerror("Semantic error: Incompatible return types");
                 return 1;
-            }
-            else if(!can_implicitly_convert(node->children[2]->data_type, current_return_type))
-            {
+            } else if (!can_implicitly_convert(node->children[2]->data_type,
+                                               current_return_type)) {
                 yylval = node->children[2];
                 yyerror("Semantic error: Incompatible return types");
                 return 1;
@@ -247,8 +245,345 @@ int handle_function_expression(Stype* node) {
     return 0;
 }
 
-bool is_basic_type(DataType* type, int token) {
-    return (type != NULL && type->is_primitive && !type->is_vector && type->basic_data_type == token);
+bool is_basic_type(DataType *type, int token) {
+    return (type != NULL && type->is_primitive && !type->is_vector &&
+            type->basic_data_type == token);
+}
+
+bool convertible_to_float(DataType* type) {
+    return (type != NULL && 
+            type->is_primitive && 
+            !type->is_vector && 
+            (type->basic_data_type == INT || 
+            type->basic_data_type == LONG || 
+            type->basic_data_type == FLOAT || 
+            type->basic_data_type == BOOL));
+}
+
+bool isFunction(DataType* type) {
+    return (type != NULL && !type->is_primitive);
+}
+
+// Function to check if two data types are strictly same
+bool equal_data_type(DataType* type1, DataType* type2)
+{
+    if(type1->is_primitive != type2->is_primitive)
+    return false;
+
+    if(type1->is_primitive)
+    {
+        if(type1->is_vector != type2->is_vector)
+        return false;
+
+        if(type1->is_vector)
+        {
+            return equal_data_type(type1->vector_data_type, type2->vector_data_type);
+        }
+        else
+        {
+            return (type1->basic_data_type == type2->basic_data_type);
+        }
+    }
+    else
+    {
+        if(!equal_data_type(type1->return_type, type2->return_type))
+        return false;
+
+        int n = type1->parameters.size();
+
+        if(n!=type2->parameters.size())
+        return false;
+
+        for(int i=0;i<n;i++)
+        {
+            if(!equal_data_type(type1->parameters[i], type2->parameters[i]))
+            return false;
+        }
+        return true;
+    }
+
+    // It should never this line
+    return false;
+}
+
+int handle_unary_expression(Stype* node) {
+    traverse_ast(node->children[0]);
+    node->data_type = node->children[0]->data_type;
+    if(!is_basic_type(node->data_type, INT) && !is_basic_type(node->data_type, LONG) && !is_basic_type(node->data_type, FLOAT) && !is_basic_type(node->data_type, BOOL)) 
+    {
+        yylval = node->children[0];
+        yyerror("Semantic error: Unary operator invoked on incompatible data types");
+        return 1;
+    }
+    return 0;
+}
+
+// Function to handle power expressions
+// - Takes the node as parameter
+// - Performs semantic checks on the operands
+// - Assigns appropriate data type to node
+int handle_power_expression(Stype* node) {
+    traverse_ast(node->children[0]);
+    traverse_ast(node->children[1]);
+    DataType* type1 = node->children[0]->data_type;
+    DataType* type2 = node->children[1]->data_type;
+
+    // Checking if any data types are NULL(void in DSL)
+    if(type1 == NULL) {
+        yylval = node->children[0];
+        yyerror("Semantic error: power operator cannot be invoked on void data types");
+        return 1;
+    }
+
+    if(type2 == NULL) {
+        yylval = node->children[1];
+        yyerror("Semantic error: power operator cannot be invoked on void data types");
+        return 1;
+    }
+
+    // Checking if the right operand is compatible with power operator
+    if(!is_basic_type(type2, INT) && !is_basic_type(type2, LONG) && !is_basic_type(type2, FLOAT) && !is_basic_type(type2, BOOL))
+    {
+        yylval = node->children[1];
+        yyerror("Semantic error: Right operand is incompatible with power operator");
+        return 1;
+    }
+
+    // Checking if the left operand is compatible with power operator
+    if(type1 == NULL || !type1->is_primitive || type1->is_vector || type1->basic_data_type == UNSET_DATA_TYPE) {
+        yylval = node->children[0];
+        yyerror("Semantic error: Left operand is incompatible with power operator");
+        return 1;
+    }
+
+    // Assigning correct data type to node
+    if(convertible_to_float(type1)) {
+        node->data_type = new DataType(FLOAT);
+    } else {
+        node->data_type = type1;
+    }
+
+    return 0;
+}
+
+// Function to handle distortion expressions
+// - Takes the node as parameter
+// - Performs semantic checks on the operands
+// - Assigns appropriate data type to node
+int handle_distortion_expression(Stype* node){
+    traverse_ast(node->children[0]);
+    traverse_ast(node->children[1]);
+    DataType* type1 = node->children[0]->data_type;
+    DataType* type2 = node->children[1]->data_type;
+
+    // Checking if any data types are NULL(void in DSL)
+    if(type1 == NULL) {
+        yylval = node->children[0];
+        yyerror("Semantic error: distortion operator cannot be invoked on void data types");
+        return 1;
+    }
+
+    if(type2 == NULL) {
+        yylval = node->children[1];
+        yyerror("Semantic error: distortion operator cannot be invoked on void data types");
+        return 1;
+    }
+
+    // Checking if the right operand is compatible with distortion operator
+    if(type2->is_primitive || type2->parameters.size()!=1 || !is_basic_type(type2->parameters[0], INT) || !is_basic_type(type2->return_type, INT))
+    {
+        yylval = node->children[1];
+        yyerror("Semantic error: Right operand is incompatible with distortion operator, It should be a function which takes an int and returns an int");
+        return 1;
+    }
+
+    // Checking if the left operand is compatible with distortion operator
+    if(!is_basic_type(type1, AUDIO)) {
+        yylval = node->children[0];
+        yyerror("Semantic error: Left operand is incompatible with distortion operator, It should be audio");
+        return 1;
+    }
+
+    // Assigning correct data type to node
+    node->data_type = type1;
+
+    return 0;
+}
+
+// Function to handle multiplication expressions
+// - Takes the node as parameter
+// - Performs semantic checks on the operands
+// - Assigns appropriate data type to node
+int handle_mult_expression(Stype* node){
+    traverse_ast(node->children[0]);
+    traverse_ast(node->children[1]);
+    DataType* type1 = node->children[0]->data_type;
+    DataType* type2 = node->children[1]->data_type;
+
+    // Checking if any data types are NULL(void in DSL)
+    if(type1 == NULL) {
+        yylval = node->children[0];
+        yyerror("Semantic error: multiplication operator cannot be invoked on void data types");
+        return 1;
+    }
+
+    if(type2 == NULL) {
+        yylval = node->children[1];
+        yyerror("Semantic error: multiplication operator cannot be invoked on void data types");
+        return 1;
+    }
+
+    // Checking the left operator
+    if(is_basic_type(type1, STRING)) 
+    {
+        yylval = node->children[0];
+        yyerror("Semantic error: multiplication operator is not defined for strings");
+        return 1;
+    }
+    else if(convertible_to_float(type1))
+    {
+        if(!convertible_to_float(type2))
+        {
+            if(isFunction(type2) && convertible_to_float(type2->return_type))
+            {
+                node->data_type = type2;
+                return 0;
+            }
+            else
+            {
+                yylval = node->children[1];
+                yyerror("Semantic error: invalid operand for multiplication operator");
+                return 1;
+            }
+        }
+        if(is_basic_type(type1, FLOAT) || is_basic_type(type2, FLOAT))
+        {
+            node->data_type = new DataType(FLOAT);
+        }
+        else if(is_basic_type(type1, LONG) || is_basic_type(type2, LONG))
+        {
+            node->data_type = new DataType(LONG);
+        }
+        else
+        {
+            node->data_type = new DataType(INT);
+        }
+        return 0;
+    }
+    else if(is_basic_type(type1, AUDIO))
+    {
+        if(!convertible_to_float(type2))
+        {
+            yylval = node->children[1];
+            yyerror("Semantic error: invalid operand for multiplication operator");
+            return 1;
+        }
+        node->data_type = type1;
+        return 0;
+    }
+    else if(isFunction(type1))
+    {
+        if(convertible_to_float(type1->return_type) && (equal_data_type(type1, type2) || convertible_to_float(type2)))
+        {
+            node->data_type = type1;
+            return 0;
+        }
+        else
+        {
+            yylval = node->children[1];
+            yyerror("Semantic error: invalid operand for multiplication operator");
+            return 1;
+        }
+    }
+    else
+    {
+        yylval = node->children[0];
+        yyerror("Semantic error: invalid operand for multiplication operator");
+        return 1;
+    }
+
+    // It should never reach this line
+    return 1;
+}
+
+// Function to handle division expressions
+// - Takes the node as parameter
+// - Performs semantic checks on the operands
+// - Assigns appropriate data type to node
+int handle_divide_expression(Stype* node){
+    traverse_ast(node->children[0]);
+    traverse_ast(node->children[1]);
+    DataType* type1 = node->children[0]->data_type;
+    DataType* type2 = node->children[1]->data_type;
+
+    // Checking if any data types are NULL(void in DSL)
+    if(type1 == NULL) {
+        yylval = node->children[0];
+        yyerror("Semantic error: division operator cannot be invoked on void data types");
+        return 1;
+    }
+
+    if(type2 == NULL) {
+        yylval = node->children[1];
+        yyerror("Semantic error: division operator cannot be invoked on void data types");
+        return 1;
+    }
+
+    // Checking the left operator
+    if(is_basic_type(type1, STRING)) 
+    {
+        yylval = node->children[0];
+        yyerror("Semantic error: division operator is not defined for strings");
+        return 1;
+    }
+    else if(convertible_to_float(type1))
+    {
+        if(!convertible_to_float(type2))
+        {
+            if(isFunction(type2) && convertible_to_float(type2->return_type))
+            {
+                node->data_type = new DataType();
+                node->data_type->is_primitive = false;
+                node->data_type->parameters = type2->parameters;
+                node->data_type->return_type = new DataType(FLOAT);
+                return 0;
+            }
+            else
+            {
+                yylval = node->children[1];
+                yyerror("Semantic error: invalid operand for division operator");
+                return 1;
+            }
+        }
+        node->data_type = new DataType(FLOAT);
+        return 0;
+    }
+    else if(isFunction(type1))
+    {
+        if(convertible_to_float(type1->return_type) && (equal_data_type(type1, type2) || convertible_to_float(type2)))
+        {
+            node->data_type = new DataType();
+            node->data_type->is_primitive = false;
+            node->data_type->parameters = type1->parameters;
+            node->data_type->return_type = new DataType(FLOAT);
+            return 0;
+        }
+        else
+        {
+            yylval = node->children[1];
+            yyerror("Semantic error: invalid operand for division operator");
+            return 1;
+        }
+    }
+    else
+    {
+        yylval = node->children[0];
+        yyerror("Semantic error: invalid operand for division operator");
+        return 1;
+    }
+
+    // It should never reach this line
+    return 1;
 }
 
 bool convertible_to_float(DataType* type) {
@@ -590,45 +925,48 @@ int handle_divide_expression(Stype* node){
 void traverse_ast(Stype *node) {
     switch (node->node_type) {
     case NODE_ROOT:
-        cout << "Root node" << endl;
+        cout << string(current_scope, '\t') << "Root node" << endl;
         traverse_ast(node->children[0]);
         traverse_ast(node->children[2]);
         // main block processed last
         traverse_ast(node->children[1]);
         break;
     case NODE_STATEMENTS:
-        cout << "Statements node" << endl;
+        cout << string(current_scope, '\t') << "Statements node" << endl;
         for (Stype *child : node->children) {
             traverse_ast(child);
         }
         break;
 
     case NODE_MAIN_BLOCK:
-        cout << "Main block node" << endl;
+        cout << string(current_scope, '\t') << "Main block node" << endl;
         // before traversing the statements node, do stuff to make the scope be
         // main block and stuff
-        symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
+        symbol_table[current_scope_table].push_back(
+            unordered_map<string, StEntry>());
         current_scope = 1;
         traverse_ast(node->children[0]);
         current_scope = 0;
         break;
     case NODE_READ_STATEMENT:
-        cout << "Read statement node" << endl;
+        cout << string(current_scope, '\t') << "Read statement node" << endl;
         traverse_ast(node->children[0]);
         if (node->data_type->is_primitive && !node->data_type->is_vector) {
             if (node->data_type->basic_data_type == AUDIO) {
-                yyerror("Semantic error: Cannot read audio. Use load statement instead");
+                yyerror("Semantic error: Cannot read audio. Use load statement "
+                        "instead");
             }
         } else {
             yyerror("Semantic error: Cannot read non-primitive data types");
         }
         break;
     case NODE_PRINT_STATEMENT:
-        cout << "Print statement node" << endl;
+        cout << string(current_scope, '\t') << "Print statement node" << endl;
         traverse_ast(node->children[0]);
         if (node->children[0]->data_type->is_primitive) {
             if (node->children[0]->data_type->basic_data_type == AUDIO) {
-                yyerror("Semantic error: Cannot print audio. Use play statement instead");
+                yyerror("Semantic error: Cannot print audio. Use play "
+                        "statement instead");
             }
         } else {
             yyerror("Semantic error: Cannot print non-primitive data types");
@@ -636,7 +974,7 @@ void traverse_ast(Stype *node) {
 
         break;
     case NODE_DECLARATION_STATEMENT:
-        cout << "Declaration statement node" << endl;
+        cout << string(current_scope, '\t') << "Declaration statement node" << endl;
         // traverse the expression first
         traverse_ast(node->children[1]);
 
@@ -644,7 +982,7 @@ void traverse_ast(Stype *node) {
             break;
         break;
     case NODE_DECLARATION_STATEMENT_WITH_TYPE:
-        cout << "Declaration statement node with type" << endl;
+        cout << string(current_scope, '\t') << "Declaration statement node with type" << endl;
         // traverse the expression first
         traverse_ast(node->children[1]);
 
@@ -652,7 +990,7 @@ void traverse_ast(Stype *node) {
             break;
         break;
     case NODE_CONST_DECLARATION_STATEMENT:
-        cout << "Const declaration statement node" << endl;
+        cout << string(current_scope, '\t') << "Const declaration statement node" << endl;
         // traverse the expression first
         traverse_ast(node->children[1]);
 
@@ -660,18 +998,18 @@ void traverse_ast(Stype *node) {
             break;
         break;
     case NODE_DATA_TYPE:
-        cout << "Data type statement node" << endl;
+        cout << string(current_scope, '\t') << "Data type statement node" << endl;
         break;
     case NODE_INT_LITERAL:
-        cout << "Int literal node" << endl;
+        cout << string(current_scope, '\t') << "Int literal node" << endl;
         node->data_type = new DataType(INT);
         break;
     case NODE_FLOAT_LITERAL:
-        cout << "Float literal node" << endl;
+        cout << string(current_scope, '\t') << "Float literal node" << endl;
         node->data_type = new DataType(FLOAT);
         break;
     case NODE_STRING_LITERAL:
-        cout << "String literal node" << endl;
+        cout << string(current_scope, '\t') << "String literal node" << endl;
         node->data_type = new DataType(STRING);
         break;
     case NODE_BOOL_LITERAL:
@@ -679,53 +1017,58 @@ void traverse_ast(Stype *node) {
         node->data_type = new DataType(BOOL);
         break;
     case NODE_IDENTIFIER:
-        cout << "Identifier node" << endl;
+        cout << string(current_scope, '\t') << "Identifier node" << endl;
         if (handle_identifier_reference(node))
             break;
         break;
     case NODE_PARAMETER_LIST:
-        cout << "NODE_PARAMETER_LIST" << endl;
+        cout << string(current_scope, '\t') << "NODE_PARAMETER_LIST" << endl;
         node->data_type = new DataType();
         node->data_type->is_primitive = false;
-        for(Stype* parameter: node->children) {
+        for (Stype *parameter : node->children) {
             traverse_ast(parameter);
             node->data_type->parameters.push_back(parameter->data_type);
         }
         break;
     case NODE_PARAMETER:
-        cout << "NODE_PARAMETER" << endl;
+        cout << string(current_scope, '\t') << "NODE_PARAMETER" << endl;
         traverse_ast(node->children[1]);
-        if(handle_parameter_declaration(node->children[0], node->children[1])) {
+        if (handle_parameter_declaration(node->children[0],
+                                         node->children[1])) {
             break;
         }
         node->data_type = node->children[1]->data_type;
         break;
     case NODE_RETURNABLE_STATEMENTS:
-        cout << "NODE_RETURNABLE_STATEMENTS" << endl;
+        cout << string(current_scope, '\t') << "NODE_RETURNABLE_STATEMENTS" << endl;
         for (Stype *child : node->children) {
             traverse_ast(child);
-        }   
+        }
         break;
     case NODE_RETURN_STATEMENT:
-        cout << "NODE_RETURN_STATEMENT" << endl;
-        if (!node->children.size()){
-            if (current_return_type != NULL){
+        cout << string(current_scope, '\t') << "NODE_RETURN_STATEMENT" << endl;
+        if (!node->children.size()) {
+            if (current_return_type != NULL) {
                 // error
                 yylval = node;
-                yyerror("Semantic error: Expecting Return Value got no return value");
+                yyerror("Semantic error: Expecting Return Value got no return "
+                        "value");
                 break;
             } else {
                 node->data_type = NULL;
             }
         } else {
-            if(current_return_type == NULL) {
+            if (current_return_type == NULL) {
                 yylval = node;
-                yyerror("Semantic error: void function cannot return non-void types");
+                yyerror("Semantic error: void function cannot return non-void "
+                        "types");
                 break;
             } else {
                 traverse_ast(node->children[0]);
                 node->data_type = node->children[0]->data_type;
-                if (node->data_type && !can_implicitly_convert(node->data_type, current_return_type)){
+                if (node->data_type &&
+                    !can_implicitly_convert(node->data_type,
+                                            current_return_type)) {
                     yylval = node;
                     yyerror("Semantic error: Incompatible return type");
                     break;
@@ -734,55 +1077,59 @@ void traverse_ast(Stype *node) {
         }
         break;
     case NODE_FUNCTION_ARGUMENTS:
-        cout << "NODE_FUNCTION_ARGUMENTS" << endl;
+        cout << string(current_scope, '\t') << "NODE_FUNCTION_ARGUMENTS" << endl;
         for (Stype *child : node->children) {
             traverse_ast(child);
         }
         break;
     case NODE_ARGUMENT_LIST:
-        cout << "NODE_ARGUMENT_LIST" << endl;
-        for (Stype* child: node->children) {
+        cout << string(current_scope, '\t') << "NODE_ARGUMENT_LIST" << endl;
+        for (Stype *child : node->children) {
             traverse_ast(child);
         }
         break;
     case NODE_OMITTED_PARAMETER:
-        cout << "NODE_OMITTED_PARAMETER" << endl;
+        cout << string(current_scope, '\t') << "NODE_OMITTED_PARAMETER" << endl;
         break;
-    case NODE_FUNCTION_CALL:
-    {
-        cout << "NODE_FUNCTION_CALL" << endl;
+    case NODE_FUNCTION_CALL: {
+        cout << string(current_scope, '\t') << "NODE_FUNCTION_CALL" << endl;
         traverse_ast(node->children[0]);
         traverse_ast(node->children[1]);
-        if (node->data_type->is_primitive){
+        if (node->data_type->is_primitive) {
             yyerror("Semantic error: Cannot call a non-function  ");
         }
-        std::vector<DataType*> parameters = node->data_type->parameters;
-        std::vector<DataType*> new_parameters;
-        for (int i = 0; i < node->children[1]->children.size(); i++){
-            
-            Stype* argument_list = node->children[1]->children[i];
-            if (argument_list->children.size() != parameters.size()){
-                yyerror("Semantic error: Incorrect number of parameters passed");
+        std::vector<DataType *> parameters = node->data_type->parameters;
+        std::vector<DataType *> new_parameters;
+        for (int i = 0; i < node->children[1]->children.size(); i++) {
+
+            Stype *argument_list = node->children[1]->children[i];
+            if (argument_list->children.size() != parameters.size()) {
+                yyerror(
+                    "Semantic error: Incorrect number of parameters passed");
             }
-            for (int j = 0 ; j < argument_list->children.size(); j++){
-            
-                if (argument_list->children[j]->node_type == NODE_OMITTED_PARAMETER){
+            for (int j = 0; j < argument_list->children.size(); j++) {
+
+                if (argument_list->children[j]->node_type ==
+                    NODE_OMITTED_PARAMETER) {
                     new_parameters.push_back(parameters[j]);
-                }
-                else if (!can_implicitly_convert(argument_list->children[j]->data_type, parameters[j])){
+                } else if (!can_implicitly_convert(
+                               argument_list->children[j]->data_type,
+                               parameters[j])) {
                     yyerror("Semantic error: Incompatible argument type");
                 }
             }
             parameters = new_parameters;
             new_parameters.clear();
-            if (!can_implicitly_convert(node->children[1]->children[i]->data_type, node->data_type->parameters[i])){
+            if (!can_implicitly_convert(
+                    node->children[1]->children[i]->data_type,
+                    node->data_type->parameters[i])) {
                 yyerror("Semantic error: Incompatible argument type");
             }
         }
         break;
     }
     case NODE_NORMAL_ASSIGNMENT_STATEMENT:
-        cout << "NODE_NORMAL_ASSIGNMENT_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_NORMAL_ASSIGNMENT_STATEMENT" << endl;
         // traverse the expression first
         traverse_ast(node->children[1]);
         // then, traverse the assignable value to check if it's a valid
@@ -791,233 +1138,281 @@ void traverse_ast(Stype *node) {
         // TODO: check if data types match/can convert using the function
         break;
     case NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT:
-        cout << "NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT" << endl;
         break;
     case NODE_MINUS_EQUALS_ASSIGNMENT_STATEMENT:
-        cout << "NODE_MINUS_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_MINUS_EQUALS_ASSIGNMENT_STATEMENT" << endl;
         break;
     case NODE_MULT_EQUALS_ASSIGNMENT_STATEMENT:
-        cout << "NODE_MULT_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_MULT_EQUALS_ASSIGNMENT_STATEMENT" << endl;
         break;
     case NODE_DIVIDE_EQUALS_ASSIGNMENT_STATEMENT:
-        cout << "NODE_DIVIDE_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_DIVIDE_EQUALS_ASSIGNMENT_STATEMENT" << endl;
         break;
     case NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT:
-        cout << "NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT" << endl;
         break;
     case NODE_OR_EQUALS_ASSIGNMENT_STATEMENT:
-        cout << "NODE_OR_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_OR_EQUALS_ASSIGNMENT_STATEMENT" << endl;
         break;
     case NODE_POWER_EQUALS_ASSIGNMENT_STATEMENT:
-        cout << "NODE_POWER_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_POWER_EQUALS_ASSIGNMENT_STATEMENT" << endl;
         break;
     case NODE_DISTORTION_EQUALS_ASSIGNMENT_STATEMENT:
-        cout << "NODE_DISTORTION_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_DISTORTION_EQUALS_ASSIGNMENT_STATEMENT" << endl;
         break;
     case NODE_CONTINUE_STATEMENT:
-        cout << "NODE_CONTINUE_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_CONTINUE_STATEMENT" << endl;
         break;
     case NODE_BREAK_STATEMENT:
-        cout << "NODE_BREAK_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_BREAK_STATEMENT" << endl;
         break;
     case NODE_LOOP_REPEAT_STATEMENT:
-        cout << "NODE_LOOP_REPEAT_STATEMENT" << endl;
+    {
+        cout << string(current_scope, '\t') << "NODE_LOOP_REPEAT_STATEMENT" << endl;
         current_scope++;
-        symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
+        symbol_table[current_scope_table].push_back(
+            unordered_map<string, StEntry>());
         traverse_ast(node->children[0]);
+        DataType *type2 = new DataType(INT);
+        if (node->children[0]->data_type == NULL){
+            yyerror("Semantic error: Repeat statement expects an integer, recieved void");
+        }
+        if (!can_implicitly_convert(node->children[0]->data_type,  type2)) {
+            yyerror("Semantic error: Repeat statement expects an integer");
+        }
         traverse_ast(node->children[1]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
         break;
+    }
     case NODE_LOOP_UNTIL_STATEMENT:
-        cout << "NODE_LOOP_UNTIL_STATEMENT" << endl;
+    {
+        cout << string(current_scope, '\t') << "NODE_LOOP_UNTIL_STATEMENT" << endl;
         current_scope++;
-        symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
+        symbol_table[current_scope_table].push_back(
+            unordered_map<string, StEntry>());
         traverse_ast(node->children[0]);
+        DataType* type2 = new DataType(INT);
+        if (node->children[0]->data_type == NULL){
+            yyerror("Semantic error: Repeat statement expects an integer, recieved void");
+        }
+        if (!can_implicitly_convert(node->children[0]->data_type,  type2)) {
+            yyerror("Semantic error: Repeat statement expects an integer");
+        }
         traverse_ast(node->children[1]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
         break;
+    }
     case NODE_LOOP_GENERAL_STATEMENT:
-        cout << "NODE_LOOP_GENERAL_STATEMENT" << endl;
+    {
+        cout << string(current_scope, '\t') << "NODE_LOOP_GENERAL_STATEMENT" << endl;
         current_scope++;
         symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
-        traverse_ast(node->children[0]);
+        bool is_int = false;
+        bool is_float = false;
+        DataType* type2 = new DataType(INT);
         traverse_ast(node->children[1]);
         traverse_ast(node->children[2]);
         traverse_ast(node->children[3]);
+        if (can_implicitly_convert(node->children[1]->data_type, type2) && can_implicitly_convert(node->children[2]->data_type, type2) && can_implicitly_convert(node->children[3]->data_type, type2)){
+            is_int = true;
+            if (is_basic_type(node->children[1]->data_type, FLOAT) || is_basic_type(node->children[2]->data_type, FLOAT) || is_basic_type(node->children[3]->data_type, FLOAT)){
+                is_float = true;
+            }
+        }
+        else {
+            yyerror("Semantic error: Loop expects integer or float values");
+        }
+        if (is_float){
+            node->children[0]->data_type = new DataType(FLOAT);
+        }
+        else if (is_int){
+            node->children[0]->data_type = new DataType(INT);
+        }
+        symbol_table[current_scope_table][current_scope].insert({node->children[0]->text, StEntry(node->children[0]->data_type, false)});
+        traverse_ast(node->children[4]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
         break;
+    }
     case NODE_IF_STATEMENT:
-        cout << "NODE_IF_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_IF_STATEMENT" << endl;
         current_scope++;
-        symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
+        symbol_table[current_scope_table].push_back(
+            unordered_map<string, StEntry>());
         traverse_ast(node->children[0]);
         traverse_ast(node->children[1]);
-        traverse_ast(node->children[2]);
-        traverse_ast(node->children[3]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
+        traverse_ast(node->children[2]);
+        traverse_ast(node->children[3]);
         break;
     case NODE_OR_STATEMENTS:
-        cout << "NODE_OR_STATEMENTS" << endl;
+        cout << string(current_scope, '\t') << "NODE_OR_STATEMENTS" << endl;
         for (Stype *child : node->children) {
             traverse_ast(child);
         }
         break;
     case NODE_OR_STATEMENT:
-        cout << "NODE_OR_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_OR_STATEMENT" << endl;
         current_scope++;
-        symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
+        symbol_table[current_scope_table].push_back(
+            unordered_map<string, StEntry>());
         traverse_ast(node->children[0]);
         traverse_ast(node->children[1]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
         break;
     case NODE_OTHERWISE_STATEMENT:
-        cout << "NODE_OTHERWISE_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_OTHERWISE_STATEMENT" << endl;
         if (node->children.size() == 0) {
             // do nothing
         } else {
             current_scope++;
-            symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
+            symbol_table[current_scope_table].push_back(
+                unordered_map<string, StEntry>());
             traverse_ast(node->children[0]);
             symbol_table[current_scope_table].pop_back();
             current_scope--;
         }
         break;
     case NODE_LOAD_STATEMENT:
-        cout << "NODE_LOAD_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_LOAD_STATEMENT" << endl;
         break;
     case NODE_PLAY_STATEMENT:
-        cout << "NODE_PLAY_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_PLAY_STATEMENT" << endl;
         break;
     case NODE_SAVE_STATEMENT:
-        cout << "NODE_SAVE_STATEMENT" << endl;
+        cout << string(current_scope, '\t') << "NODE_SAVE_STATEMENT" << endl;
         break;
     case NODE_NORMAL_FUNCTION:
-        cout << "NODE_NORMAL_FUNCTION" << endl;
+        cout << string(current_scope, '\t') << "NODE_NORMAL_FUNCTION" << endl;
         handle_function_expression(node);
         break;
     case NODE_INLINE_FUNCTION:
-        cout << "NODE_INLINE_FUNCTION" << endl;
+        cout << string(current_scope, '\t') << "NODE_INLINE_FUNCTION" << endl;
         handle_function_expression(node);
         break;
     case NODE_UNARY_INVERSE_EXPR:
-        cout << "NODE_UNARY_INVERSE_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_UNARY_INVERSE_EXPR" << endl;
         traverse_ast(node->children[0]);
         node->data_type = node->children[0]->data_type;
-        if(!is_basic_type(node->data_type, AUDIO))
-        {
+        if (!is_basic_type(node->data_type, AUDIO)) {
             yylval = node->children[0];
-            yyerror("Semantic error: Inverse operator invoked on non-audio data types");
+            yyerror("Semantic error: Inverse operator invoked on non-audio "
+                    "data types");
             break;
         }
         break;
     case NODE_UNARY_LOGICAL_NOT_EXPR:
-        cout << "NODE_UNARY_LOGICAL_NOT_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_UNARY_LOGICAL_NOT_EXPR" << endl;
         if(handle_unary_expression(node)) {
             break;
         }
         node->data_type->basic_data_type = BOOL;
         break;
     case NODE_UNARY_PLUS_EXPR:
-        cout << "NODE_UNARY_PLUS_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_UNARY_PLUS_EXPR" << endl;
         handle_unary_expression(node);
         break;
     case NODE_UNARY_MINUS_EXPR:
-        cout << "NODE_UNARY_MINUS_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_UNARY_MINUS_EXPR" << endl;
         handle_unary_expression(node);
         break;
+    case NODE_BOOL_LITERAL:
+        cout << string(current_scope, '\t') << "NODE_BOOL_LITERAL" << endl;
+        break;
     case NODE_INDEX:
-        cout << "NODE_INDEX" << endl;
+        cout << string(current_scope, '\t') << "NODE_INDEX" << endl;
         break;
     case NODE_SLICE:
-        cout << "NODE_SLICE" << endl;
+        cout << string(current_scope, '\t') << "NODE_SLICE" << endl;
         break;
     case NODE_POWER_EXPR:
-        cout << "NODE_POWER_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_POWER_EXPR" << endl;
         if(handle_power_expression(node)){
             node->data_type = new DataType(UNSET_DATA_TYPE);
             break;
         }
         break;
     case NODE_DISTORTION_EXPR:
-        cout << "NODE_DISTORTION_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_DISTORTION_EXPR" << endl;
         if(handle_distortion_expression(node)){
             node->data_type = new DataType(UNSET_DATA_TYPE);
             break;
         }
         break;
     case NODE_MULT_EXPR:
-        cout << "NODE_MULT_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_MULT_EXPR" << endl;
         if(handle_mult_expression(node)){
             node->data_type = new DataType(UNSET_DATA_TYPE);
             break;
         }
         break;
     case NODE_DIVIDE_EXPR:
-        cout << "NODE_DIVIDE_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_DIVIDE_EXPR" << endl;
         if(handle_divide_expression(node)){
             node->data_type = new DataType(UNSET_DATA_TYPE);
             break;
         }
         break;
     case NODE_MOD_EXPR:
-        cout << "NODE_MOD_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_MOD_EXPR" << endl;
         break;
     case NODE_SPEEDUP_EXPR:
-        cout << "NODE_SPEEDUP_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_SPEEDUP_EXPR" << endl;
         break;
     case NODE_SPEEDDOWN_EXPR:
-        cout << "NODE_SPEEDDOWN_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_SPEEDDOWN_EXPR" << endl;
         break;
     case NODE_PLUS_EXPR:
-        cout << "NODE_PLUS_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_PLUS_EXPR" << endl;
         break;
     case NODE_MINUS_EXPR:
-        cout << "NODE_MINUS_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_MINUS_EXPR" << endl;
         break;
     case NODE_SUPERPOSITION_EXPR:
-        cout << "NODE_SUPERPOSITION_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_SUPERPOSITION_EXPR" << endl;
         break;
     case NODE_LE_EXPR:
-        cout << "nœud le expression" << endl;
+        cout << string(current_scope, '\t') << "nœud le expression" << endl;
         break;
     case NODE_LEQ_EXPR:
-        cout << "NODE_LEQ_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_LEQ_EXPR" << endl;
         break;
     case NODE_GE_EXPR:
-        cout << "NODE_GE_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_GE_EXPR" << endl;
         break;
     case NODE_GEQ_EXPR:
-        cout << "NODE_GEQ_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_GEQ_EXPR" << endl;
         break;
     case NODE_EQUALS_EXPR:
-        cout << "NODE_EQUALS_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_EQUALS_EXPR" << endl;
         break;
     case NODE_NOT_EQUALS_EXPR:
-        cout << "NODE_NOT_EQUALS_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_NOT_EQUALS_EXPR" << endl;
         break;
     case NODE_LOGICAL_AND_EXPR:
-        cout << "NODE_LOGICAL_AND_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_LOGICAL_AND_EXPR" << endl;
         break;
     case NODE_LOGICAL_OR_EXPR:
-        cout << "NODE_LOGICAL_OR_EXPR" << endl;
+        cout << string(current_scope, '\t') << "NODE_LOGICAL_OR_EXPR" << endl;
         break;
     case NODE_ASSIGNABLE_VALUE:
-        cout << "NODE_ASSIGNABLE_VALUE" << endl;
+        cout << string(current_scope, '\t') << "NODE_ASSIGNABLE_VALUE" << endl;
         traverse_ast(node->children[0]);
         node->data_type = node->children[0]->data_type;
         // TODO: handle vector index and slice
         break;
     case NODE_NOT_SET:
-        cout << "Big bad error: Oops, looks like you have an uninitialised Stype somewhere!"
+        cout << "Big bad error: Oops, looks like you have an uninitialised "
+                "Stype somewhere!"
              << endl;
         break;
     default:
-        cout << "Big bad error: bruh you forgot to handle this node" << endl;
+        cout << string(current_scope, '\t') << "Big bad error: bruh you forgot to handle this node" << endl;
     }
 }
 

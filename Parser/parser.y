@@ -274,7 +274,7 @@ loop_statement
         $$->children.push_back($3);
         $$->children.push_back($5);
     }
-    | LOOP OVER assignable_value expr TO expr '@' expr '{' loopable_statements '}' {
+    | LOOP OVER IDENTIFIER expr TO expr '@' expr '{' loopable_statements '}' {
         $$ = new Stype(NODE_LOOP_GENERAL_STATEMENT);
         $$->children.push_back($3);
         $$->children.push_back($4);
@@ -282,7 +282,7 @@ loop_statement
         $$->children.push_back($8);
         $$->children.push_back($10);
     }
-    | LOOP OVER assignable_value expr TO expr  '{' loopable_statements '}' {
+    | LOOP OVER IDENTIFIER expr TO expr  '{' loopable_statements '}' {
         $$ = new Stype(NODE_LOOP_GENERAL_STATEMENT);
         $$->children.push_back($3);
         $$->children.push_back($4);
