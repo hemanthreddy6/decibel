@@ -586,6 +586,97 @@ int handle_divide_expression(Stype* node){
     return 1;
 }
 
+int handle_modulo_expression(Stype* node){
+    traverse_ast(node->children[0]);
+    traverse_ast(node->children[1]);
+    DataType* type1 = node->children[0]->data_type;
+    DataType* type2 = node->children[1]->data_type;
+
+    // Checking if any data types are NULL(void in DSL)
+    if(type1 == NULL) {
+        yylval = node->children[0];
+        yyerror("Semantic error: modulo operator cannot be invoked on void data types");
+        return 1;
+    }
+
+    if(type2 == NULL) {
+        yylval = node->children[1];
+        yyerror("Semantic error: modulo operator cannot be invoked on void data types");
+        return 1;
+    }
+    if (!type1->is_primitive){
+        if (!type2->is_primitive){
+            yylval = node->children[1];
+            yyerror("Semantic error: modulo expression cannot be called on two functions");
+            return 1;
+        }
+        while (type1 && !type1->is_primitive){
+            type1 = type1->return_type;
+        }
+    } else if (!type2->is_primitive){
+        while (type2 && !type2->is_primitive){
+            type2 = type2->return_type;
+        }
+    }
+
+    // Checking the left operator
+    if(is_basic_type(type1, STRING)) 
+    {
+        yylval = node->children[0];
+        yyerror("Semantic error: division operator is not defined for strings");
+        return 1;
+    }
+    else if(convertible_to_float(type1))
+    {
+        if(!convertible_to_float(type2))
+        {
+            if(isFunction(type2) && convertible_to_float(type2->return_type))
+            {
+                node->data_type = new DataType();
+                node->data_type->is_primitive = false;
+                node->data_type->parameters = type2->parameters;
+                node->data_type->return_type = new DataType(FLOAT);
+                return 0;
+            }
+            else
+            {
+                yylval = node->children[1];
+                yyerror("Semantic error: invalid operand for division operator");
+                return 1;
+            }
+        }
+        node->data_type = new DataType(FLOAT);
+        return 0;
+    }
+    else if(isFunction(type1))
+    {
+        if(convertible_to_float(type1->return_type) && (equal_data_type(type1, type2) || convertible_to_float(type2)))
+        {
+            node->data_type = new DataType();
+            node->data_type->is_primitive = false;
+            node->data_type->parameters = type1->parameters;
+            node->data_type->return_type = new DataType(FLOAT);
+            return 0;
+        }
+        else
+        {
+            yylval = node->children[1];
+            yyerror("Semantic error: invalid operand for division operator");
+            return 1;
+        }
+    }
+    else
+    {
+        yylval = node->children[0];
+        yyerror("Semantic error: invalid operand for division operator");
+        return 1;
+    }
+
+    // It should never reach this line
+    return 1;
+}
+
+
 void traverse_ast(Stype *node) {
     switch (node->node_type) {
     case NODE_ROOT:
