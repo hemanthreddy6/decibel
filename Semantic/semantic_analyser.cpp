@@ -987,9 +987,33 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_INDEX:
         cout << string(current_scope, '\t') << "NODE_INDEX" << endl;
+        if (node->data_type->is_primitive){
+            if (node->data_type->is_vector){
+                node->data_type = node->data_type->vector_data_type;
+            }else if(node->data_type->basic_data_type == STRING){
+                // can index strings
+            } else {
+                yyerror("Semantic error: cannot index this data type!");
+            }
+        } else {
+            yyerror("Semantic error: cannot index into a function!");
+        }
         break;
     case NODE_SLICE:
         cout << string(current_scope, '\t') << "NODE_SLICE" << endl;
+        if (node->data_type->is_primitive){
+            if (node->data_type->is_vector){
+                // can slice vectors
+            } else if (node->data_type->basic_data_type == STRING){
+                // can slice strings
+            } else if (node->data_type->basic_data_type == AUDIO){
+                // can slice audio
+            } else {
+                yyerror("Semantic error: Cannot slice this data type");
+            }
+        } else {
+            yyerror("Semantic error: cannot index into a function!");
+        }
         break;
     case NODE_POWER_EXPR:
         cout << string(current_scope, '\t') << "NODE_POWER_EXPR" << endl;
@@ -1066,6 +1090,10 @@ void traverse_ast(Stype *node) {
         traverse_ast(node->children[0]);
         node->data_type = node->children[0]->data_type;
         // TODO: handle vector index and slice
+        for(int i = 1; i < node->children.size(); i++){
+            node->children[i]->data_type = node->data_type;
+            traverse_ast(node->children[1]);
+        }
         break;
     case NODE_NOT_SET:
         cout << "Big bad error: Oops, looks like you have an uninitialised "
