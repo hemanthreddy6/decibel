@@ -922,7 +922,7 @@ void traverse_ast(Stype *node) {
         symbol_table[current_scope_table].push_back(
             unordered_map<string, StEntry>());
         traverse_ast(node->children[0]);
-        DataType* type2 = new DataType(INT);
+        DataType* type2 = new DataType(LONG);
         if (node->children[0]->data_type == NULL){
             yyerror("Semantic error: Repeat statement expects an integer, recieved void");
         }
