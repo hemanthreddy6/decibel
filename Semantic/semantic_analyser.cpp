@@ -610,70 +610,44 @@ int handle_modulo_expression(Stype* node){
             yyerror("Semantic error: modulo expression cannot be called on two functions");
             return 1;
         }
+        node->data_type = type1;
         while (type1 && !type1->is_primitive){
             type1 = type1->return_type;
         }
     } else if (!type2->is_primitive){
+        node->data_type = type2;
         while (type2 && !type2->is_primitive){
             type2 = type2->return_type;
         }
     }
 
-    // Checking the left operator
-    if(is_basic_type(type1, STRING)) 
-    {
-        yylval = node->children[0];
-        yyerror("Semantic error: division operator is not defined for strings");
-        return 1;
-    }
-    else if(convertible_to_float(type1))
-    {
-        if(!convertible_to_float(type2))
-        {
-            if(isFunction(type2) && convertible_to_float(type2->return_type))
-            {
-                node->data_type = new DataType();
-                node->data_type->is_primitive = false;
-                node->data_type->parameters = type2->parameters;
-                node->data_type->return_type = new DataType(FLOAT);
-                return 0;
-            }
-            else
-            {
-                yylval = node->children[1];
-                yyerror("Semantic error: invalid operand for division operator");
-                return 1;
-            }
-        }
-        node->data_type = new DataType(FLOAT);
-        return 0;
-    }
-    else if(isFunction(type1))
-    {
-        if(convertible_to_float(type1->return_type) && (equal_data_type(type1, type2) || convertible_to_float(type2)))
-        {
-            node->data_type = new DataType();
-            node->data_type->is_primitive = false;
-            node->data_type->parameters = type1->parameters;
-            node->data_type->return_type = new DataType(FLOAT);
-            return 0;
-        }
-        else
-        {
-            yylval = node->children[1];
-            yyerror("Semantic error: invalid operand for division operator");
-            return 1;
-        }
-    }
-    else
-    {
-        yylval = node->children[0];
-        yyerror("Semantic error: invalid operand for division operator");
-        return 1;
+    if (type1->is_vector || type2->is_vector){
+        yylval = node->children[1];
+        yyerror("Semantic error: modulo operation not supported for vectors");
     }
 
-    // It should never reach this line
-    return 1;
+    if (type1->basic_data_type == STRING || type2->basic_data_type == STRING || type2->basic_data_type == AUDIO){
+        yylval = node->children[1];
+        yyerror("Semantic error: Types incompatible for modulo operator");
+    }
+    
+    int curr_prim_data_type;
+
+    if (type1->basic_data_type == AUDIO){
+        curr_prim_data_type = AUDIO;
+    } else if (type1->basic_data_type == FLOAT || type2->basic_data_type == FLOAT){
+        curr_prim_data_type = FLOAT;
+    } else if (type1->basic_data_type == LONG || type2->basic_data_type == LONG){
+        curr_prim_data_type = LONG;
+    } else {
+        curr_prim_data_type = INT;
+    }
+    if (!node->data_type->is_primitive)
+        node->data_type->return_type = new DataType(curr_prim_data_type);
+    else
+        node->data_type->basic_data_type = curr_prim_data_type;
+
+    return 0;
 }
 
 
@@ -1136,6 +1110,8 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_MOD_EXPR:
         cout << string(current_scope, '\t') << "NODE_MOD_EXPR" << endl;
+        if (handle_modulo_expression(node))
+            node->data_type = new DataType(UNSET_DATA_TYPE);
         break;
     case NODE_SPEEDUP_EXPR:
         cout << string(current_scope, '\t') << "NODE_SPEEDUP_EXPR" << endl;
