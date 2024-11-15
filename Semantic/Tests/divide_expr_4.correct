@@ -2,5 +2,5 @@ main{
     fib1 <- (a: int): int {
         return 5;
     };
-    fib3 <- fib1 / 64.435;
+    fib3 <- fib1 / fib1;
 }

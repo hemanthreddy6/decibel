@@ -2,5 +2,8 @@ main{
     func1 <- (a: int, b: int): int{
         return (a*b);
     };
-    c: (int,int):int <- func1 * 5;
+    func2 <- (c: int, d: int): int{
+        return (c+d+c);
+    };
+    c: (int,int):int <- func1 * func2;
 }

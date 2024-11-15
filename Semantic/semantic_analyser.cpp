@@ -395,7 +395,15 @@ int handle_power_expression(Stype *node) {
 
     // Assigning correct data type to node
     if (convertible_to_float(type1)) {
-        // TODO: Use tuhil's new function
+        if (convertible_to_float(type2)) {
+            node->data_type = type1;
+            node->data_type->basic_data_type = combine_basic_types(type1->basic_data_type, type2->basic_data_type);
+            return 0;
+        } else {
+            yylval = node->children[1];
+            yyerror("Semantic error: Right operand is incompatible with power operator");
+            return 1;
+        }
     } else {
         node->data_type = type1;
     }
@@ -447,7 +455,8 @@ int handle_distortion_expression(Stype *node) {
             yyerror("Semantic error: incompatible data type for distortion function");
             return 1;
         } else {
-            // TODO: Use tuhil's new function
+            node->data_type = type1;
+            node->data_type->basic_data_type = combine_basic_types(type1->basic_data_type, type2->basic_data_type);
             return 0;
         }
     } else {
@@ -471,7 +480,8 @@ int handle_mult_expression(Stype *node) {
     DataType *type2 = node->children[1]->data_type;
 
     bool is_function = false;
-    DataType* function_datatype = new DataType(*type1);
+    DataType* function_datatype_left = new DataType(*type1);
+    DataType* function_datatype_right = new DataType(*type2);
 
     // Checking if any data types are NULL(void in DSL)
     if (type1 == NULL) {
@@ -539,7 +549,7 @@ int handle_mult_expression(Stype *node) {
         if (is_basic_type(type1, AUDIO)) {
             if (convertible_to_float(type2)) {
                 if (is_function) {
-                    node->data_type = function_datatype;
+                    node->data_type = function_datatype_left;
                 } else {
                     node->data_type = type1;
                 }
@@ -550,13 +560,30 @@ int handle_mult_expression(Stype *node) {
                 return 1;
             }
         } else if(convertible_to_float(type1)) {
-            // TODO: Use tuhil's new function
-            if (is_function) {
-                node->data_type = function_datatype;
+            if (is_basic_type(type2, AUDIO)) {
+                if (is_function) {
+                    node->data_type = function_datatype_right;
+                } else {
+                    node->data_type = type2;
+                }
+                return 0;
+            } else if(convertible_to_float(type2)) {
+                if (is_function) {
+                    if (combine_basic_types(type1->basic_data_type, type2->basic_data_type) == final_return_type(function_datatype_left)) {
+                        node->data_type = function_datatype_left;
+                    } else {
+                        node->data_type = function_datatype_right;
+                    }
+                } else {
+                    node->data_type = type1;
+                    node->data_type->basic_data_type = combine_basic_types(type1->basic_data_type, type2->basic_data_type);
+                }
+                return 0;
             } else {
-                node->data_type = type1;
+                yylval = node->children[1];
+                yyerror("Semantic error: incompatiable operand for multiplication operator");
+                return 1;
             }
-            return 0;
         } else {
             yylval = node->children[1];
             yyerror("Semantic error: incompatiable operand for multiplication operator");
@@ -584,7 +611,8 @@ int handle_divide_expression(Stype *node) {
     DataType *type2 = node->children[1]->data_type;
 
     bool is_function = false;
-    DataType* function_datatype = new DataType(*type1);
+    DataType* function_datatype_left = new DataType(*type1);
+    DataType* function_datatype_right = new DataType(*type2);
 
     // Checking if any data types are NULL(void in DSL)
     if (type1 == NULL) {
@@ -650,13 +678,23 @@ int handle_divide_expression(Stype *node) {
         }
 
         if(convertible_to_float(type1)) {
-            // TODO: Use tuhil's new function
-            if (is_function) {
-                node->data_type = function_datatype;
+            if(convertible_to_float(type2)) {
+                if (is_function) {
+                    if (combine_basic_types(type1->basic_data_type, type2->basic_data_type) == final_return_type(function_datatype_left)) {
+                        node->data_type = function_datatype_left;
+                    } else {
+                        node->data_type = function_datatype_right;
+                    }
+                } else {
+                    node->data_type = type1;
+                    node->data_type->basic_data_type = combine_basic_types(type1->basic_data_type, type2->basic_data_type);
+                }
+                return 0;
             } else {
-                node->data_type = type1;
+                yylval = node->children[1];
+                yyerror("Semantic error: incompatiable operand for division operator");
+                return 1;
             }
-            return 0;
         } else {
             yylval = node->children[1];
             yyerror("Semantic error: incompatiable operand for division operator");
@@ -779,8 +817,13 @@ int handle_plus_expression(Stype* node) {
         return 1;
     }
 
+    bool is_function = false;
+    DataType* function_datatype_left = new DataType(*type1);
+    DataType* function_datatype_right = new DataType(*type2);
+
     if (isFunction(type1) && isFunction(type2)) {
         if (are_data_types_equal(type1, type2) && final_return_type(type1) && final_return_type(type2)) {
+            is_function = true;
             type1->basic_data_type = final_return_type(type1);
             type1->is_primitive = true;
             type1->is_vector = false;
@@ -832,7 +875,11 @@ int handle_plus_expression(Stype* node) {
         // Audio addition(concatenation)
         if (type1->basic_data_type == AUDIO) {
             if(type2->basic_data_type == AUDIO) {
-                node->data_type = type1;
+                if(is_function) {
+                    node->data_type = function_datatype_left;
+                } else {
+                    node->data_type = type1;
+                }
                 return 0;
             } else {
                 yylval = node->children[1];
@@ -845,16 +892,23 @@ int handle_plus_expression(Stype* node) {
                 yyerror("Semantic error: audio cannot be added to a string");
                 return 1;
             } else {
-                node->data_type = type1;
+                if(is_function) {
+                    node->data_type = function_datatype_left;
+                } else {
+                    node->data_type = type1;
+                }
                 return 0;
             }
         } else {
-            if(is_basic_type(type1, FLOAT) || is_basic_type(type2, FLOAT)) {
-                node->data_type = new DataType(FLOAT);
-            } else if (is_basic_type(type1, LONG) || is_basic_type(type2, LONG)) {
-                node->data_type = new DataType(LONG);
+            if (is_function) {
+                if (combine_basic_types(type1->basic_data_type, type2->basic_data_type) == final_return_type(function_datatype_left)) {
+                    node->data_type = function_datatype_left;
+                } else {
+                    node->data_type = function_datatype_right;
+                }
             } else {
-                node->data_type = new DataType(INT);
+                node->data_type = type1;
+                node->data_type->basic_data_type = combine_basic_types(type1->basic_data_type, type2->basic_data_type);
             }
             return 0;
         }
@@ -1082,6 +1136,7 @@ int handle_assignment_statement(Stype* node)
     }
     return 1;
 }
+
 void traverse_ast(Stype *node) {
     switch (node->node_type) {
     case NODE_ROOT:
