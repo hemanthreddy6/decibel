@@ -4,7 +4,7 @@
 #define SEMANTIC 1
 int semantic();
 #include "../Parser/y.tab.c"
-// #include <bits/stdc++.h>
+#include <bits/stdc++.h>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -690,6 +690,165 @@ int handle_speedup_speeddown_expression(Stype *node, bool is_speedup) {
     return 0;
 }
 
+int handle_plus_expression(Stype* node) {
+    traverse_ast(node->children[0]);
+    traverse_ast(node->children[1]);
+    DataType *type1 = node->children[0]->data_type;
+    DataType *type2 = node->children[1]->data_type;
+
+    // Checking if any data types are NULL(void in DSL)
+    if (type1 == NULL) {
+        yylval = node->children[0];
+        yyerror("Semantic error: addition operator cannot be invoked on void data types");
+        return 1;
+    }
+    if (type2 == NULL) {
+        yylval = node->children[1];
+        yyerror("Semantic error: addition operator cannot be invoked on void data types");
+        return 1;
+    }
+
+    // Checking if both are not of the same type
+    if (type1->is_primitive != type2->is_primitive) {
+        yylval = node->children[0];
+        yyerror("Semantic error: incompatiable operands for addition operator");
+        return 1;
+    }
+
+    // When they are not functions
+    if (type1->is_primitive) {
+        // Addition is not supported for vectors
+        if (type1->is_vector) {
+            yylval = node->children[0];
+            yyerror("Semantic error: incompatiable operands for addition operator");
+            return 1;
+        }
+
+        if (type1->is_vector) {
+            yylval = node->children[1];
+            yyerror("Semantic error: incompatiable operands for addition operator");
+            return 1;
+        }
+
+        if (type1->basic_data_type == UNSET_DATA_TYPE) {
+            yylval = node->children[0];
+            yyerror("Semantic error: data type cannot be unset");
+            return 1;
+        }
+
+        if (type2->basic_data_type == UNSET_DATA_TYPE) {
+            yylval = node->children[1];
+            yyerror("Semantic error: data type cannot be unset");
+            return 1;
+        }
+
+        // Audio addition(concatenation)
+        if (type1->basic_data_type == AUDIO) {
+            if(type2->basic_data_type == AUDIO) {
+                node->data_type = type1;
+                return 0;
+            } else {
+                yylval = node->children[1];
+                yyerror("Semantic error: audio can only be added with audio");
+                return 1;
+            }
+        } else if(type1->basic_data_type == STRING) {
+            if(type2->basic_data_type == AUDIO) {
+                yylval = node->children[1];
+                yyerror("Semantic error: audio cannot be added to a string");
+                return 1;
+            } else {
+                node->data_type = type1;
+                return 0;
+            }
+        } else {
+            if(is_basic_type(type1, FLOAT) || is_basic_type(type2, FLOAT)) {
+                node->data_type = new DataType(FLOAT);
+            } else if (is_basic_type(type1, LONG) || is_basic_type(type2, LONG)) {
+                node->data_type = new DataType(LONG);
+            } else {
+                node->data_type = new DataType(INT);
+            }
+            return 0;
+        }
+    } else {
+        // TODO: Handle functions additions
+        // return
+    }
+
+    // It should never reach this line
+    return 1;
+}
+
+int handle_superposition_expression(Stype* node) {
+    traverse_ast(node->children[0]);
+    traverse_ast(node->children[1]);
+    DataType *type1 = node->children[0]->data_type;
+    DataType *type2 = node->children[1]->data_type;
+
+    // Checking if any data types are NULL(void in DSL)
+    if (type1 == NULL) {
+        yylval = node->children[0];
+        yyerror("Semantic error: superposition operator cannot be invoked on void data types");
+        return 1;
+    }
+    if (type2 == NULL) {
+        yylval = node->children[1];
+        yyerror("Semantic error: superposition operator cannot be invoked on void data types");
+        return 1;
+    }
+
+    // Both data types must be AUDIO
+    if (!is_basic_type(type1, AUDIO)) {
+        yylval = node->children[0];
+        yyerror("Semantic error: superposition operator is only defined for audio data types");
+        return 1;
+    }
+
+    if (!is_basic_type(type2, AUDIO)) {
+        yylval = node->children[1];
+        yyerror("Semantic error: superposition operator is only defined for audio data types");
+        return 1;
+    }
+
+    node->data_type = type1;
+    return 0;
+}
+
+int handle_relational_expression(Stype* node, bool is_string_allowed) {
+    traverse_ast(node->children[0]);
+    traverse_ast(node->children[1]);
+    DataType *type1 = node->children[0]->data_type;
+    DataType *type2 = node->children[1]->data_type;
+
+    // Checking if any data types are NULL(void in DSL)
+    if (type1 == NULL) {
+        yylval = node->children[0];
+        yyerror("Semantic error: relational operators cannot be invoked on void data types");
+        return 1;
+    }
+    if (type2 == NULL) {
+        yylval = node->children[1];
+        yyerror("Semantic error: relational operators cannot be invoked on void data types");
+        return 1;
+    }
+
+    if (!convertible_to_float(type1) && !(is_string_allowed && is_basic_type(type1, STRING))) {
+        yylval = node->children[0];
+        yyerror("Semantic error: incompatiable operand for this relational operator");
+        return 1;
+    }
+
+    if (!convertible_to_float(type2) && !(is_string_allowed && is_basic_type(type2, STRING))) {
+        yylval = node->children[1];
+        yyerror("Semantic error: incompatiable operand for this relational operator");
+        return 1;
+    }
+
+    node->data_type = new DataType(BOOL);
+    return 0;    
+}
+
 void traverse_ast(Stype *node) {
     switch (node->node_type) {
     case NODE_ROOT:
@@ -1190,37 +1349,66 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_PLUS_EXPR:
         cout << string(current_scope, '\t') << "NODE_PLUS_EXPR" << endl;
+        if (handle_plus_expression(node)) {
+            node->data_type = new DataType(UNSET_DATA_TYPE);
+        }
         break;
     case NODE_MINUS_EXPR:
         cout << string(current_scope, '\t') << "NODE_MINUS_EXPR" << endl;
         break;
     case NODE_SUPERPOSITION_EXPR:
-        cout << string(current_scope, '\t') << "NODE_SUPERPOSITION_EXPR"
-             << endl;
+        cout << string(current_scope, '\t') << "NODE_SUPERPOSITION_EXPR" << endl;
+        if(handle_superposition_expression(node)) {
+            node->data_type = new DataType(UNSET_DATA_TYPE);
+        }
         break;
     case NODE_LE_EXPR:
         cout << string(current_scope, '\t') << "nœud le expression" << endl;
+        if(handle_relational_expression(node, false)) {
+            node->data_type = new DataType(UNSET_DATA_TYPE);
+        }
         break;
     case NODE_LEQ_EXPR:
         cout << string(current_scope, '\t') << "NODE_LEQ_EXPR" << endl;
+        if(handle_relational_expression(node, false)) {
+            node->data_type = new DataType(UNSET_DATA_TYPE);
+        }
         break;
     case NODE_GE_EXPR:
         cout << string(current_scope, '\t') << "NODE_GE_EXPR" << endl;
+        if(handle_relational_expression(node, false)) {
+            node->data_type = new DataType(UNSET_DATA_TYPE);
+        }
         break;
     case NODE_GEQ_EXPR:
         cout << string(current_scope, '\t') << "NODE_GEQ_EXPR" << endl;
+        if(handle_relational_expression(node, false)) {
+            node->data_type = new DataType(UNSET_DATA_TYPE);
+        }
         break;
     case NODE_EQUALS_EXPR:
         cout << string(current_scope, '\t') << "NODE_EQUALS_EXPR" << endl;
+        if(handle_relational_expression(node, true)) {
+            node->data_type = new DataType(UNSET_DATA_TYPE);
+        }
         break;
     case NODE_NOT_EQUALS_EXPR:
         cout << string(current_scope, '\t') << "NODE_NOT_EQUALS_EXPR" << endl;
+        if(handle_relational_expression(node, true)) {
+            node->data_type = new DataType(UNSET_DATA_TYPE);
+        }
         break;
     case NODE_LOGICAL_AND_EXPR:
         cout << string(current_scope, '\t') << "NODE_LOGICAL_AND_EXPR" << endl;
+        if(handle_relational_expression(node, false)) {
+            node->data_type = new DataType(UNSET_DATA_TYPE);
+        }
         break;
     case NODE_LOGICAL_OR_EXPR:
         cout << string(current_scope, '\t') << "NODE_LOGICAL_OR_EXPR" << endl;
+        if(handle_relational_expression(node, false)) {
+            node->data_type = new DataType(UNSET_DATA_TYPE);
+        }
         break;
     case NODE_ASSIGNABLE_VALUE:
         cout << string(current_scope, '\t') << "NODE_ASSIGNABLE_VALUE" << endl;
