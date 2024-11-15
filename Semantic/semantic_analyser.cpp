@@ -1380,7 +1380,7 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_SPEEDDOWN_EXPR:
         cout << string(current_scope, '\t') << "NODE_SPEEDDOWN_EXPR" << endl;
-        if (handle_speedup_speeddown_expression(node, ))
+        if (handle_speedup_speeddown_expression(node, false))
             node->data_type = new DataType(UNSET_DATA_TYPE);
         break;
     case NODE_PLUS_EXPR:
