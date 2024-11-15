@@ -173,31 +173,31 @@ int handle_parameter_declaration(Stype *identifier, Stype *data_type) {
 }
 
 // This function checks if the referenced identifier exists in the symbol table
-int handle_identifier_reference(Stype *node) {
+StEntry* handle_identifier_reference(Stype *node) {
     bool found = false;
-    StEntry entry;
+    StEntry* entry = new StEntry();
     // start at the highest scope and go higher and higher until it's found
     for (int scope = current_scope; scope >= 0; scope--) {
         if (symbol_table[current_scope_table][scope].count(node->text)) {
             found = true;
-            entry = symbol_table[current_scope_table][scope][node->text];
+            *entry = symbol_table[current_scope_table][scope][node->text];
             break;
         }
     }
     // also check global scope
     if (!found && global_scope->count(node->text)) {
         found = true;
-        entry = (*global_scope)[node->text];
+        *entry = (*global_scope)[node->text];
     }
     if (found)
-        node->data_type = entry.data_type;
+        node->data_type = entry->data_type;
     else {
         yylval = node;
         yyerror(
             ("Semantic error: undefined reference to " + node->text).c_str());
-        return 1;
+        return NULL;
     }
-    return 0;
+    return entry;
 }
 
 // Function to handle function definitions in expressions
@@ -1069,6 +1069,12 @@ int handle_assignment_statement(Stype* node)
 {
     traverse_ast(node->children[1]);
     traverse_ast(node->children[0]);
+    StEntry* entry = handle_identifier_reference(node->children[0]->children[0]);
+    if (entry->is_const){
+        yylval = node->children[0];
+        yyerror("Semantic error: Const variable cannot be re-assigned");
+        return 1;
+    }
     DataType* type1 = node->children[0]->data_type;
     DataType* type2 = node->children[1]->data_type;
 
@@ -1113,6 +1119,16 @@ int handle_assignment_statement(Stype* node)
         }
         return 0;
     }
+    else if (type1->is_primitive && type1->is_vector){
+        if ((type2->is_primitive && type2->is_vector)){
+            return 0;
+        }
+        else{
+            yylval = node->children[0];
+            yyerror("Semantic error: Assignment statement data type mismatch");
+            return 1;
+        } 
+    }
     else if (isFunction(type1)) {
         if (isFunction(type2)){
             if (are_data_types_equal(type1, type2)){
@@ -1135,6 +1151,19 @@ int handle_assignment_statement(Stype* node)
         return 1;
     }
     return 1;
+}
+
+void handle_different_assignments(Stype * node , int(*func)(Stype* node), enum NodeType token ){
+    Stype* assign_node = new Stype(NODE_NORMAL_ASSIGNMENT_STATEMENT);
+    Stype* plus_node = new Stype(token);
+    plus_node->children.push_back(node->children[0]);
+    plus_node->children.push_back(node->children[1]);
+    if (func(plus_node)){
+        node->data_type = new DataType(UNSET_DATA_TYPE);
+    }
+    assign_node->children.push_back(node->children[0]);
+    assign_node->children.push_back(plus_node);
+    traverse_ast(assign_node);
 }
 
 void traverse_ast(Stype *node) {
@@ -1237,7 +1266,7 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_IDENTIFIER:
         cout << string(current_scope, '\t') << "Identifier node" << endl;
-        if (handle_identifier_reference(node))
+        if (!handle_identifier_reference(node))
             break;
         break;
     case NODE_PARAMETER_LIST:
@@ -1357,36 +1386,48 @@ void traverse_ast(Stype *node) {
         }
         break;
     case NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT:
+    {
         cout << string(current_scope, '\t')
              << "NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        handle_different_assignments(node,handle_plus_expression,NODE_PLUS_EXPR);
         break;
+    }
     case NODE_MINUS_EQUALS_ASSIGNMENT_STATEMENT:
+    {
         cout << string(current_scope, '\t')
              << "NODE_MINUS_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        handle_different_assignments(node,handle_minus_expression,NODE_MINUS_EXPR);
         break;
+    }
     case NODE_MULT_EQUALS_ASSIGNMENT_STATEMENT:
         cout << string(current_scope, '\t')
              << "NODE_MULT_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        handle_different_assignments(node,handle_mult_expression,NODE_MULT_EXPR);
         break;
     case NODE_DIVIDE_EQUALS_ASSIGNMENT_STATEMENT:
         cout << string(current_scope, '\t')
              << "NODE_DIVIDE_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        handle_different_assignments(node,handle_divide_expression,NODE_DIVIDE_EXPR);
         break;
     case NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT:
         cout << string(current_scope, '\t')
              << "NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        handle_different_assignments(node,handle_modulo_expression,NODE_MOD_EXPR);
         break;
     case NODE_OR_EQUALS_ASSIGNMENT_STATEMENT:
         cout << string(current_scope, '\t')
              << "NODE_OR_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        handle_different_assignments(node,handle_superposition_expression,NODE_SUPERPOSITION_EXPR);
         break;
     case NODE_POWER_EQUALS_ASSIGNMENT_STATEMENT:
         cout << string(current_scope, '\t')
              << "NODE_POWER_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        handle_different_assignments(node,handle_power_expression,NODE_POWER_EXPR);
         break;
     case NODE_DISTORTION_EQUALS_ASSIGNMENT_STATEMENT:
         cout << string(current_scope, '\t')
              << "NODE_DISTORTION_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        handle_different_assignments(node,handle_distortion_expression,NODE_DISTORTION_EXPR);
         break;
     case NODE_CONTINUE_STATEMENT:
         cout << string(current_scope, '\t') << "NODE_CONTINUE_STATEMENT"
