@@ -286,6 +286,13 @@ bool isFunction(DataType *type) {
     return (type != NULL && !type->is_primitive);
 }
 
+bool compatible_with_distortion(DataType* type) {
+    return (!type->is_primitive && 
+            type->parameters.size() == 1 && 
+            is_basic_type(type->parameters[0], INT) && 
+            is_basic_type(type->return_type, INT));
+}
+
 // Function to check if two data types are strictly same
 bool equal_data_type(DataType *type1, DataType *type2) {
     if (type1->is_primitive != type2->is_primitive)
@@ -321,18 +328,18 @@ bool equal_data_type(DataType *type1, DataType *type2) {
     return false;
 }
 
+// Function to handle unary expressions
+// - Only defined to float-convertible data types
 int handle_unary_expression(Stype *node) {
     traverse_ast(node->children[0]);
-    node->data_type = node->children[0]->data_type;
-    if (!is_basic_type(node->data_type, INT) &&
-        !is_basic_type(node->data_type, LONG) &&
-        !is_basic_type(node->data_type, FLOAT) &&
-        !is_basic_type(node->data_type, BOOL)) {
+
+    if (!convertible_to_float(node->children[0]->data_type)) {
         yylval = node->children[0];
-        yyerror("Semantic error: Unary operator invoked on incompatible data "
-                "types");
+        yyerror("Semantic error: Unary operator invoked on incompatible data types");
         return 1;
     }
+
+    node->data_type = node->children[0]->data_type;
     return 0;
 }
 
@@ -349,24 +356,20 @@ int handle_power_expression(Stype *node) {
     // Checking if any data types are NULL(void in DSL)
     if (type1 == NULL) {
         yylval = node->children[0];
-        yyerror("Semantic error: power operator cannot be invoked on void data "
-                "types");
+        yyerror("Semantic error: power operator cannot be invoked on void data types");
         return 1;
     }
 
     if (type2 == NULL) {
         yylval = node->children[1];
-        yyerror("Semantic error: power operator cannot be invoked on void data "
-                "types");
+        yyerror("Semantic error: power operator cannot be invoked on void data types");
         return 1;
     }
 
     // Checking if the right operand is compatible with power operator
-    if (!is_basic_type(type2, INT) && !is_basic_type(type2, LONG) &&
-        !is_basic_type(type2, FLOAT) && !is_basic_type(type2, BOOL)) {
+    if (!convertible_to_float(type2)) {
         yylval = node->children[1];
-        yyerror("Semantic error: Right operand is incompatible with power "
-                "operator");
+        yyerror("Semantic error: Right operand is incompatible with power operator");
         return 1;
     }
 
@@ -381,7 +384,7 @@ int handle_power_expression(Stype *node) {
 
     // Assigning correct data type to node
     if (convertible_to_float(type1)) {
-        node->data_type = new DataType(FLOAT);
+        // TODO: Use tuhil's new function
     } else {
         node->data_type = type1;
     }
@@ -402,40 +405,47 @@ int handle_distortion_expression(Stype *node) {
     // Checking if any data types are NULL(void in DSL)
     if (type1 == NULL) {
         yylval = node->children[0];
-        yyerror("Semantic error: distortion operator cannot be invoked on void "
-                "data types");
+        yyerror("Semantic error: distortion operator cannot be invoked on void data types");
         return 1;
     }
 
     if (type2 == NULL) {
         yylval = node->children[1];
-        yyerror("Semantic error: distortion operator cannot be invoked on void "
-                "data types");
+        yyerror("Semantic error: distortion operator cannot be invoked on void data types");
         return 1;
     }
-
-    // Checking if the right operand is compatible with distortion operator
-    if (type2->is_primitive || type2->parameters.size() != 1 ||
-        !is_basic_type(type2->parameters[0], INT) ||
-        !is_basic_type(type2->return_type, INT)) {
-        yylval = node->children[1];
-        yyerror("Semantic error: Right operand is incompatible with distortion "
-                "operator, It should be a function which takes an int and "
-                "returns an int");
-        return 1;
-    }
-
-    // Checking if the left operand is compatible with distortion operator
-    if (!is_basic_type(type1, AUDIO)) {
+    
+    if (!type1->is_primitive) {
         yylval = node->children[0];
-        yyerror("Semantic error: Left operand is incompatible with distortion "
-                "operator, It should be audio");
+        yyerror("Semantic error: distortion operator cannot be invoked on a function");
         return 1;
     }
 
-    // Assigning correct data type to node
-    node->data_type = type1;
+    if (is_basic_type(type1, AUDIO)) {
+        if (compatible_with_distortion(type2)) {
+            node->data_type = type1;
+            return 0;
+        } else {
+            yylval = node->children[1];
+            yyerror("Semantic error: right operand is not compatible with distortion operator");
+            return 1;
+        }
+    } else if(convertible_to_float(type1)) {
+        if(!convertible_to_float(type2)) {
+            yylval = node->children[1];
+            yyerror("Semantic error: incompatible data type for distortion function");
+            return 1;
+        } else {
+            // TODO: Use tuhil's new function
+            return 0;
+        }
+    } else {
+        yylval = node->children[0];
+        yyerror("Semantic error: incompatible data type for distortion function");
+        return 1;
+    }
 
+    // It should not reach this line
     return 0;
 }
 
@@ -448,6 +458,9 @@ int handle_mult_expression(Stype *node) {
     traverse_ast(node->children[1]);
     DataType *type1 = node->children[0]->data_type;
     DataType *type2 = node->children[1]->data_type;
+
+    bool is_function = false;
+    DataType* function_datatype = new DataType(*type1);
 
     // Checking if any data types are NULL(void in DSL)
     if (type1 == NULL) {
@@ -464,55 +477,84 @@ int handle_mult_expression(Stype *node) {
         return 1;
     }
 
-    // Checking the left operator
+    if (isFunction(type1) && isFunction(type2)) {
+        if (are_data_types_equal(type1, type2) && final_return_type(type1) && final_return_type(type2)) {
+            is_function = true;
+
+            type1->basic_data_type = final_return_type(type1);
+            type1->is_primitive = true;
+            type1->is_vector = false;
+
+            type2->basic_data_type = final_return_type(type2);
+            type2->is_primitive = true;
+            type2->is_vector = false;
+        } else {
+            yylval = node->children[0];
+            yyerror("Semantic error: incompatiable operand for multiplication operator");
+            return 1;
+        }
+    }
+
     if (is_basic_type(type1, STRING)) {
         yylval = node->children[0];
-        yyerror("Semantic error: multiplication operator is not defined for "
-                "strings");
+        yyerror("Semantic error: incompatiable operand for multiplication operator");
         return 1;
-    } else if (convertible_to_float(type1)) {
-        if (!convertible_to_float(type2)) {
-            if (isFunction(type2) && convertible_to_float(type2->return_type)) {
-                node->data_type = type2;
+    }
+
+    if (is_basic_type(type2, STRING)) {
+        yylval = node->children[1];
+        yyerror("Semantic error: incompatiable operand for multiplication operator");
+        return 1;
+    }
+
+    if (type1->is_primitive != type2->is_primitive) {
+        yylval = node->children[0];
+        yyerror("Semantic error: operand mismatch for multiplication operator");
+        return 1;
+    }
+
+    if (type1->is_primitive) {
+        if (!is_basic(type1)) {
+            yylval = node->children[0];
+            yyerror("Semantic error: multiplication operator does not support vectors");
+            return 1;
+        }
+        if (!is_basic(type2)) {
+            yylval = node->children[1];
+            yyerror("Semantic error: multiplication operator does not support vectors");
+            return 1;
+        }
+
+        if (is_basic_type(type1, AUDIO)) {
+            if (convertible_to_float(type2)) {
+                if (is_function) {
+                    node->data_type = function_datatype;
+                } else {
+                    node->data_type = type1;
+                }
                 return 0;
             } else {
                 yylval = node->children[1];
-                yyerror("Semantic error: invalid operand for multiplication "
-                        "operator");
+                yyerror("Semantic error: incompatiable operand for multiplication operator");
                 return 1;
             }
-        }
-        if (is_basic_type(type1, FLOAT) || is_basic_type(type2, FLOAT)) {
-            node->data_type = new DataType(FLOAT);
-        } else if (is_basic_type(type1, LONG) || is_basic_type(type2, LONG)) {
-            node->data_type = new DataType(LONG);
-        } else {
-            node->data_type = new DataType(INT);
-        }
-        return 0;
-    } else if (is_basic_type(type1, AUDIO)) {
-        if (!convertible_to_float(type2)) {
-            yylval = node->children[1];
-            yyerror(
-                "Semantic error: invalid operand for multiplication operator");
-            return 1;
-        }
-        node->data_type = type1;
-        return 0;
-    } else if (isFunction(type1)) {
-        if (convertible_to_float(type1->return_type) &&
-            (equal_data_type(type1, type2) || convertible_to_float(type2))) {
-            node->data_type = type1;
+        } else if(convertible_to_float(type1)) {
+            // TODO: Use tuhil's new function
+            if (is_function) {
+                node->data_type = function_datatype;
+            } else {
+                node->data_type = type1;
+            }
             return 0;
         } else {
             yylval = node->children[1];
-            yyerror(
-                "Semantic error: invalid operand for multiplication operator");
+            yyerror("Semantic error: incompatiable operand for multiplication operator");
             return 1;
         }
     } else {
+        // It should never reach this line
         yylval = node->children[0];
-        yyerror("Semantic error: invalid operand for multiplication operator");
+        yyerror("It should never reach this line");
         return 1;
     }
 
@@ -530,59 +572,89 @@ int handle_divide_expression(Stype *node) {
     DataType *type1 = node->children[0]->data_type;
     DataType *type2 = node->children[1]->data_type;
 
+    bool is_function = false;
+    DataType* function_datatype = new DataType(*type1);
+
     // Checking if any data types are NULL(void in DSL)
     if (type1 == NULL) {
         yylval = node->children[0];
-        yyerror("Semantic error: division operator cannot be invoked on void "
-                "data types");
+        yyerror("Semantic error: division operator cannot be invoked on "
+                "void data types");
         return 1;
     }
 
     if (type2 == NULL) {
         yylval = node->children[1];
-        yyerror("Semantic error: division operator cannot be invoked on void "
-                "data types");
+        yyerror("Semantic error: division operator cannot be invoked on "
+                "void data types");
         return 1;
     }
 
-    // Checking the left operator
-    if (is_basic_type(type1, STRING)) {
-        yylval = node->children[0];
-        yyerror("Semantic error: division operator is not defined for strings");
-        return 1;
-    } else if (convertible_to_float(type1)) {
-        if (!convertible_to_float(type2)) {
-            if (isFunction(type2) && convertible_to_float(type2->return_type)) {
-                node->data_type = new DataType();
-                node->data_type->is_primitive = false;
-                node->data_type->parameters = type2->parameters;
-                node->data_type->return_type = new DataType(FLOAT);
-                return 0;
-            } else {
-                yylval = node->children[1];
-                yyerror(
-                    "Semantic error: invalid operand for division operator");
-                return 1;
-            }
+    if (isFunction(type1) && isFunction(type2)) {
+        if (are_data_types_equal(type1, type2) && final_return_type(type1) && final_return_type(type2)) {
+            is_function = true;
+
+            type1->basic_data_type = final_return_type(type1);
+            type1->is_primitive = true;
+            type1->is_vector = false;
+
+            type2->basic_data_type = final_return_type(type2);
+            type2->is_primitive = true;
+            type2->is_vector = false;
+        } else {
+            yylval = node->children[0];
+            yyerror("Semantic error: incompatiable operand for division operator");
+            return 1;
         }
-        node->data_type = new DataType(FLOAT);
-        return 0;
-    } else if (isFunction(type1)) {
-        if (convertible_to_float(type1->return_type) &&
-            (equal_data_type(type1, type2) || convertible_to_float(type2))) {
-            node->data_type = new DataType();
-            node->data_type->is_primitive = false;
-            node->data_type->parameters = type1->parameters;
-            node->data_type->return_type = new DataType(FLOAT);
+    }
+
+    if (is_basic_type(type1, STRING) || is_basic_type(type1, AUDIO)) {
+        yylval = node->children[0];
+        yyerror("Semantic error: incompatiable operand for division operator");
+        return 1;
+    }
+
+    if (is_basic_type(type2, STRING) || is_basic_type(type2, AUDIO)) {
+        yylval = node->children[1];
+        yyerror("Semantic error: incompatiable operand for division operator");
+        return 1;
+    }
+
+    if (type1->is_primitive != type2->is_primitive) {
+        yylval = node->children[0];
+        yyerror("Semantic error: operand mismatch for division operator");
+        return 1;
+    }
+
+    if (type1->is_primitive) {
+        if (!is_basic(type1)) {
+            yylval = node->children[0];
+            yyerror("Semantic error: division operator does not support vectors");
+            return 1;
+        }
+        if (!is_basic(type2)) {
+            yylval = node->children[1];
+            yyerror("Semantic error: division operator does not support vectors");
+            return 1;
+        }
+
+        if(convertible_to_float(type1)) {
+            // TODO: Use tuhil's new function
+            if (is_function) {
+                node->data_type = function_datatype;
+            } else {
+                node->data_type = type1;
+            }
             return 0;
         } else {
             yylval = node->children[1];
-            yyerror("Semantic error: invalid operand for division operator");
+            yyerror("Semantic error: incompatiable operand for division operator");
             return 1;
         }
-    } else {
+    } else{
+        // It should never reach this line
         yylval = node->children[0];
-        yyerror("Semantic error: invalid operand for division operator");
+        yyerror("It should never reach this line");
         return 1;
     }
 
@@ -744,6 +816,22 @@ int handle_plus_expression(Stype* node) {
         return 1;
     }
 
+    if (isFunction(type1) && isFunction(type2)) {
+        if (are_data_types_equal(type1, type2) && final_return_type(type1) && final_return_type(type2)) {
+            type1->basic_data_type = final_return_type(type1);
+            type1->is_primitive = true;
+            type1->is_vector = false;
+
+            type2->basic_data_type = final_return_type(type2);
+            type2->is_primitive = true;
+            type2->is_vector = false;
+        } else {
+            yylval = node->children[0];
+            yyerror("Semantic error: incompatiable operand for addition operator");
+            return 1;
+        }
+    }
+
     // Checking if both are not of the same type
     if (type1->is_primitive != type2->is_primitive) {
         yylval = node->children[0];
@@ -808,8 +896,10 @@ int handle_plus_expression(Stype* node) {
             return 0;
         }
     } else {
-        // TODO: Handle functions additions
-        // return
+        // It should never reach this line
+        yylval = node->children[0];
+        yyerror("It should never reach this line");
+        return 1;
     }
 
     // It should never reach this line
@@ -1457,9 +1547,7 @@ void traverse_ast(Stype *node) {
         }
         break;
     case NODE_NOT_SET:
-        cout << "Big bad error: Oops, looks like you have an uninitialised "
-                "Stype somewhere!"
-             << endl;
+        cout << "Big bad error: Oops, looks like you have an uninitialised Stype somewhere!" << endl;
         break;
     default:
         cout << string(current_scope, '\t')
