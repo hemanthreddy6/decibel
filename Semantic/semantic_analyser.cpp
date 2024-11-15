@@ -4,7 +4,7 @@
 #define SEMANTIC 1
 int semantic();
 #include "../Parser/y.tab.c"
-#include <bits/stdc++.h>
+// #include <bits/stdc++.h>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -958,236 +958,75 @@ int handle_relational_expression(Stype* node, bool is_string_allowed) {
     return 0;    
 }
 
-int handle_plus_expression(Stype* node) {
-    traverse_ast(node->children[0]);
+int handle_assignment_statement(Stype* node)
+{
     traverse_ast(node->children[1]);
-    DataType *type1 = node->children[0]->data_type;
-    DataType *type2 = node->children[1]->data_type;
+    traverse_ast(node->children[0]);
+    DataType* type1 = node->children[0]->data_type;
+    DataType* type2 = node->children[1]->data_type;
 
     // Checking if any data types are NULL(void in DSL)
-    if (type1 == NULL) {
+    if (type1 == NULL){
         yylval = node->children[0];
-        yyerror("Semantic error: addition operator cannot be invoked on void data types");
+        yyerror("Semantic error: assignable value cannot be VOID ");
         return 1;
     }
-    if (type2 == NULL) {
+    if (type2 == NULL){
         yylval = node->children[1];
-        yyerror("Semantic error: addition operator cannot be invoked on void data types");
+        yyerror("Semantic error: VOID expression cannot be assigned ");
         return 1;
     }
 
-    // Checking if both are not of the same type
-    if (type1->is_primitive != type2->is_primitive) {
-        yylval = node->children[0];
-        yyerror("Semantic error: incompatiable operands for addition operator");
-        return 1;
-    }
-
-    // When they are not functions
-    if (type1->is_primitive) {
-        // Addition is not supported for vectors
-        if (type1->is_vector) {
-            yylval = node->children[0];
-            yyerror("Semantic error: incompatiable operands for addition operator");
-            return 1;
-        }
-
-        if (type1->is_vector) {
-            yylval = node->children[1];
-            yyerror("Semantic error: incompatiable operands for addition operator");
-            return 1;
-        }
-
-        if (type1->basic_data_type == UNSET_DATA_TYPE) {
-            yylval = node->children[0];
-            yyerror("Semantic error: data type cannot be unset");
-            return 1;
-        }
-
-        if (type2->basic_data_type == UNSET_DATA_TYPE) {
-            yylval = node->children[1];
-            yyerror("Semantic error: data type cannot be unset");
-            return 1;
-        }
-
-        // Audio addition(concatenation)
-        if (type1->basic_data_type == AUDIO) {
-            if(type2->basic_data_type == AUDIO) {
-                node->data_type = type1;
-                return 0;
-            } else {
-                yylval = node->children[1];
-                yyerror("Semantic error: audio can only be added with audio");
-                return 1;
-            }
-        } else if(type1->basic_data_type == STRING) {
-            if(type2->basic_data_type == AUDIO) {
-                yylval = node->children[1];
-                yyerror("Semantic error: audio cannot be added to a string");
-                return 1;
-            } else {
-                node->data_type = type1;
-                return 0;
-            }
-        } else {
-            if(is_basic_type(type1, FLOAT) || is_basic_type(type2, FLOAT)) {
-                node->data_type = new DataType(FLOAT);
-            } else if (is_basic_type(type1, LONG) || is_basic_type(type2, LONG)) {
-                node->data_type = new DataType(LONG);
-            } else {
-                node->data_type = new DataType(INT);
-            }
+    // checking assignable_value
+    if (is_basic_type(type1, STRING)){
+        if (can_implicitly_convert(type2, type1)){
+            // success
+            node->data_type = type1;
             return 0;
         }
-    } else {
-        // TODO: Handle functions additions
-        // return
-    }
-
-    // It should never reach this line
-    return 1;
-}
-
-
-int handle_superposition_expression(Stype* node) {
-    traverse_ast(node->children[0]);
-    traverse_ast(node->children[1]);
-    DataType *type1 = node->children[0]->data_type;
-    DataType *type2 = node->children[1]->data_type;
-
-    // Checking if any data types are NULL(void in DSL)
-    if (type1 == NULL) {
-        yylval = node->children[0];
-        yyerror("Semantic error: superposition operator cannot be invoked on void data types");
-        return 1;
-    }
-    if (type2 == NULL) {
-        yylval = node->children[1];
-        yyerror("Semantic error: superposition operator cannot be invoked on void data types");
-        return 1;
-    }
-
-    // Both data types must be AUDIO
-    if (!is_basic_type(type1, AUDIO)) {
-        yylval = node->children[0];
-        yyerror("Semantic error: superposition operator is only defined for audio data types");
-        return 1;
-    }
-
-    if (!is_basic_type(type2, AUDIO)) {
-        yylval = node->children[1];
-        yyerror("Semantic error: superposition operator is only defined for audio data types");
-        return 1;
-    }
-
-    node->data_type = type1;
-    return 0;
-}
-
-int handle_relational_expression(Stype* node, bool is_string_allowed) {
-    traverse_ast(node->children[0]);
-    traverse_ast(node->children[1]);
-    DataType *type1 = node->children[0]->data_type;
-    DataType *type2 = node->children[1]->data_type;
-
-    // Checking if any data types are NULL(void in DSL)
-    if (type1 == NULL) {
-        yylval = node->children[0];
-        yyerror("Semantic error: relational operators cannot be invoked on void data types");
-        return 1;
-    }
-    if (type2 == NULL) {
-        yylval = node->children[1];
-        yyerror("Semantic error: relational operators cannot be invoked on void data types");
-        return 1;
-    }
-
-    if (!convertible_to_float(type1) && !(is_string_allowed && is_basic_type(type1, STRING))) {
-        yylval = node->children[0];
-        yyerror("Semantic error: incompatiable operand for this relational operator");
-        return 1;
-    }
-
-    if (!convertible_to_float(type2) && !(is_string_allowed && is_basic_type(type2, STRING))) {
-        yylval = node->children[1];
-        yyerror("Semantic error: incompatiable operand for this relational operator");
-        return 1;
-    }
-
-    node->data_type = new DataType(BOOL);
-    return 0;    
-}
-
-int handle_minus_expression(Stype* node)
-{
-    traverse_ast(node->children[0]);
-    traverse_ast(node->children[1]);
-    DataType *type1 = node->children[0]->data_type;
-    DataType *type2 = node->children[1]->data_type;
-
-    // Checking if any data types are NULL(void in DSL)
-    if (type1 == NULL) {
-        yylval = node->children[0];
-        yyerror("Semantic error: minus operator cannot be invoked on "
-                "void data types");
-        return 1;
-    }
-
-    if (type2 == NULL) {
-        yylval = node->children[1];
-        yyerror("Semantic error: minus operator cannot be invoked on "
-                "void data types");
-        return 1;
-    }
-
-    // Checking the left operator
-    if (is_basic_type(type1, STRING)) {
-        yylval = node->children[0];
-        yyerror("Semantic error: minus operator is not defined for "
-                "strings");
-        return 1;
-    } else if (convertible_to_float(type1)) {
-        if (!convertible_to_float(type2)) {
-            yylval = node->children[1];
-            yyerror("Semantic error: invalid operand for minus "
-                    "operator");
+        else{
+            yylval = node->children[0];
+            yyerror("Semantic error: Assignment statement data type mismatch");
             return 1;
         }
-        if (is_basic_type(type1, FLOAT) || is_basic_type(type2, FLOAT)) {
-            type1->basic_data_type = FLOAT;
-            node->data_type = type1;
-        } else if (is_basic_type(type1, LONG) || is_basic_type(type2, LONG)) {
-            type1->basic_data_type = LONG;
-            node->data_type = type1;
-        } else {
-            type1->basic_data_type = INT;
-            node->data_type = type1;
+    }
+    else if (convertible_to_float(type1)){
+        if (!convertible_to_float(type2)){
+            yylval = node->children[1];
+            yyerror("Semantic error: Mismatch assignment data type");
+            return 1;
         }
         return 0;
-    } else if (is_basic_type(type1, AUDIO)) {
-        yylval = node->children[1];
-        yyerror(
-            "Semantic error: invalid operand for minus "
-            "operator");
-        return 1;
-    } else if (isFunction(type1)) {
+    }
+    else if (is_basic_type(type1,AUDIO)){
+        if (!is_basic_type(type2,AUDIO)){
+            yylval = node->children[0];
+            yyerror("Semantic error: Mismatch assignment data type");
+            return 1;
+        }
+        return 0;
+    }
+    else if (isFunction(type1)) {
         if (isFunction(type2)){
-            if (are_data_types_equal_and_not_null(type1, type2)){
-                if (final_return_type(type1) != STRING || final_return_type(type1) != AUDIO ){
-                    // node->data_type = new DataType();
-                    node->data_type->is_primitive = false;
-                    node->data_type->parameters = type1->parameters;
-                    node->data_type->return_type = type1->return_type;
-                } 
-                
+            if (are_data_types_equal(type1, type2)){
+                return 0;
+            }
+            else{
+                yylval = node->children[0];
+                yyerror("Semantic error: Assignment statement data types mismatch");
             }
         }
-    } else {
+        else {
+            yylval = node->children[0];
+            yyerror("Semantic error: Assignment statement data types mismatch");
+        }
+
+    }
+    else{
         yylval = node->children[0];
         yyerror("Semantic error: invalid operand for minus operator");
         return 1;
     }
-    // It should never reach this line
     return 1;
 }
 void traverse_ast(Stype *node) {
@@ -1405,12 +1244,9 @@ void traverse_ast(Stype *node) {
     case NODE_NORMAL_ASSIGNMENT_STATEMENT:
         cout << string(current_scope, '\t')
              << "NODE_NORMAL_ASSIGNMENT_STATEMENT" << endl;
-        // traverse the expression first
-        traverse_ast(node->children[1]);
-        // then, traverse the assignable value to check if it's a valid
-        // reference to a variable
-        traverse_ast(node->children[0]);
-        // TODO: check if data types match/can convert using the function
+        if (handle_assignment_statement(node)){
+            node->data_type = new DataType(UNSET_DATA_TYPE);
+        }
         break;
     case NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT:
         cout << string(current_scope, '\t')
