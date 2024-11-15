@@ -15,6 +15,8 @@ void traverse_ast(Stype *node);
 
 // Use this function to check if two data types are the same type
 bool are_data_types_equal(DataType *type1, DataType *type2) {
+    if (!type1 || !type2)
+        return type1 == type2;
     if (type1->is_primitive && type2->is_primitive) {
         if (type1->is_vector && type2->is_vector) {
             return are_data_types_equal(type1->vector_data_type,
@@ -42,6 +44,12 @@ bool are_data_types_equal(DataType *type1, DataType *type2) {
         return false;
 }
 
+bool are_data_types_equal_and_not_null(DataType *type1, DataType *type2) {
+    if (!type1 || !type2)
+        return false;
+    return are_data_types_equal(type1, type2);
+}
+
 // this function is used to see if type1 can be implicitly converted to type2.
 bool can_implicitly_convert(DataType *type1, DataType *type2) {
     if (!type1 || !type2)
@@ -67,6 +75,19 @@ bool can_implicitly_convert(DataType *type1, DataType *type2) {
     } else
         // if both are not basic, they have to be equal
         return are_data_types_equal(type1, type2);
+}
+
+int final_return_type(DataType *type) {
+    if (!type)
+        return 0;
+    if (type->is_primitive) {
+        if (type->is_vector) {
+            return final_return_type(type->vector_data_type);
+        }
+        return type->basic_data_type;
+    } else {
+        return final_return_type(type->return_type);
+    }
 }
 
 // Symbol table entry
@@ -249,6 +270,10 @@ int handle_function_expression(Stype *node) {
 bool is_basic_type(DataType *type, int token) {
     return (type != NULL && type->is_primitive && !type->is_vector &&
             type->basic_data_type == token);
+}
+
+bool is_basic(DataType *type) {
+    return (type != NULL && type->is_primitive && !type->is_vector);
 }
 
 bool convertible_to_float(DataType *type) {
@@ -568,8 +593,19 @@ int handle_divide_expression(Stype *node) {
 int handle_modulo_expression(Stype *node) {
     traverse_ast(node->children[0]);
     traverse_ast(node->children[1]);
+
     DataType *type1 = node->children[0]->data_type;
     DataType *type2 = node->children[1]->data_type;
+    int t1 = final_return_type(type1);
+    int t2 = final_return_type(type2);
+    if (!(is_basic(type1) && is_basic(type2))) {
+        if (!are_data_types_equal_and_not_null(type1, type2)) {
+            yylval = node->children[0];
+            yyerror("Semantic error: invalid use of modulo operator");
+            // yyerror
+            return 1;
+        }
+    }
 
     // Checking if any data types are NULL(void in DSL)
     if (type1 == NULL) {
@@ -1185,7 +1221,7 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_SPEEDDOWN_EXPR:
         cout << string(current_scope, '\t') << "NODE_SPEEDDOWN_EXPR" << endl;
-        if (handle_speedup_speeddown_expression(node, false))
+        if (handle_speedup_speeddown_expression(node, ))
             node->data_type = new DataType(UNSET_DATA_TYPE);
         break;
     case NODE_PLUS_EXPR:
