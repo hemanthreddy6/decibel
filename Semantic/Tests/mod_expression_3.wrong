@@ -1,0 +1,11 @@
+func1 <- (a:int, b:bool):int {
+    return a + b;
+} ;
+func2 <- (a:int, b:bool):long {
+    return a - b;
+} ;
+main {
+    a <- func1 % func2;
+}
+
+

@@ -1,3 +1,17 @@
+func1 <- (a:int, b:float):float {
+    if (a > b) {
+        return a;
+    } otherwise {
+        return b;
+    }
+} ;
+func2 <- (a:int, b:float):float {
+    if (a < b) {
+        return a;
+    } otherwise {
+        return b;
+    }
+} ;
 main {
     a:int <- 1;
     b:int <- 3;
@@ -17,6 +31,7 @@ main {
     f = f % a;
     f = f % d;
     f = e % f;
+    func3 <- func1 % func2;
 }
 
 

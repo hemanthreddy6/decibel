@@ -1,0 +1,7 @@
+func1 <- (a:int, b:bool):(bool, audio, int):float {
+    return (a:bool, b:audio, c:int):float => (c * a);
+} ;
+func2 <- (a:int, b:bool):(bool, audio, int):float {
+    return (a:bool, b:audio, c:int):float => (c * a * c);
+} ;
+a <- func1 % func2;

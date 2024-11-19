@@ -1,0 +1,9 @@
+main {
+    a:int <- 1;
+    b <- "hello";
+    c:audio <- load "a.wav";
+    a = a % b;
+    a = c % a;
+}
+
+

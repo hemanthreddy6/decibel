@@ -135,6 +135,7 @@ int handle_declaration(Stype *node, bool has_dtype, bool is_const) {
     // match/cannot be implicitly converted
     if (has_dtype && !can_implicitly_convert(node->children[1]->data_type,
                                              node->children[2]->data_type)) {
+        yylval = node->children[1];
         yyerror("Semantic error: cannot convert this data type to this "
                 "other one");
         return 1;
@@ -718,7 +719,7 @@ int handle_modulo_expression(Stype *node) {
     if (!(is_basic(type1) && is_basic(type2))) {
         if (!are_data_types_equal_and_not_null(type1, type2)) {
             yylval = node->children[0];
-            yyerror("Semantic error: invalid use of modulo operator");
+            yyerror("Semantic error: modulo operator only allowed between functions that have the exact same signature and have a non-null return type.");
             // yyerror
             return 1;
         }
@@ -1167,9 +1168,11 @@ void traverse_ast(Stype *node) {
     case NODE_ROOT:
         cout << string(current_scope, '\t') << "Root node" << endl;
         traverse_ast(node->children[0]);
-        traverse_ast(node->children[2]);
-        // main block processed last
-        traverse_ast(node->children[1]);
+        if (node->children[1]->children.size()){
+            traverse_ast(node->children[1]->children[1]);
+            // main block processed last
+            traverse_ast(node->children[1]);
+        }
         break;
     case NODE_STATEMENTS:
         cout << string(current_scope, '\t') << "Statements node" << endl;
@@ -1553,12 +1556,33 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_LOAD_STATEMENT:
         cout << string(current_scope, '\t') << "NODE_LOAD_STATEMENT" << endl;
+        traverse_ast(node->children[0]);
+        if (!is_basic_type(node->children[0]->data_type, STRING)){
+            yylval = node->children[0];
+            yyerror("Semantic error: Load statement needs to be passed a string");
+        }
+        node->data_type = new DataType(AUDIO);
         break;
     case NODE_PLAY_STATEMENT:
         cout << string(current_scope, '\t') << "NODE_PLAY_STATEMENT" << endl;
+        traverse_ast(node->children[0]);
+        if (!is_basic_type(node->children[0]->data_type, AUDIO)){
+            yylval = node->children[0];
+            yyerror("Semantic error: Can only play audio");
+        }
         break;
     case NODE_SAVE_STATEMENT:
         cout << string(current_scope, '\t') << "NODE_SAVE_STATEMENT" << endl;
+        traverse_ast(node->children[0]);
+        traverse_ast(node->children[1]);
+        if (!is_basic_type(node->children[0]->data_type, AUDIO)){
+            yylval = node->children[0];
+            yyerror("Semantic error: Save statement can only save audio to a file");
+        }
+        if (!is_basic_type(node->children[1]->data_type, STRING)){
+            yylval = node->children[1];
+            yyerror("Semantic error: Save statement must be given a file name, which is a string");
+        }
         break;
     case NODE_NORMAL_FUNCTION:
         cout << string(current_scope, '\t') << "NODE_NORMAL_FUNCTION" << endl;
