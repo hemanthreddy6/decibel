@@ -1,11 +1,7 @@
-// #include <cstddef>
-#include <algorithm>
-#include <type_traits>
 #define SEMANTIC 1
 int semantic();
-#include "../Parser/y.tab.c"
-// #include <bits/stdc++.h>
 #include <iostream>
+#include "../Parser/y.tab.c"
 #include <string>
 #include <unordered_map>
 

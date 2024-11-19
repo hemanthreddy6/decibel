@@ -1,6 +1,7 @@
 %{
     #include <stdio.h>
     #include <stdbool.h>
+    #include <iostream>
     #include "../Lex/lex.yy.c"
     int yyerror(const char*);
 
@@ -105,8 +106,7 @@ data_type
         $$->data_type->return_type = NULL; }
     | '(' data_type_list ')' ':' data_type {
         $$ = $2; 
-        $$->data_type->return_type = $5->data_type; }
-    | error;
+        $$->data_type->return_type = $5->data_type; };
 
 data_type_list
     : non_empty_data_type_list {$$ = $1;}
@@ -555,6 +555,11 @@ int yyerror(const char* s){
 }
 int main() {
     yyparse();
+    
+    if (is_error){
+        yyerror("");
+        return 1;
+    }
 
     #ifdef SEMANTIC
     semantic();
