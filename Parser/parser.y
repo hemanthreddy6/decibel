@@ -6,6 +6,11 @@
     int yyerror(const char*);
 
     YYSTYPE root = new Stype(NODE_ROOT);
+
+    void copy_pos(YYSTYPE source, YYSTYPE dest){
+        dest->line_no = source->line_no;
+        dest->col_no = source->col_no;
+    }
 %}
 %define parse.error verbose
 
@@ -41,15 +46,16 @@
 
 %%
 program
-    : statements main_block statements { 
+    : statements main_block { 
         root->children.push_back($1);
-        root->children.push_back($2); 
-        root->children.push_back($3); };
+        root->children.push_back($2);};
 
 main_block
-    : MAIN '{' statements '}' {
+    : MAIN '{' statements '}' statements {
         $$ = new Stype(NODE_MAIN_BLOCK); 
-        $$->children.push_back($3); };
+        $$->children.push_back($3);
+        $$->children.push_back($5);}
+    | { $$ = new Stype(NODE_MAIN_BLOCK);};
 
 import_statement
     : IMPORT STRING_LITERAL;
@@ -376,6 +382,7 @@ otherwise_statement
 load_statement
     : LOAD expr{
         $$ = new Stype(NODE_LOAD_STATEMENT);
+        copy_pos($2, $$);
         $$->children.push_back($2);
     };
 
@@ -386,7 +393,7 @@ play_statement
     };
 
 save_statement
-    : SAVE assignable_value RIGHT_ARROW expr {
+    : SAVE expr RIGHT_ARROW expr {
         $$ = new Stype(NODE_SAVE_STATEMENT);
         $$->children.push_back($2);
         $$->children.push_back($4);
@@ -396,24 +403,28 @@ expr
     : '(' expr ')' { $$ = $2; }
     | '(' parameter_list ')' ':' data_type IMPLIES '(' expr ')' {
         $$ = new Stype(NODE_INLINE_FUNCTION);
+        copy_pos($1, $$);
         $$->children.push_back($2);
         $$->children.push_back($5);
         $$->children.push_back($8);
     }
     | '(' parameter_list ')' ':' data_type '{' returnable_statements '}' {
         $$ = new Stype(NODE_NORMAL_FUNCTION);
+        copy_pos($1, $$);
         $$->children.push_back($2);
         $$->children.push_back($5);
         $$->children.push_back($7);
     }
     | '(' parameter_list ')' IMPLIES '(' expr ')' {
         $$ = new Stype(NODE_INLINE_FUNCTION);
+        copy_pos($1, $$);
         $$->children.push_back($2);
         $$->children.push_back(new Stype(NODE_DATA_TYPE));
         $$->children.push_back($6);
     }
     | '(' parameter_list ')' '{' returnable_statements '}' {
         $$ = new Stype(NODE_NORMAL_FUNCTION);
+        copy_pos($1, $$);
         $$->children.push_back($2);
         $$->children.push_back(new Stype(NODE_DATA_TYPE));
         $$->children.push_back($5);
@@ -421,74 +432,92 @@ expr
     | unary_expr { $$ = $1; }
     | expr '^' expr { 
         $$ = new Stype(NODE_POWER_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr '&' expr { 
         $$ = new Stype(NODE_DISTORTION_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr '*' expr { 
         $$ = new Stype(NODE_MULT_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr '/' expr { 
         $$ = new Stype(NODE_DIVIDE_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr '%' expr { 
         $$ = new Stype(NODE_MOD_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr SPEEDUP expr { 
         $$ = new Stype(NODE_SPEEDUP_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr SPEEDDOWN expr { 
         $$ = new Stype(NODE_SPEEDDOWN_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr '+' expr { 
         $$ = new Stype(NODE_PLUS_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr '-' expr { 
         $$ = new Stype(NODE_MINUS_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr '|' expr { 
         $$ = new Stype(NODE_SUPERPOSITION_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr '<' expr { 
         $$ = new Stype(NODE_LE_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr LEQ expr { 
         $$ = new Stype(NODE_LEQ_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr '>' expr { 
         $$ = new Stype(NODE_GE_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr GEQ expr { 
         $$ = new Stype(NODE_GEQ_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr EQUALS expr { 
         $$ = new Stype(NODE_EQUALS_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr NOT_EQUALS expr { 
         $$ = new Stype(NODE_NOT_EQUALS_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr LOGICAL_AND expr { 
         $$ = new Stype(NODE_LOGICAL_AND_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | expr LOGICAL_OR expr { 
         $$ = new Stype(NODE_LOGICAL_OR_EXPR); 
+        copy_pos($1, $$);
         $$->children.push_back($1); 
         $$->children.push_back($3); }
     | error ;
@@ -497,15 +526,19 @@ unary_expr
     : value { $$ = $1; }
     | '~' expr { 
         $$ = new Stype(NODE_UNARY_INVERSE_EXPR);
+        copy_pos($2, $$);
         $$->children.push_back($2); }
     | '!' expr {
         $$ = new Stype(NODE_UNARY_LOGICAL_NOT_EXPR);
+        copy_pos($2, $$);
         $$->children.push_back($2); }
     | '+' expr {
         $$ = new Stype(NODE_UNARY_PLUS_EXPR);
+        copy_pos($2, $$);
         $$->children.push_back($2); }
     | '-' expr {
         $$ = new Stype(NODE_UNARY_MINUS_EXPR);
+        copy_pos($2, $$);
         $$->children.push_back($2); };
 
 value
@@ -530,6 +563,7 @@ assignable_value
         $$->children.back()->children.push_back($5);}
     | IDENTIFIER {
         $$ = new Stype(NODE_ASSIGNABLE_VALUE);
+        copy_pos($1, $$);
         $$->children.push_back($1); };
 
 
