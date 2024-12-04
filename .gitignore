@@ -9,6 +9,7 @@ Parser/parser
 Parser/parser.tab.c
 Parser/parser.tab.h
 Parser/a.out
+CodeGen/codegen
 .vscode/
 .DS_Store
 .clang-format

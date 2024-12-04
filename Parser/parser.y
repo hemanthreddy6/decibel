@@ -587,6 +587,9 @@ int yyerror(const char* s){
     error_col_no = yylval->col_no;
     return 1;
 }
+#ifdef CODEGEN
+int codegen_main(Stype* root);
+#endif
 int main() {
     yyparse();
     
@@ -597,6 +600,9 @@ int main() {
 
     #ifdef SEMANTIC
     semantic();
+    #endif
+    #ifdef CODEGEN
+    codegen_main(root);
     #endif
     
     yyerror("");
