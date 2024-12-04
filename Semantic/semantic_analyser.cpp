@@ -106,7 +106,6 @@ struct StEntry {
 vector<vector<unordered_map<string, StEntry>>> symbol_table;
 
 // This is just a reference to easily access symbol_table[0][0]
-unordered_map<string, StEntry> *global_scope = NULL;
 
 // this is the first index into the symbol table. when it's 0, it is the scope
 // table of global statements and statements in the main block.
@@ -182,9 +181,9 @@ StEntry* handle_identifier_reference(Stype *node) {
         }
     }
     // also check global scope
-    if (!found && global_scope->count(node->text)) {
+    if (!found && symbol_table[0][0].find(node->text) != symbol_table[0][0].end()) {
         found = true;
-        *entry = (*global_scope)[node->text];
+        *entry = symbol_table[0][0][node->text];
     }
     if (found)
         node->data_type = entry->data_type;
@@ -206,7 +205,7 @@ int handle_function_expression(Stype *node) {
     int last_scope_table = current_scope_table;
     int last_scope = current_scope;
     DataType *last_return_type = current_return_type;
-    unordered_map<string, StEntry> *last_global_scope = global_scope;
+    // unordered_map<string, StEntry> *last_global_scope = global_scope;
 
     // Setting global variables for traversal
     int least_unused_scope_table = symbol_table.size();
@@ -1206,6 +1205,9 @@ void traverse_ast(Stype *node) {
     case NODE_PRINT_STATEMENT:
         cout << string(current_scope, '\t') << "Print statement node" << endl;
         traverse_ast(node->children[0]);
+        if (!node->children[0]->data_type){
+            break;
+        }
         if (node->children[0]->data_type->is_primitive) {
             if (node->children[0]->data_type->basic_data_type == AUDIO) {
                 yyerror("Semantic error: Cannot print audio. Use play "
@@ -1784,8 +1786,8 @@ int semantic() {
         1, vector<unordered_map<string, StEntry>>(
                1, unordered_map<string, StEntry>()));
 
-    global_scope = &symbol_table[0][0];
-
+    cerr << "------------semantic started------------" << endl;
     traverse_ast(root);
+    cerr << "------------semantic done------------" << endl;
     return 0;
 }

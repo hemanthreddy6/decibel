@@ -601,6 +601,10 @@ int main() {
     #ifdef SEMANTIC
     semantic();
     #endif
+    if (is_error){
+        yyerror("");
+        return 1;
+    }
     #ifdef CODEGEN
     codegen_main(root);
     #endif

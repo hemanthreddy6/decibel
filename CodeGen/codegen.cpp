@@ -426,28 +426,34 @@ Value *codegen(Stype *node) {
         Function *TheFunction = Builder.GetInsertBlock()->getParent();
 
         BasicBlock *LoopBB = BasicBlock::Create(TheContext, "loop", TheFunction);
-        BasicBlock *AfterLoopBB = BasicBlock::Create(TheContext, "afterloop");
+        BasicBlock *AfterLoopBB = BasicBlock::Create(TheContext, "afterloop", TheFunction);
+        BasicBlock *CondBB = BasicBlock::Create(TheContext, "condition", TheFunction);
 
-        // Initial jump to loop block
-        Builder.CreateBr(LoopBB);
+        Value * NumIters = codegen(node->children[0]);
 
-        // Emit loop block
+        Value *LoopCounter = Builder.CreateAlloca(NumIters->getType(), nullptr, "loopcounter");
+        Builder.CreateStore(NumIters, LoopCounter);
+
+        Builder.CreateBr(CondBB);
+        Builder.SetInsertPoint(CondBB);
+
+        Value *CurrentCounter = Builder.CreateLoad(NumIters->getType(), LoopCounter, "currentcounter");
+
+        Value *CondV = Builder.CreateICmpSGT(CurrentCounter, ConstantInt::get(NumIters->getType(), 0), "loopcond");
+
+        Builder.CreateCondBr(CondV, LoopBB, AfterLoopBB);
+
         Builder.SetInsertPoint(LoopBB);
+
+        Value *DecrementedCounter = Builder.CreateSub(CurrentCounter, ConstantInt::get(NumIters->getType(), 1), "decrement");
+        Builder.CreateStore(DecrementedCounter, LoopCounter);
+
         pushSymbolTable();
         codegen(node->children[1]); // Loop body statements
         popSymbolTable();
 
-        // Condition check
-        Value *CondV = codegen(node->children[0]);
-        if (CondV->getType()->isIntegerTy())
-            CondV = Builder.CreateICmpNE(CondV, ConstantInt::get(CondV->getType(), 0), "loopcond");
-        else if (CondV->getType()->isFloatingPointTy())
-            CondV = Builder.CreateFCmpONE(CondV, ConstantFP::get(TheContext, APFloat(0.0)), "loopcond");
+        Builder.CreateBr(CondBB);
 
-        Builder.CreateCondBr(CondV, LoopBB, AfterLoopBB);
-
-        // Emit after loop block
-        // TheFunction->getBasicBlocks().push_back(AfterLoopBB);
         Builder.SetInsertPoint(AfterLoopBB);
 
         return Constant::getNullValue(Type::getInt32Ty(TheContext));
@@ -631,6 +637,7 @@ Function *getFunction(const string &name) {
 
 // Main codegen entry point
 int codegen_main(Stype *root) {
+    cerr << "---------------------------------------------------------------------" << endl;
     // Initialize the module
     freopen("out.ll", "w", stdout);
     TheModule = make_unique<Module>("MyModule", TheContext);
