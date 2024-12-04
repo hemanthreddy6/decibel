@@ -10,6 +10,9 @@ Parser/parser.tab.c
 Parser/parser.tab.h
 Parser/a.out
 CodeGen/codegen
+CodeGen/out.ll
+CodeGen/out.o
+CodeGen/out
 .vscode/
 .DS_Store
 .clang-format

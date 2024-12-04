@@ -607,5 +607,5 @@ int main() {
     
     yyerror("");
 
-    return 1;
+    return 0;
 }

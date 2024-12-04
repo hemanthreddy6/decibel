@@ -9,7 +9,9 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/raw_ostream.h"
+#include <cstdio>
 #include <iostream>
+#include <llvm-14/llvm/IR/Constants.h>
 
 #define CODEGEN 1
 
@@ -90,6 +92,7 @@ void declarePrintFunction() {
         PrintArgs.push_back(Type::getInt8Ty(TheContext)->getPointerTo()); // char*
         FunctionType *PrintType = FunctionType::get(Type::getInt32Ty(TheContext), PrintArgs, true);
         printFunction = Function::Create(PrintType, Function::ExternalLinkage, "printf", TheModule.get());
+        // cerr << "Declared Print function yay!!" << endl;
     }
 }
 
@@ -97,7 +100,7 @@ void declarePrintFunction() {
 Value *codegen(Stype *node) {
     switch (node->node_type) {
     case NODE_ROOT: {
-        cout << "Root node" << endl;
+        cerr << "Root node" << endl;
         auto val = codegen(node->children[0]);
         if (node->children[1]->children.size()) {
             codegen(node->children[1]->children[1]);
@@ -107,7 +110,7 @@ Value *codegen(Stype *node) {
         return val;
     }
     case NODE_MAIN_BLOCK: {
-        cout << "Main block node" << endl;
+        cerr << "Main block node" << endl;
         // before traversing the statements node, do stuff to make the scope be
         // main block and stuff
         // symbol_table[current_scope_table].push_back(unordered_map<string, StEntry>());
@@ -117,32 +120,37 @@ Value *codegen(Stype *node) {
     }
     // Literals and Identifiers
     case NODE_INT_LITERAL: {
-        cout << "NODE_INT_LITERAL" << endl;
+        cerr << "NODE_INT_LITERAL" << endl;
         int64_t val = std::stoll(node->text);
         return ConstantInt::get(TheContext, APInt(64, val));
     }
     case NODE_FLOAT_LITERAL: {
-        cout << "NODE_FLOAT_LITERAL" << endl;
+        cerr << "NODE_FLOAT_LITERAL" << endl;
         double val = std::stod(node->text);
         return ConstantFP::get(TheContext, APFloat(val));
     }
     case NODE_BOOL_LITERAL: {
-        cout << "NODE_BOOL_LITERAL" << endl;
+        cerr << "NODE_BOOL_LITERAL" << endl;
         bool val = (node->text == "true");
         return ConstantInt::get(TheContext, APInt(1, val));
     }
     case NODE_STRING_LITERAL: {
-        cout << "NODE_STRING_LITERAL" << endl;
+        cerr << "NODE_STRING_LITERAL" << endl;
         return Builder.CreateGlobalStringPtr(node->text);
     }
     case NODE_IDENTIFIER: {
-        cout << "NODE_IDENTIFIER" << endl;
+        cerr << "NODE_IDENTIFIER" << endl;
         AllocaInst *var = findVariable(node->text);
         return Builder.CreateLoad(var->getAllocatedType(), var, node->text.c_str());
     }
+    case NODE_ASSIGNABLE_VALUE: {
+        cerr << "NODE_ASSIGNABLE_VALUE" << endl;
+        // TODO: Need to handle vectors and slices here!!
+        return codegen(node->children[0]);
+    }
     // Expressions
     case NODE_PLUS_EXPR: {
-        cout << "NODE_PLUS_EXPR" << endl;
+        cerr << "NODE_PLUS_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
         if (LHS->getType()->isFloatingPointTy() || RHS->getType()->isFloatingPointTy()) {
@@ -152,7 +160,7 @@ Value *codegen(Stype *node) {
         }
     }
     case NODE_MINUS_EXPR: {
-        cout << "NODE_MINUS_EXPR" << endl;
+        cerr << "NODE_MINUS_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
         if (LHS->getType()->isFloatingPointTy() || RHS->getType()->isFloatingPointTy()) {
@@ -162,7 +170,7 @@ Value *codegen(Stype *node) {
         }
     }
     case NODE_MULT_EXPR: {
-        cout << "NODE_MULT_EXPR" << endl;
+        cerr << "NODE_MULT_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
         if (LHS->getType()->isFloatingPointTy() || RHS->getType()->isFloatingPointTy()) {
@@ -172,7 +180,7 @@ Value *codegen(Stype *node) {
         }
     }
     case NODE_DIVIDE_EXPR: {
-        cout << "NODE_DIVIDE_EXPR" << endl;
+        cerr << "NODE_DIVIDE_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
         if (LHS->getType()->isFloatingPointTy() || RHS->getType()->isFloatingPointTy()) {
@@ -182,7 +190,7 @@ Value *codegen(Stype *node) {
         }
     }
     case NODE_POWER_EXPR: {
-        cout << "NODE_POWER_EXPR" << endl;
+        cerr << "NODE_POWER_EXPR" << endl;
         // Implement power operation using llvm.pow function
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
@@ -192,59 +200,59 @@ Value *codegen(Stype *node) {
         return Builder.CreateCall(PowFunc, {LHS, RHS}, "powtmp");
     }
     case NODE_EQUALS_EXPR: {
-        cout << "NODE_EQUALS_EXPR" << endl;
+        cerr << "NODE_EQUALS_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
         return Builder.CreateICmpEQ(LHS, RHS, "eqtmp");
     }
     case NODE_NOT_EQUALS_EXPR: {
-        cout << "NODE_NOT_EQUALS_EXPR" << endl;
+        cerr << "NODE_NOT_EQUALS_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
         return Builder.CreateICmpNE(LHS, RHS, "netmp");
     }
     case NODE_LEQ_EXPR: {
-        cout << "NODE_LEQ_EXPR" << endl;
+        cerr << "NODE_LEQ_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
         return Builder.CreateICmpSLE(LHS, RHS, "leqtmp");
     }
     case NODE_GEQ_EXPR: {
-        cout << "NODE_GEQ_EXPR" << endl;
+        cerr << "NODE_GEQ_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
         return Builder.CreateICmpSGE(LHS, RHS, "geqtmp");
     }
     case NODE_LE_EXPR: {
-        cout << "NODE_LE_EXPR" << endl;
+        cerr << "NODE_LE_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
         return Builder.CreateICmpSLT(LHS, RHS, "letmp");
     }
     case NODE_GE_EXPR: {
-        cout << "NODE_GE_EXPR" << endl;
+        cerr << "NODE_GE_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
         return Builder.CreateICmpSGT(LHS, RHS, "getmp");
     }
     case NODE_LOGICAL_AND_EXPR: {
-        cout << "NODE_LOGICAL_AND_EXPR" << endl;
+        cerr << "NODE_LOGICAL_AND_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
         return Builder.CreateAnd(LHS, RHS, "andtmp");
     }
     case NODE_LOGICAL_OR_EXPR: {
-        cout << "NODE_LOGICAL_OR_EXPR" << endl;
+        cerr << "NODE_LOGICAL_OR_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
         return Builder.CreateOr(LHS, RHS, "ortmp");
     }
     case NODE_UNARY_LOGICAL_NOT_EXPR: {
-        cout << "NODE_UNARY_LOGICAL_NOT_EXPR" << endl;
+        cerr << "NODE_UNARY_LOGICAL_NOT_EXPR" << endl;
         Value *Operand = codegen(node->children[0]);
         return Builder.CreateNot(Operand, "nottmp");
     }
-    // case NODE_NEGATE_EXPR: {cout << "NODE_NEGATE_EXPR" << endl;
+    // case NODE_NEGATE_EXPR: {cerr << "NODE_NEGATE_EXPR" << endl;
     //     Value* Operand = codegen(node->children[0]);
     //     if (Operand->getType()->isFloatingPointTy()) {
     //         return Builder.CreateFNeg(Operand, "negtmp");
@@ -253,7 +261,7 @@ Value *codegen(Stype *node) {
     //     }
     // }
     case NODE_FUNCTION_CALL: {
-        cout << "NODE_FUNCTION_CALL" << endl;
+        cerr << "NODE_FUNCTION_CALL" << endl;
         string FuncName = node->children[0]->text;
         Function *CalleeF = getFunction(FuncName);
 
@@ -267,7 +275,7 @@ Value *codegen(Stype *node) {
         return Builder.CreateCall(CalleeF, ArgsV, "calltmp");
     }
 
-    // case NODE_CAST_EXPR: {cout << "NODE_CAST_EXPR" << endl;
+    // case NODE_CAST_EXPR: {cerr << "NODE_CAST_EXPR" << endl;
     //     // Implement type casting
     //     Value* ExprVal = codegen(node->children[0]);
     //     DataType* TargetType = node->data_type;
@@ -281,7 +289,7 @@ Value *codegen(Stype *node) {
     //         return Builder.CreateBitCast(ExprVal, DestType, "casttmp");
     //     }
     // }
-    // case NODE_VECTOR_ACCESS: {cout << "NODE_VECTOR_ACCESS" << endl;
+    // case NODE_VECTOR_ACCESS: {cerr << "NODE_VECTOR_ACCESS" << endl;
     //     // Access an element from a vector
     //     Value* VecVal = codegen(node->children[0]);
     //     Value* IndexVal = codegen(node->children[1]);
@@ -295,7 +303,7 @@ Value *codegen(Stype *node) {
     case NODE_DIVIDE_EQUALS_ASSIGNMENT_STATEMENT:
     case NODE_POWER_EQUALS_ASSIGNMENT_STATEMENT:
     case NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT: {
-        cout << "NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT" << endl;
+        cerr << "NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT" << endl;
         // Handle compound assignments
         Stype *LHSNode = node->children[0];
         Stype *RHSNode = node->children[1];
@@ -338,18 +346,18 @@ Value *codegen(Stype *node) {
     }
     case NODE_DECLARATION_STATEMENT:
     case NODE_DECLARATION_STATEMENT_WITH_TYPE: {
-        cout << "NODE_DECLARATION_STATEMENT_WITH_TYPE" << endl;
+        cerr << "NODE_DECLARATION_STATEMENT_WITH_TYPE" << endl;
         // Declaration: IDENTIFIER '<-' expr
         string VarName = node->children[0]->text;
-        cout << VarName << endl;
+        cerr << VarName << endl;
         Stype *ExprNode = node->children[1];
 
         Value *InitVal = codegen(ExprNode);
 
         // Get the function we are currently in.
         Function *TheFunction = Builder.GetInsertBlock()->getParent();
-        cout << TheFunction << endl;
-        cout << "Done with decl stmt" << endl;
+        cerr << TheFunction << endl;
+        cerr << "Done with decl stmt" << endl;
 
         Type *VarType;
         if (node->node_type == NODE_DECLARATION_STATEMENT_WITH_TYPE) {
@@ -370,7 +378,7 @@ Value *codegen(Stype *node) {
         return InitVal;
     }
     case NODE_IF_STATEMENT: {
-        cout << "NODE_IF_STATEMENT" << endl;
+        cerr << "NODE_IF_STATEMENT" << endl;
         // IF expr '{' statements '}'
         Value *CondV = codegen(node->children[0]);
 
@@ -413,7 +421,7 @@ Value *codegen(Stype *node) {
         return Constant::getNullValue(Type::getInt32Ty(TheContext));
     }
     case NODE_LOOP_REPEAT_STATEMENT: {
-        cout << "NODE_LOOP_REPEAT_STATEMENT" << endl;
+        cerr << "NODE_LOOP_REPEAT_STATEMENT" << endl;
         // loop_statement: LOOP expr '{' statements '}'
         Function *TheFunction = Builder.GetInsertBlock()->getParent();
 
@@ -445,18 +453,18 @@ Value *codegen(Stype *node) {
         return Constant::getNullValue(Type::getInt32Ty(TheContext));
     }
     case NODE_BREAK_STATEMENT: {
-        cout << "NODE_BREAK_STATEMENT" << endl;
+        cerr << "NODE_BREAK_STATEMENT" << endl;
         // Implement break statement
         // For simplicity, we can skip implementing break and continue
         return Constant::getNullValue(Type::getInt32Ty(TheContext));
     }
     case NODE_CONTINUE_STATEMENT: {
-        cout << "NODE_CONTINUE_STATEMENT" << endl;
+        cerr << "NODE_CONTINUE_STATEMENT" << endl;
         // Implement continue statement
         return Constant::getNullValue(Type::getInt32Ty(TheContext));
     }
     case NODE_RETURN_STATEMENT: {
-        cout << "NODE_RETURN_STATEMENT" << endl;
+        cerr << "NODE_RETURN_STATEMENT" << endl;
         if (node->children.size() > 0) {
             Value *RetVal = codegen(node->children[0]);
             Builder.CreateRet(RetVal);
@@ -469,7 +477,7 @@ Value *codegen(Stype *node) {
         return nullptr;
     }
     case NODE_PRINT_STATEMENT: {
-        cout << "NODE_PRINT_STATEMENT" << endl;
+        cerr << "NODE_PRINT_STATEMENT" << endl;
         declarePrintFunction();
         Value *ExprVal = codegen(node->children[0]);
 
@@ -486,21 +494,21 @@ Value *codegen(Stype *node) {
         return nullptr;
     }
     case NODE_LOAD_STATEMENT: {
-        cout << "NODE_LOAD_STATEMENT" << endl;
+        cerr << "NODE_LOAD_STATEMENT" << endl;
         declareAudioFunctions();
         Value *FilenameVal = codegen(node->children[0]);
         Value *AudioData = Builder.CreateCall(loadAudioFunction, {FilenameVal}, "loadaudio");
         return AudioData;
     }
     case NODE_PLAY_STATEMENT: {
-        cout << "NODE_PLAY_STATEMENT" << endl;
+        cerr << "NODE_PLAY_STATEMENT" << endl;
         declareAudioFunctions();
         Value *AudioVal = codegen(node->children[0]);
         Builder.CreateCall(playAudioFunction, {AudioVal});
         return nullptr;
     }
     case NODE_SAVE_STATEMENT: {
-        cout << "NODE_SAVE_STATEMENT" << endl;
+        cerr << "NODE_SAVE_STATEMENT" << endl;
         declareAudioFunctions();
         Value *AudioVal = codegen(node->children[0]);
         Value *FilenameVal = codegen(node->children[1]);
@@ -508,7 +516,7 @@ Value *codegen(Stype *node) {
         return nullptr;
     }
     case NODE_NORMAL_FUNCTION: {
-        cout << "NODE_NORMAL_FUNCTION" << endl;
+        cerr << "NODE_NORMAL_FUNCTION" << endl;
         // Implement function definition
         string FuncName = node->children[0]->text;
         Stype *ParamListNode = node->children[1];
@@ -558,7 +566,7 @@ Value *codegen(Stype *node) {
         return TheFunction;
     }
     case NODE_STATEMENTS: {
-        cout << "NODE_STATEMENTS" << endl;
+        cerr << "NODE_STATEMENTS" << endl;
         Value *LastValue = nullptr;
         for (Stype *stmt : node->children) {
             LastValue = codegen(stmt);
@@ -566,7 +574,7 @@ Value *codegen(Stype *node) {
         return LastValue;
     }
     default:
-        cout << "forgot to handle a node bruh" << endl;
+        cerr << "forgot to handle a node bruh " << node->node_type << endl;
         return nullptr;
     }
 }
@@ -624,17 +632,19 @@ Function *getFunction(const string &name) {
 // Main codegen entry point
 int codegen_main(Stype *root) {
     // Initialize the module
+    freopen("out.ll", "w", stdout);
     TheModule = make_unique<Module>("MyModule", TheContext);
 
     // Generate code for the root node
-    cout << "-------------------------------starting codegen--------------------------------------" << endl;
-    Function* main_function = Function::Create(FunctionType::get(Type::getVoidTy(TheContext), {}, false), Function::ExternalLinkage, "main", TheModule.get());
+    cerr << "-------------------------------starting codegen--------------------------------------" << endl;
+    Function *main_function = Function::Create(FunctionType::get(Type::getInt32Ty(TheContext), {}, false), Function::ExternalLinkage, "main", TheModule.get());
     BasicBlock *BB = BasicBlock::Create(TheContext, "entry", main_function);
     Builder.SetInsertPoint(BB);
     pushSymbolTable();
     codegen(root);
     popSymbolTable();
-    cout << "--------------------------traversed tree for codegen---------------------------------" << endl;
+    Builder.CreateRet(ConstantInt::get(Type::getInt32Ty(TheContext), 0));
+    cerr << "--------------------------traversed tree for codegen---------------------------------" << endl;
 
     // Validate the generated code
     verifyModule(*TheModule, &errs());
