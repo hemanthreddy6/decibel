@@ -77,7 +77,7 @@ statement
     | save_statement ';' {$$ = $1;}
     | read_statement ';' {$$ = $1;}
     | print_statement ';' {$$ = $1;}
-    | import_statement ';' {yyerror("Import statements can only be at the start of the file before any other statements.");};
+    | import_statement ';' {yyerror("error: Import statements can only be at the start of the file before any other statements.");};
 
 read_statement
     : READ assignable_value {

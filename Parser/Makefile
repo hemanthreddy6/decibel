@@ -1,5 +1,6 @@
 -include ../Makefile.inc
 COMPILER := $(if $(COMPILER),$(COMPILER),g++)
+
 .PHONY: build test clean run
 
 build: parser
@@ -12,7 +13,7 @@ y.tab.c: parser.y
 	fi
 
 parser: y.tab.c ../Lex/lex.yy.c
-	$(COMPILER) -o parser y.tab.c -lm
+	$(COMPILER) $(CXXFLAGS) -o parser y.tab.c -lm
 
 ../Lex/lex.yy.c: ../Lex/lexer.l
 	@make build -C "../Lex" --quiet

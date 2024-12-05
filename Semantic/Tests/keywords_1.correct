@@ -1,0 +1,22 @@
+// import "keywords.db";
+
+main {
+    const fileName: string <- "sample.wav";  // const keyword
+    duration: int <- 5.0;                 
+    Done: bool <- true;                // boolean 
+    audioTrack: audio <- load fileName;    // reserved keyword 'load'
+
+    duration += Done;
+    Done = false;
+
+    // conditional keywords
+    if Done != false {
+        play audioTrack;
+    } otherwise {
+        save audioTrack -> "music.wav";
+    }
+
+    // saving
+    const silence: audio <- load "silence.wav";
+    save silence -> "nothing.wav";
+}

@@ -1,0 +1,24 @@
+// import "function_tests.db";
+
+multiply <- (a: float, b: float): float{
+    return a * b;
+};
+
+main {
+    // Inline function
+    result <- multiply(3.5, 2);
+    print result; // Expected: 7.0
+
+    // Currying
+    double <- multiply(2, _);
+    print double(4); // Expected: 8.0
+
+    // Default parameters
+    audioTrack: audio <- load "sample.wav";
+    scaled <- audioTrack * double(1.5);
+    play scaled;
+
+    // Nested function calls
+    finalResult <- multiply(double(3), 2);
+    print finalResult; // Expected: 12.0
+}
