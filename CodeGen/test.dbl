@@ -5,7 +5,19 @@ f <- (a:long , b:long):long {
         return b;
     }
 };
-print f(0, 42);
+f1 <- (a:long , b:long):long {
+    if (a<b){
+        return a;
+    } otherwise {
+        return b;
+    }
+};
+f2 <- f;
+if 100 > 20 {
+    f2 = f1;
+}
+// If it's f1, 10 will be printed, otherwise 100
+print f2(100, 10);
 a <- 0;
 loop 10 {
     a += 1;
