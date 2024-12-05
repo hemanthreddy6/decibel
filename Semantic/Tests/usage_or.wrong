@@ -1,0 +1,14 @@
+
+checkValue <- (num: int): string {
+    if num > 0 or num == 0 {
+        return "Non-negative";
+    } or num == -1 {  
+        return "Invalid"; 
+    }
+};
+
+main {
+    num: int <- -2;
+    result: string <- checkValue(num);  
+    print result;
+}

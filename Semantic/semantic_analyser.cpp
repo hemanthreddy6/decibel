@@ -351,6 +351,26 @@ bool equal_data_type(DataType *type1, DataType *type2) {
     return false;
 }
 
+void copy_data_type(DataType* dest, DataType* src) {
+    if(dest == NULL || src == NULL)
+    {
+        return;
+    }
+    dest->basic_data_type = src->basic_data_type;
+    dest->is_primitive = src->is_primitive;
+    dest->is_vector = src->is_vector;
+    dest->vector_size = src->vector_size;
+    dest->vector_data_type = new DataType();
+    dest->return_type = new DataType();
+    copy_data_type(dest->vector_data_type, src->vector_data_type);
+    copy_data_type(dest->return_type, src->return_type);
+    for(int i=0;i<src->parameters.size();i++)
+    {
+        dest->parameters.push_back(new DataType());
+        copy_data_type(dest->parameters[i], src->parameters[i]);
+    }
+}
+
 // Function to handle unary expressions
 // - Only defined to float-convertible data types
 int handle_unary_expression(Stype *node) {
@@ -488,8 +508,10 @@ int handle_distortion_expression(Stype *node) {
 int handle_mult_expression(Stype *node) {
     traverse_ast(node->children[0]);
     traverse_ast(node->children[1]);
-    DataType *type1 = node->children[0]->data_type;
-    DataType *type2 = node->children[1]->data_type;
+    DataType *type1 = new DataType();
+    DataType *type2 = new DataType();
+    copy_data_type(type1, node->children[0]->data_type);
+    copy_data_type(type2, node->children[1]->data_type);
 
     // Checking if any data types are NULL(void in DSL)
     if (type1 == NULL) {
@@ -506,9 +528,12 @@ int handle_mult_expression(Stype *node) {
         return 1;
     }
     bool is_function = false;
-    DataType* function_datatype_left = new DataType(*type1);
-    DataType* function_datatype_right = new DataType(*type2);
 
+    DataType* function_datatype_left = new DataType();
+    DataType* function_datatype_right = new DataType();
+
+    copy_data_type(function_datatype_left, type1);
+    copy_data_type(function_datatype_right, type2);
 
     if (isFunction(type1) && isFunction(type2)) {
         if (are_data_types_equal(type1, type2) && final_return_type(type1) && final_return_type(type2)) {
@@ -619,8 +644,10 @@ int handle_mult_expression(Stype *node) {
 int handle_divide_expression(Stype *node) {
     traverse_ast(node->children[0]);
     traverse_ast(node->children[1]);
-    DataType *type1 = node->children[0]->data_type;
-    DataType *type2 = node->children[1]->data_type;
+    DataType *type1 = new DataType();
+    DataType *type2 = new DataType();
+    copy_data_type(type1, node->children[0]->data_type);
+    copy_data_type(type2, node->children[1]->data_type);
 
     if (type1 == NULL) {
         yylval = node->children[0];
@@ -636,8 +663,12 @@ int handle_divide_expression(Stype *node) {
         return 1;
     }
     bool is_function = false;
-    DataType* function_datatype_left = new DataType(*type1);
-    DataType* function_datatype_right = new DataType(*type2);
+
+    DataType* function_datatype_left = new DataType();
+    DataType* function_datatype_right = new DataType();
+
+    copy_data_type(function_datatype_left, type1);
+    copy_data_type(function_datatype_right, type2);
 
     // Checking if any data types are NULL(void in DSL)
 
@@ -814,8 +845,10 @@ int handle_speedup_speeddown_expression(Stype *node, bool is_speedup) {
 int handle_plus_expression(Stype* node) {
     traverse_ast(node->children[0]);
     traverse_ast(node->children[1]);
-    DataType *type1 = node->children[0]->data_type;
-    DataType *type2 = node->children[1]->data_type;
+    DataType *type1 = new DataType();
+    DataType *type2 = new DataType();
+    copy_data_type(type1, node->children[0]->data_type);
+    copy_data_type(type2, node->children[1]->data_type);
 
     // Checking if any data types are NULL(void in DSL)
     if (type1 == NULL) {
@@ -830,8 +863,11 @@ int handle_plus_expression(Stype* node) {
     }
 
     bool is_function = false;
-    DataType* function_datatype_left = new DataType(*type1);
-    DataType* function_datatype_right = new DataType(*type2);
+    DataType* function_datatype_left = new DataType();
+    DataType* function_datatype_right = new DataType();
+
+    copy_data_type(function_datatype_left, type1);
+    copy_data_type(function_datatype_right, type2);
 
     if (isFunction(type1) && isFunction(type2)) {
         if (are_data_types_equal(type1, type2) && final_return_type(type1) && final_return_type(type2)) {
