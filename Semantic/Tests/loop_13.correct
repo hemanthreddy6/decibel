@@ -1,0 +1,8 @@
+// LOOP with Custom Step Calculation
+
+main {
+    step <- 3;
+    loop over i 0 to 10 @ step {
+        print i;
+    }
+}

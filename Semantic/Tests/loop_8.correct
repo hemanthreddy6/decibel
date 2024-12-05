@@ -1,0 +1,11 @@
+// LOOP with Function Call
+
+nice <- (n : int) {
+    print n;
+};
+
+main {
+    loop over i 1 to 3 {
+        nice(i);
+    }
+}

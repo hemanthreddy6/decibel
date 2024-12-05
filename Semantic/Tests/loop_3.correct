@@ -1,0 +1,7 @@
+// LOOP OVER with Integer Range
+
+main {
+    loop over i 0 to 10 {
+        print i;
+    }
+}

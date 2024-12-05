@@ -1,0 +1,12 @@
+// LOOP with break
+
+main {
+    i <- 0;
+    loop 10 {
+        if i == 5 {
+            break;
+        }
+        print i;
+        i = i + 1;
+    }
+}

@@ -1,0 +1,10 @@
+// Nested LOOPs
+
+main {
+    loop 3 {
+        print "Outer loop";
+        loop 2 {
+            print "Inner loop";
+        }
+    }
+}

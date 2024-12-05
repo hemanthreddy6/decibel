@@ -1,0 +1,8 @@
+// Loop Variable Used Outside Scope
+
+main {
+    loop over i 0 to 5 {
+        print i;
+    }
+    print i;  // Attempting to use 'i' outside the loop
+}

@@ -1,0 +1,9 @@
+// LOOP with Assignment Operators
+
+main {
+    sum <- 0;
+    loop over i 1 to 5 {
+        sum += i;
+    }
+    print sum;
+}

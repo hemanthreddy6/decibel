@@ -1,0 +1,9 @@
+// LOOP with Multiple Conditions
+
+main {
+    i <- 0;
+    loop until i >= 5 && i % 2 == 0 {
+        print i;
+        i = i + 1;
+    }
+}

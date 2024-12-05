@@ -1,0 +1,7 @@
+// Test Case 12: Undefined Variable in Loop Condition
+
+main {
+    loop until x == 5 {
+        x = x + 1;
+    }
+}

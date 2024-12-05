@@ -1,0 +1,9 @@
+// LOOP UNTIL Condition
+
+main {
+    counter <- 0;
+    loop until counter == 5 {
+        print counter;
+        counter = counter + 1;
+    }
+}
