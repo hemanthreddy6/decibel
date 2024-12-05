@@ -1346,15 +1346,16 @@ void traverse_ast(Stype *node) {
         cout << string(current_scope, '\t') << "NODE_FUNCTION_CALL" << endl;
         traverse_ast(node->children[0]);
         traverse_ast(node->children[1]);
-        if (node->data_type->is_primitive) {
+        if (node->children[0]->data_type->is_primitive) {
             yyerror("Semantic error: Cannot call a non-function  ");
         }
-        std::vector<DataType *> parameters = node->data_type->parameters;
+        std::vector<DataType *> parameters = node->children[0]->data_type->parameters;
         std::vector<DataType *> new_parameters;
         for (int i = 0; i < node->children[1]->children.size(); i++) {
 
             Stype *argument_list = node->children[1]->children[i];
             if (argument_list->children.size() != parameters.size()) {
+                yylval = argument_list;
                 yyerror(
                     "Semantic error: Incorrect number of parameters passed");
             }
@@ -1366,16 +1367,25 @@ void traverse_ast(Stype *node) {
                 } else if (!can_implicitly_convert(
                                argument_list->children[j]->data_type,
                                parameters[j])) {
+                    yylval = argument_list->children[j];
                     yyerror("Semantic error: Incompatible argument type");
                 }
             }
             parameters = new_parameters;
             new_parameters.clear();
-            if (!can_implicitly_convert(
-                    node->children[1]->children[i]->data_type,
-                    node->data_type->parameters[i])) {
-                yyerror("Semantic error: Incompatible argument type");
-            }
+            // if (!can_implicitly_convert(
+            //         node->children[1]->children[i]->data_type,
+            //         node->data_type->parameters[i])) {
+            //     yyerror("Semantic error: Incompatible argument type");
+            // }
+        }
+        if (new_parameters.size()){
+            node->data_type = new DataType();
+            node->data_type->is_primitive = false;
+            node->data_type->parameters = new_parameters;
+            node->data_type->return_type = node->children[0]->data_type->return_type;
+        } else {
+            node->data_type = node->children[0]->data_type->return_type;
         }
         break;
     }
