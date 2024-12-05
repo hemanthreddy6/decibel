@@ -7,6 +7,7 @@ int semantic();
 
 using namespace std;
 
+void built_in_functions();
 void traverse_ast(Stype *node);
 
 // Use this function to check if two data types are the same type
@@ -1791,6 +1792,67 @@ void traverse_ast(Stype *node) {
     }
 }
 
+void built_in_functions(){
+    // print function
+    DataType* print_return_type = NULL;
+    DataType* print_parameter = new DataType(STRING);
+    vector<DataType*> print_parameters = {print_parameter};
+    DataType* print_data_type = new DataType();
+    print_data_type->is_primitive = false;
+    print_data_type->parameters = print_parameters;
+    print_data_type->return_type = print_return_type;
+    symbol_table[0][0].insert({"print", StEntry(print_data_type, true)});
+
+    // read function
+    DataType* read_return_type = new DataType(STRING);
+    vector<DataType*> read_parameters = {};
+    DataType* read_data_type = new DataType();
+    read_data_type->is_primitive = false;
+    read_data_type->parameters = read_parameters;
+    read_data_type->return_type = read_return_type;
+    symbol_table[0][0].insert({"read", StEntry(read_data_type, true)});
+
+    // play function
+    DataType* play_return_type = NULL;
+    DataType* play_parameter = new DataType(AUDIO);
+    vector<DataType*> play_parameters = {play_parameter};
+    DataType* play_data_type = new DataType();
+    play_data_type->is_primitive = false;
+    play_data_type->parameters = play_parameters;
+    play_data_type->return_type = play_return_type;
+    symbol_table[0][0].insert({"play", StEntry(play_data_type, true)});
+
+    // load function
+    DataType* load_return_type = new DataType(AUDIO);
+    DataType* load_parameter = new DataType(STRING);
+    vector<DataType*> load_parameters = {load_parameter};
+    DataType* load_data_type = new DataType();
+    load_data_type->is_primitive = false;
+    load_data_type->parameters = load_parameters;
+    load_data_type->return_type = load_return_type;
+    symbol_table[0][0].insert({"load", StEntry(load_data_type, true)});
+
+    // save function
+    DataType* save_return_type = NULL;
+    DataType* save_parameter1 = new DataType(AUDIO);
+    DataType* save_parameter2 = new DataType(STRING);
+    vector<DataType*> save_parameters = {save_parameter1, save_parameter2};
+    DataType* save_data_type = new DataType();
+    save_data_type->is_primitive = false;
+    save_data_type->parameters = save_parameters;
+    save_data_type->return_type = save_return_type;
+    symbol_table[0][0].insert({"save", StEntry(save_data_type, true)});
+
+    // sin function
+    DataType* sin_return_type = new DataType(FLOAT);
+    DataType* sin_parameter = new DataType(FLOAT);
+    vector<DataType*> sin_parameters = {sin_parameter};
+    DataType* sin_data_type = new DataType();
+    sin_data_type->is_primitive = false;
+    sin_data_type->parameters = sin_parameters;
+    sin_data_type->return_type = sin_return_type;
+    symbol_table[0][0].insert({"sin", StEntry(sin_data_type, true)});
+}
 int semantic() {
     // Initialising the symbol table
     symbol_table = vector<vector<unordered_map<string, StEntry>>>(
