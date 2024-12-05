@@ -6,7 +6,7 @@ factorial <- (n: int): int {
         return n * self(n - 1);
     } otherwise {
         return 0; 
-    }
+    }git pu
 };
 
 main {

@@ -1,0 +1,13 @@
+
+checkEven <- (num: int): string {
+    if num % 2 == 0 {  
+        return "Even"; 
+    } otherwise {
+        return "Odd";  
+    }
+};
+
+main {
+    result: string <- checkEven(6); 
+    print result; 
+}

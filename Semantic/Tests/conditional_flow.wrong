@@ -1,0 +1,14 @@
+
+checkEven <- (num: int): string {
+    if num % 2 == 0 {  
+        return "Even";  // Missing else/otherwise for odd numbers
+    }
+    else {
+        return "Odd";  // Return "Odd" if the number is not divisible by 2
+    }
+};
+
+main {
+    result: string <- checkEven(7);  // Error: No valid return for odd numbers
+    print result;
+}
