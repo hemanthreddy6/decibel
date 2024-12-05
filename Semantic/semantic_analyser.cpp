@@ -188,7 +188,6 @@ StEntry* handle_identifier_reference(Stype *node) {
     if (found)
         node->data_type = entry->data_type;
     else {
-        cerr << node->text << endl;
         node->data_type = NULL;
         yylval = node;
         yyerror(
