@@ -247,10 +247,25 @@ Value *codegen(Stype *node) {
         Value *RHS = codegen(node->children[1]);
         return Builder.CreateOr(LHS, RHS, "ortmp");
     }
+    case NODE_UNARY_INVERSE_EXPR: {
+        cerr << "NODE_UNARY_INVERSE_EXPR" << endl;
+        Value *Operand = codegen(node->children[0]);
+        return Builder.CreateNot(Operand, "invtmp");
+    }
     case NODE_UNARY_LOGICAL_NOT_EXPR: {
         cerr << "NODE_UNARY_LOGICAL_NOT_EXPR" << endl;
         Value *Operand = codegen(node->children[0]);
         return Builder.CreateNot(Operand, "nottmp");
+    }
+    case NODE_UNARY_PLUS_EXPR: {
+        cerr << "NODE_UNARY_PLUS_EXPR" << endl;
+        Value *Operand codegen(node->children[0]);
+        return Builder.CreateAdd(Operand, ConstantInt::get(Operand->getType(), 0), "plustmp");
+    }
+    case NODE_UNARY_MINUS_EXPR: {
+        cerr << "NODE_UNARY_MINUS_EXPR" << endl;
+        Value *Operand = codegen(node->children[0]);
+        return Builder.CreateNeg(Operand, ConstantInt::get(Operand->getType(), 0), "negtmp");
     }
     // case NODE_NEGATE_EXPR: {cerr << "NODE_NEGATE_EXPR" << endl;
     //     Value* Operand = codegen(node->children[0]);
