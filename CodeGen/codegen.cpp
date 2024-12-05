@@ -423,22 +423,28 @@ Value *codegen(Stype *node) {
         Builder.SetInsertPoint(OrBB);
 
         vector<BasicBlock *> OrBBS;
+        vector<BasicBlock *> OrStatementsBBS;
 
         for (int i = 0; i < node->children[2]->children.size(); i++) {
             BasicBlock *InnerOrBB = BasicBlock::Create(TheContext, "inner_or", TheFunction);
+            BasicBlock *InnerOrStatementsBB = BasicBlock::Create(TheContext, "inner_or_statements", TheFunction);
             OrBBS.push_back(InnerOrBB);
+            OrStatementsBBS.push_back(InnerOrStatementsBB);
         }
         OrBBS.push_back(ElseBB);
 
+        Builder.CreateBr(OrBBS[0]);
+
         for (int i = 0; i < node->children[2]->children.size(); i++) {
+            Builder.SetInsertPoint(OrBBS[i]);
             Value *OrCondV = codegen(node->children[2]->children[i]->children[0]);
             if (OrCondV->getType()->isIntegerTy())
                 OrCondV = Builder.CreateICmpNE(OrCondV, ConstantInt::get(OrCondV->getType(), 0), "ifcond");
             else if (CondV->getType()->isFloatingPointTy())
                 OrCondV = Builder.CreateFCmpONE(OrCondV, ConstantFP::get(TheContext, APFloat(0.0)), "ifcond");
 
-            Builder.CreateCondBr(OrCondV, OrBBS[i], OrBBS[i + 1]);
-            Builder.SetInsertPoint(OrBBS[i]);
+            Builder.CreateCondBr(OrCondV, OrStatementsBBS[i], OrBBS[i + 1]);
+            Builder.SetInsertPoint(OrStatementsBBS[i]);
             pushSymbolTable();
             codegen(node->children[2]->children[i]->children[1]); // Then statements
             popSymbolTable();
