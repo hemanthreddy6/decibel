@@ -2,6 +2,7 @@
 
 [![Lexer](https://github.com/hemanthreddy6/decibel/actions/workflows/lexer.yml/badge.svg)](https://github.com/hemanthreddy6/decibel/actions/workflows/lexer.yml)
 [![Parser](https://github.com/hemanthreddy6/decibel/actions/workflows/parser.yml/badge.svg)](https://github.com/hemanthreddy6/decibel/actions/workflows/parser.yml)
+[![Semantic Analyser](https://github.com/hemanthreddy6/decibel/actions/workflows/semantic.yaml/badge.svg)](https://github.com/hemanthreddy6/decibel/actions/workflows/semantic.yaml)
 
 ## Introduction
 Decibel is a statically typed, domain-specific programming language designed to simplify audio generation and manipulation. It offers a powerful yet intuitive approach to handle complex audio tasks, including sound generation, mixing, and real-time processing. With its user-friendly syntax and a rich set of operators, Decibel allows both professionals and beginners to create high-quality audio applications effortlessly.

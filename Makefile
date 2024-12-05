@@ -4,7 +4,7 @@ build:
 	@make build -C "Lex" --quiet
 	@make build -C "Parser" --quiet
 	@make build -C "Semantic" --quiet
-	@make build -C "Codegen" --quiet
+	@make build -C "CodeGen" --quiet
 
 clean:
 	@make clean -C "Lex" --quiet

@@ -1,10 +1,13 @@
-a <- 42;
+a <- 0;
 loop 10 {
     a += 1;
-    print a;
-    if a > 44 {
-        if a > 50 {
-            print -a;
-        }
+    if a > 8 {
+        print -a;
+    } or a > 6 {
+        print a*100;
+    } or a > 4 {
+        print a - 100;
+    } otherwise {
+        print a;
     }
 }

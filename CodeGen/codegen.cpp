@@ -407,10 +407,11 @@ Value *codegen(Stype *node) {
 
         // Create blocks for the then and else cases.
         BasicBlock *ThenBB = BasicBlock::Create(TheContext, "then", TheFunction);
+        BasicBlock *OrBB = BasicBlock::Create(TheContext, "or", TheFunction);
         BasicBlock *ElseBB = BasicBlock::Create(TheContext, "else", TheFunction);
         BasicBlock *MergeBB = BasicBlock::Create(TheContext, "ifcont", TheFunction);
 
-        Builder.CreateCondBr(CondV, ThenBB, ElseBB);
+        Builder.CreateCondBr(CondV, ThenBB, OrBB);
 
         // Emit then block.
         Builder.SetInsertPoint(ThenBB);
@@ -419,12 +420,43 @@ Value *codegen(Stype *node) {
         popSymbolTable();
         Builder.CreateBr(MergeBB);
 
+        Builder.SetInsertPoint(OrBB);
+
+        vector<BasicBlock *> OrBBS;
+        vector<BasicBlock *> OrStatementsBBS;
+
+        for (int i = 0; i < node->children[2]->children.size(); i++) {
+            BasicBlock *InnerOrBB = BasicBlock::Create(TheContext, "inner_or", TheFunction);
+            BasicBlock *InnerOrStatementsBB = BasicBlock::Create(TheContext, "inner_or_statements", TheFunction);
+            OrBBS.push_back(InnerOrBB);
+            OrStatementsBBS.push_back(InnerOrStatementsBB);
+        }
+        OrBBS.push_back(ElseBB);
+
+        Builder.CreateBr(OrBBS[0]);
+
+        for (int i = 0; i < node->children[2]->children.size(); i++) {
+            Builder.SetInsertPoint(OrBBS[i]);
+            Value *OrCondV = codegen(node->children[2]->children[i]->children[0]);
+            if (OrCondV->getType()->isIntegerTy())
+                OrCondV = Builder.CreateICmpNE(OrCondV, ConstantInt::get(OrCondV->getType(), 0), "ifcond");
+            else if (CondV->getType()->isFloatingPointTy())
+                OrCondV = Builder.CreateFCmpONE(OrCondV, ConstantFP::get(TheContext, APFloat(0.0)), "ifcond");
+
+            Builder.CreateCondBr(OrCondV, OrStatementsBBS[i], OrBBS[i + 1]);
+            Builder.SetInsertPoint(OrStatementsBBS[i]);
+            pushSymbolTable();
+            codegen(node->children[2]->children[i]->children[1]); // Then statements
+            popSymbolTable();
+            Builder.CreateBr(MergeBB);
+        }
+
         // Emit else block.
         // TheFunction->getBasicBlocks().push_back(ElseBB);
         Builder.SetInsertPoint(ElseBB);
-        if (node->children.size() > 2) {
+        if (node->children[3]->children.size()){
             pushSymbolTable();
-            codegen(node->children[2]); // Else statements
+            codegen(node->children[3]->children[0]); // Else statements
             popSymbolTable();
         }
         Builder.CreateBr(MergeBB);
@@ -444,7 +476,7 @@ Value *codegen(Stype *node) {
         BasicBlock *AfterLoopBB = BasicBlock::Create(TheContext, "afterloop", TheFunction);
         BasicBlock *CondBB = BasicBlock::Create(TheContext, "condition", TheFunction);
 
-        Value * NumIters = codegen(node->children[0]);
+        Value *NumIters = codegen(node->children[0]);
 
         Value *LoopCounter = Builder.CreateAlloca(NumIters->getType(), nullptr, "loopcounter");
         Builder.CreateStore(NumIters, LoopCounter);

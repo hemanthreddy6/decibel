@@ -12,7 +12,7 @@ panFunction <- (time: float): float {
 
 main {
     track: audio <- load "original.wav";
-    pannedTrack <- PAN(track, panFunction);
+    pannedTrack <- PAN_DYNAMIC(track, panFunction);
 
     // Play and save panned track
     play pannedTrack;
