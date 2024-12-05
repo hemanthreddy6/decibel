@@ -1,0 +1,18 @@
+main {
+    a: int <- 0;
+    b: long <- 0;
+    c: float <- 0.0;
+    d: bool <- true;
+    e: string <- "nice";
+
+    print a;
+    print b;
+    print c;
+    print d;
+    print e;
+
+    f: int[3][5] <- 0;
+    print f[2][3];
+    g: string[4] <- "hello";
+    print g[0];
+}
