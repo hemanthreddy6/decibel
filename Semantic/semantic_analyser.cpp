@@ -1866,6 +1866,7 @@ int semantic() {
                1, unordered_map<string, StEntry>()));
 
     // cerr << "------------semantic started------------" << endl;
+    built_in_functions();
     traverse_ast(root);
     // cerr << "------------semantic done------------" << endl;
     return 0;
