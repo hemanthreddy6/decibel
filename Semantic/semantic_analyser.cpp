@@ -1550,34 +1550,46 @@ void traverse_ast(Stype *node) {
         current_scope--;
         break;
     }
-    case NODE_IF_STATEMENT:
+    case NODE_IF_STATEMENT:{
         cout << string(current_scope, '\t') << "NODE_IF_STATEMENT" << endl;
         current_scope++;
         symbol_table[current_scope_table].push_back(
             unordered_map<string, StEntry>());
         traverse_ast(node->children[0]);
+        DataType *type2 = new DataType(BOOL);
+        if (!can_implicitly_convert(node->children[0]->data_type, type2)) {
+            yylval = node->children[0];
+            yyerror("Semantic error: If statement expects a boolean value");
+        }
         traverse_ast(node->children[1]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
         traverse_ast(node->children[2]);
         traverse_ast(node->children[3]);
         break;
+    }
     case NODE_OR_STATEMENTS:
         cout << string(current_scope, '\t') << "NODE_OR_STATEMENTS" << endl;
         for (Stype *child : node->children) {
             traverse_ast(child);
         }
         break;
-    case NODE_OR_STATEMENT:
+    case NODE_OR_STATEMENT:{
         cout << string(current_scope, '\t') << "NODE_OR_STATEMENT" << endl;
         current_scope++;
         symbol_table[current_scope_table].push_back(
             unordered_map<string, StEntry>());
         traverse_ast(node->children[0]);
+        DataType *type2 = new DataType(BOOL);
+        if (!can_implicitly_convert(node->children[0]->data_type, type2)) {
+            yylval = node->children[0];
+            yyerror("Semantic error: If statement expects a boolean value");
+        }
         traverse_ast(node->children[1]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
         break;
+    }
     case NODE_OTHERWISE_STATEMENT:
         cout << string(current_scope, '\t') << "NODE_OTHERWISE_STATEMENT"
              << endl;
@@ -1588,6 +1600,11 @@ void traverse_ast(Stype *node) {
             symbol_table[current_scope_table].push_back(
                 unordered_map<string, StEntry>());
             traverse_ast(node->children[0]);
+            DataType *type2 = new DataType(BOOL);
+            if (!can_implicitly_convert(node->children[0]->data_type, type2)) {
+            yylval = node->children[0];
+            yyerror("Semantic error: If statement expects a boolean value");
+            }
             symbol_table[current_scope_table].pop_back();
             current_scope--;
         }
