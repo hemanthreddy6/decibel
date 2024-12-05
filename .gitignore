@@ -11,6 +11,7 @@ Parser/parser.tab.h
 Parser/a.out
 CodeGen/codegen
 CodeGen/out.ll
+CodeGen/out1.ll
 CodeGen/out.o
 CodeGen/out
 .vscode/

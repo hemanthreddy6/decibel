@@ -11,7 +11,12 @@
 #include "llvm/Support/raw_ostream.h"
 #include <cstdio>
 #include <iostream>
+#include <llvm-14/llvm/ADT/STLFunctionalExtras.h>
 #include <llvm-14/llvm/IR/Constants.h>
+#include <llvm-14/llvm/IR/Instructions.h>
+#include <llvm-14/llvm/Support/Casting.h>
+#include <string>
+#include <vector>
 
 #define CODEGEN 1
 
@@ -25,8 +30,13 @@ static LLVMContext TheContext;
 static IRBuilder<> Builder(TheContext);
 static unique_ptr<Module> TheModule;
 
+// Audio type
+StructType *AudioType = nullptr;
+
 // Symbol Table for code generation
 static vector<unordered_map<string, AllocaInst *>> NamedValues;
+int num_funcs = 0;
+vector<pair<Stype *, Function *>> function_nodes;
 
 // Function Declarations
 Value *codegen(Stype *node);
@@ -153,20 +163,64 @@ Value *codegen(Stype *node) {
         cerr << "NODE_PLUS_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
-        if (LHS->getType()->isFloatingPointTy() || RHS->getType()->isFloatingPointTy()) {
+        Type *LHSType = LHS->getType();
+        Type *RHSType = RHS->getType();
+
+        if (LHSType->isFloatingPointTy() || RHSType->isFloatingPointTy()) {
+            if (LHSType->isIntegerTy())
+                LHS = Builder.CreateSIToFP(LHS, Type::getDoubleTy(TheContext), "int_to_float");
+            if (RHSType->isIntegerTy())
+                RHS = Builder.CreateSIToFP(RHS, Type::getDoubleTy(TheContext), "int_to_float");
             return Builder.CreateFAdd(LHS, RHS, "addtmp");
-        } else {
+        }
+
+        if (LHSType->isIntegerTy() && RHSType->isIntegerTy()) {
             return Builder.CreateAdd(LHS, RHS, "addtmp");
+        }
+        // String addition
+        if (LHSType->isPointerTy() && LHSType->getContainedType(0)->isIntegerTy(8)) {
+            Function *StrCatFunc = TheModule->getFunction("string_concat");
+            if (!StrCatFunc) {
+                FunctionType *StrCatType =
+                    FunctionType::get(Type::getInt8Ty(TheContext)->getPointerTo(),                                                // Return type: char*
+                                      {Type::getInt8Ty(TheContext)->getPointerTo(), Type::getInt8Ty(TheContext)->getPointerTo()}, // Arguments: char*, char*
+                                      false);
+                StrCatFunc = Function::Create(StrCatType, Function::ExternalLinkage, "string_concat", TheModule.get());
+            }
+            return Builder.CreateCall(StrCatFunc, {LHS, RHS}, "concat");
+        }
+
+        // Audio addition
+        if (LHSType->isStructTy() && RHSType->isStructTy() && LHSType->getStructName() == "struct.Audio" && RHSType->getStructName() == "struct.Audio") {
+            Function *AudioAddFunc = TheModule->getFunction("audio_add");
+            if (!AudioAddFunc) {
+                FunctionType *AudioAddType = FunctionType::get(AudioType, {LHSType, RHSType}, false);
+                AudioAddFunc = Function::Create(AudioAddType, Function::ExternalLinkage, "audio_add", TheModule.get());
+            }
+            return Builder.CreateCall(AudioAddFunc, {LHS, RHS}, "audioadd");
+        }
+
+        // handling addition of two function
+        if (LHSType->isPointerTy() && LHSType->getContainedType(0)->isFunctionTy()) {
+            // TODO
         }
     }
     case NODE_MINUS_EXPR: {
         cerr << "NODE_MINUS_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
-        if (LHS->getType()->isFloatingPointTy() || RHS->getType()->isFloatingPointTy()) {
-            return Builder.CreateFSub(LHS, RHS, "subtmp");
-        } else {
-            return Builder.CreateSub(LHS, RHS, "subtmp");
+        Type *LHSType = LHS->getType();
+        Type *RHSType = RHS->getType();
+        if (LHSType->isFloatingPointTy() || RHSType->isFloatingPointTy()) {
+            if (LHSType->isIntegerTy())
+                LHS = Builder.CreateSIToFP(LHS, Type::getDoubleTy(TheContext), "int_to_float");
+            if (RHSType->isIntegerTy())
+                RHS = Builder.CreateSIToFP(RHS, Type::getDoubleTy(TheContext), "int_to_float");
+            return Builder.CreateFSub(LHS, RHS, "addtmp");
+        }
+
+        if (LHSType->isIntegerTy() && RHSType->isIntegerTy()) {
+            return Builder.CreateSub(LHS, RHS, "addtmp");
         }
     }
     case NODE_MULT_EXPR: {
@@ -259,8 +313,9 @@ Value *codegen(Stype *node) {
     }
     case NODE_UNARY_PLUS_EXPR: {
         cerr << "NODE_UNARY_PLUS_EXPR" << endl;
-        Value *Operand = codegen(node->children[0]);
-        return Builder.CreateAdd(Operand, ConstantInt::get(Operand->getType(), 0), "plustmp");
+        return codegen(node->children[0]);
+        // Value *Operand = codegen(node->children[0]);
+        // return Builder.CreateAdd(Operand, ConstantInt::get(Operand->getType(), 0), "plustmp");
     }
     case NODE_UNARY_MINUS_EXPR: {
         cerr << "NODE_UNARY_MINUS_EXPR" << endl;
@@ -278,16 +333,35 @@ Value *codegen(Stype *node) {
     case NODE_FUNCTION_CALL: {
         cerr << "NODE_FUNCTION_CALL" << endl;
         string FuncName = node->children[0]->text;
-        Function *CalleeF = getFunction(FuncName);
+        // Function *CalleeF = getFunction(FuncName);
+        auto CalleeF = findVariable(FuncName);
+        // auto functype = CalleeF->getType();
+        FunctionType *functype = (FunctionType *)getLLVMType(node->data_type);
 
+        PointerType *FuncPointerType = PointerType::getUnqual(functype);
+
+        // Type *tp = ConstantExpr::getBitCast(getFunction("_func_0"), FuncPointerType)->getType();
+        // Type *tp = ;
+
+        // Value *FuncPtr = Builder.CreateLoad(tp, CalleeF);
         vector<Value *> ArgsV;
         Stype *FuncArgsNode = node->children[1];
-        for (Stype *arg : FuncArgsNode->children) {
+        for (Stype *arg : FuncArgsNode->children[0]->children) {
             Value *ArgVal = codegen(arg);
             ArgsV.push_back(ArgVal);
         }
 
-        return Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+        Value *p = Builder.CreateAlloca(CalleeF->getType(), nullptr, "p");
+
+        Builder.CreateStore(CalleeF, p, false);
+        Value *temp = Builder.CreateLoad(FuncPointerType, p);
+        Value *temp1 = Builder.CreateLoad(FuncPointerType, temp);
+
+        return Builder.CreateCall(getFunction("_func_0")->getFunctionType(), temp1, ArgsV);
+
+        // LoadInst *loadFPtr = Builder.CreateLoad(tp, CalleeF, "loadedFuncPtr");
+        //
+        // return Builder.CreateCall(cast<Function>(loadFPtr), ArgsV, "calltmp");
     }
 
     // case NODE_CAST_EXPR: {cerr << "NODE_CAST_EXPR" << endl;
@@ -454,7 +528,7 @@ Value *codegen(Stype *node) {
         // Emit else block.
         // TheFunction->getBasicBlocks().push_back(ElseBB);
         Builder.SetInsertPoint(ElseBB);
-        if (node->children[3]->children.size()){
+        if (node->children[3]->children.size()) {
             pushSymbolTable();
             codegen(node->children[3]->children[0]); // Else statements
             popSymbolTable();
@@ -571,9 +645,9 @@ Value *codegen(Stype *node) {
     case NODE_NORMAL_FUNCTION: {
         cerr << "NODE_NORMAL_FUNCTION" << endl;
         // Implement function definition
-        string FuncName = node->children[0]->text;
-        Stype *ParamListNode = node->children[1];
-        DataType *ReturnTypeData = node->data_type;
+        // string FuncName = node->children[0]->text;
+        Stype *ParamListNode = node->children[0];
+        DataType *ReturnTypeData = node->children[1]->data_type;
         Stype *BodyNode = node->children[2];
 
         vector<Type *> ParamTypes;
@@ -587,37 +661,42 @@ Value *codegen(Stype *node) {
 
         Type *ReturnType = getLLVMType(ReturnTypeData);
         FunctionType *FT = FunctionType::get(ReturnType, ParamTypes, false);
-        Function *TheFunction = Function::Create(FT, Function::ExternalLinkage, FuncName, TheModule.get());
+        Function *TheFunction = Function::Create(FT, Function::ExternalLinkage, "_func_" + to_string(num_funcs), TheModule.get());
+
+        num_funcs++;
 
         unsigned idx = 0;
         for (auto &Arg : TheFunction->args()) {
             Arg.setName(ParamNames[idx++]);
         }
 
-        BasicBlock *BB = BasicBlock::Create(TheContext, "entry", TheFunction);
-        Builder.SetInsertPoint(BB);
-
-        pushSymbolTable();
-
-        idx = 0;
-        for (auto &Arg : TheFunction->args()) {
-            AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName().str(), Arg.getType());
-            Builder.CreateStore(&Arg, Alloca);
-            NamedValues.back()[Arg.getName().str()] = Alloca;
-            idx++;
-        }
-
-        codegen(BodyNode);
-
-        if (ReturnType == Type::getVoidTy(TheContext)) {
-            Builder.CreateRetVoid();
-        }
-
-        popSymbolTable();
-
-        verifyFunction(*TheFunction);
-        return TheFunction;
+        // BasicBlock *BB = BasicBlock::Create(TheContext, "func_entry", TheFunction);
+        // Builder.SetInsertPoint(BB);
+        //
+        // pushSymbolTable();
+        //
+        // idx = 0;
+        // for (auto &Arg : TheFunction->args()) {
+        //     AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName().str(), Arg.getType());
+        //     Builder.CreateStore(&Arg, Alloca);
+        //     NamedValues.back()[Arg.getName().str()] = Alloca;
+        //     idx++;
+        // }
+        //
+        // codegen(BodyNode);
+        //
+        // if (ReturnType == Type::getVoidTy(TheContext)) {
+        //     Builder.CreateRetVoid();
+        // } else
+        //
+        // popSymbolTable();
+        //
+        // verifyFunction(*TheFunction);
+        function_nodes.push_back({node, TheFunction});
+        PointerType *FuncPointerType = PointerType::get(FT, 0);
+        return ConstantExpr::getBitCast(TheFunction, FuncPointerType);
     }
+    case NODE_RETURNABLE_STATEMENTS:
     case NODE_STATEMENTS: {
         cerr << "NODE_STATEMENTS" << endl;
         Value *LastValue = nullptr;
@@ -634,6 +713,8 @@ Value *codegen(Stype *node) {
 
 // Function to get LLVM type from DataType
 Type *getLLVMType(DataType *dtype) {
+    if (!dtype)
+        return nullptr;
     if (dtype->is_primitive) {
         if (dtype->is_vector) {
             Type *elemType = getLLVMType(dtype->vector_data_type);
@@ -641,7 +722,7 @@ Type *getLLVMType(DataType *dtype) {
         } else {
             switch (dtype->basic_data_type) {
             case INT:
-                return Type::getInt32Ty(TheContext);
+                return Type::getInt16Ty(TheContext);
             case LONG:
                 return Type::getInt64Ty(TheContext);
             case FLOAT:
@@ -651,7 +732,7 @@ Type *getLLVMType(DataType *dtype) {
             case STRING:
                 return Type::getInt8Ty(TheContext)->getPointerTo();
             case AUDIO:
-                return Type::getInt8Ty(TheContext)->getPointerTo(); // Represent audio data as i8*
+                return AudioType;
             default:
                 return nullptr;
             }
@@ -689,6 +770,10 @@ int codegen_main(Stype *root) {
     freopen("out.ll", "w", stdout);
     TheModule = make_unique<Module>("MyModule", TheContext);
 
+    // Define the struct type
+    AudioType = StructType::create(TheContext, "struct.Audio");
+    AudioType->setBody({Type::getInt64Ty(TheContext), PointerType::get(Type::getInt32Ty(TheContext), 0)});
+
     // Generate code for the root node
     cerr << "-------------------------------starting codegen--------------------------------------" << endl;
     Function *main_function = Function::Create(FunctionType::get(Type::getInt32Ty(TheContext), {}, false), Function::ExternalLinkage, "main", TheModule.get());
@@ -698,6 +783,42 @@ int codegen_main(Stype *root) {
     codegen(root);
     popSymbolTable();
     Builder.CreateRet(ConstantInt::get(Type::getInt32Ty(TheContext), 0));
+
+    while (function_nodes.size() != 0) {
+        auto node_func = function_nodes.back();
+        function_nodes.pop_back();
+        auto node = node_func.first;
+        auto TheFunction = node_func.second;
+
+        BasicBlock *BB = BasicBlock::Create(TheContext, "func_entry", TheFunction);
+        Builder.SetInsertPoint(BB);
+
+        pushSymbolTable();
+
+        int idx = 0;
+        for (auto &Arg : TheFunction->args()) {
+            AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName().str(), Arg.getType());
+            Builder.CreateStore(&Arg, Alloca);
+            NamedValues.back()[Arg.getName().str()] = Alloca;
+            idx++;
+        }
+
+        codegen(node->children[2]);
+
+        auto RetType = getLLVMType(node->children[1]->data_type);
+
+        if (RetType == Type::getVoidTy(TheContext)) {
+            Builder.CreateRetVoid();
+        }
+
+        Builder.CreateRet(Constant::getNullValue(RetType));
+
+        popSymbolTable();
+
+        verifyFunction(*TheFunction);
+
+    }
+
     cerr << "--------------------------traversed tree for codegen---------------------------------" << endl;
 
     // Validate the generated code

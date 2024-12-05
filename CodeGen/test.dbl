@@ -1,3 +1,11 @@
+f <- (a:long , b:long):long {
+    if (a>b){
+        return a;
+    } otherwise {
+        return b;
+    }
+};
+print f(0, 42);
 a <- 0;
 loop 10 {
     a += 1;

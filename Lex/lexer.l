@@ -94,6 +94,7 @@
 
         Stype(enum NodeType type){
             node_type = type;
+            data_type = NULL;
         }
     };
     #define YYSTYPE struct Stype *
