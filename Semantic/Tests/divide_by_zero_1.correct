@@ -1,0 +1,7 @@
+main {
+    a: int <- 0;
+    b: int <- 10;
+    result <- b / a;
+}
+
+// This is checked at runtime

@@ -1,0 +1,14 @@
+add <- (a: int, b: int): int {
+    return a + b;
+};
+
+sub <- (a: int, b: int): int {
+    return a - b;
+};
+
+main {
+    aaa: string <- "a";
+    b: float;
+    result <- add(aaa, b);  // Error: Passing a string as argument when an int is expected
+    print result;
+}
