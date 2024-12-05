@@ -1,0 +1,16 @@
+main {
+    a1: string <- "good";
+    a2: string <- "better";
+    a3: string <- "best";
+
+    b1 <- a1 + a2;
+    b2: string <- a2 + " luck";
+    b3 <- "lol";
+
+    c1 <- "nice" + b1 + "qwerty";
+    c2 <- c1 + c1 + c1;
+    c2 = b1 + ("c1" + a3);
+    c3: string <- (((((("bi"))))));
+
+    d1 <- c3 + (((c2 + (c1 + ((" hello " + c1) + c2)))) + c3);
+}

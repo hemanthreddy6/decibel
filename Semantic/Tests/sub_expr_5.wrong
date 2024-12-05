@@ -1,0 +1,7 @@
+main {
+    a <- load "input.wav";
+    b <- (a: int): int {
+        return a - 45;
+    };
+    c <- a - b;
+}

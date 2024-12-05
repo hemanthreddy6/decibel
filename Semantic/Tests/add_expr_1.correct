@@ -1,0 +1,29 @@
+main {
+    a1: audio <- load "input1.wav";
+    a2: audio <- load "input2.wav";
+    a3: audio <- a1 + a2;
+
+    b1 <- load "input1.wav";
+    b2: audio <- load "input2.wav";
+    b3: audio <- b1 + b2;
+
+    c1 <- load "input1.wav";
+    c2 <- load "input2.wav";
+    c3: audio <- c1 + c2;
+
+    d1 <- load "input1.wav";
+    d2 <- load "input2.wav";
+    d3 <- d1 + d2;
+
+    e1 <- a3 + b1;
+    e2: audio <- b3 + (c3 + d3) + e1;
+    e3 <- ((e2 + c3) + e1) + e2;
+
+    a1 = e1 + (((e3)));
+    a2 = ((b2 + c2) + (d2 + e2));
+
+    a3 = (load "input3.wav") + c2;
+    
+    f1 <- ((load "input1.wav") + (load "input4.wav"));
+    f2: audio <- (load "output1.mp4") + (((((d2)))));
+}

@@ -1,0 +1,5 @@
+main {
+    a <- load "input.wav";
+    b <- 256;
+    c <- a + b;
+}

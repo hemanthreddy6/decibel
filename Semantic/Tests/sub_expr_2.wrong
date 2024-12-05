@@ -1,0 +1,5 @@
+main {
+    a: audio <- load "main.wav";
+    b: audio <- load "dior.wav";
+    c <- a-b;
+}

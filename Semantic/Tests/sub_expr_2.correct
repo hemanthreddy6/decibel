@@ -1,0 +1,32 @@
+main {
+    a <- (a: int):int {
+        return 2;
+    };
+    b <- (b: int):int {
+        return 5;
+    };
+    c <- a - b;
+    d <- c(35);
+    e: int <- 25;
+    e = d;
+
+    f <- (a: int, b: int):(int):int {
+        return (c: int):int {
+            return 25;
+        };
+    };
+
+    g <- (c: int, d: int):(int):int {
+        return (j: int):int {
+            return (j-23);
+        };
+    };
+
+    h <- f - g;
+    g(2,3);
+    f(1,2);
+    i <- h(6,8) - (c - g(2,3));
+    j <- i - f(4,5);
+    k <- j(4) - 45;
+    l: int <- i(4);
+}
