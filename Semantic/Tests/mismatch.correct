@@ -1,0 +1,7 @@
+
+main {
+    a: int <- 5;  // 'a' is an integer
+    b: float <- 3.14;  // 'b' is a float
+    c: int <- a * 2;  // Valid, type of result matches 'int'
+    print c;  // Output: 10
+}

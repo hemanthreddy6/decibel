@@ -1,0 +1,13 @@
+
+func1 <- (x: int): int {
+    return x * 2;
+};
+
+func1 <- (y: float): float {
+    return y + 1.5;
+};
+
+main {
+    result1 <- func1(4);   =
+    result2 <- func1(3.5);
+}

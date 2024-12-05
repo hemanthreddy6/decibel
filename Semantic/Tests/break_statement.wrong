@@ -1,0 +1,9 @@
+
+main {
+    counter <- 0;
+    loop 10 {
+        counter <- counter + 1;
+    }
+    break;
+    print counter;
+}

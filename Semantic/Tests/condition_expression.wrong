@@ -1,0 +1,9 @@
+
+ain {
+    x <- 5;
+    if (x > 5) {
+        print "Greater than 5";
+    } else {
+        print 10 + "Text";  // wrong: incompatible types
+    }
+}

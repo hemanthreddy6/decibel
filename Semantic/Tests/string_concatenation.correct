@@ -1,0 +1,7 @@
+
+main {
+    greeting <- "Hello ";
+    name <- "World";
+    result <- greeting + name;
+    print result;
+}

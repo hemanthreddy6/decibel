@@ -1,0 +1,16 @@
+
+factorial <- (n: int): int {  
+    if n == 0 {
+        return 1;
+    } or n > 0 {
+        return n * factorial(n - 1);
+    } otherwise {
+        return 0; 
+    }
+};
+
+main {
+    n: int <- 5;
+    result: int <- factorial(n);  
+    print result;
+}

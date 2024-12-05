@@ -1,0 +1,6 @@
+
+main {
+    a: int <- 10;
+    b: string <- "hello";
+    a = b;  
+}

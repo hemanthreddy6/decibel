@@ -1,0 +1,15 @@
+
+func1 <- (b: int, c: int): int {
+    return b;
+};
+
+func2 <- (): float => (3.14); 
+
+func3 <- (a: int): string {
+    b <- 5;
+    return "awesome";
+};
+
+main {
+    func4 <- (b: int): int => (b); 
+}

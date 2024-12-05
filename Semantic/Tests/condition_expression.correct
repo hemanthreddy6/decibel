@@ -1,0 +1,9 @@
+
+main {
+    x <- 10;
+    if (x > 5) {
+        print "Greater than 5";
+    } or x <= 5 {
+        print "Less than or equal to 5";
+    }
+}

@@ -1,0 +1,14 @@
+
+func1 <- (b: int, c: int): int {
+    return b;
+};
+
+func1 <- (): float {
+    return 3.14;
+};
+
+func1 <- (b: int, c: int): string {
+    return "conflict";
+};
+n
+func1 <- 10; 

@@ -1,0 +1,13 @@
+
+funcInt <- (x: int): int {
+    return x * 2;
+};
+
+funcFloat <- (y: float): float {
+    return y + 1.5;
+};
+
+main {
+    result1 <- funcInt(4);    
+    result2 <- funcFloat(3.5); 
+}

@@ -1,5 +1,0 @@
-main{
-    a <- 10;
-    b <- 'hello';
-    const a:int <- 20;
-}

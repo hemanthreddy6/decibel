@@ -1,0 +1,8 @@
+
+main {
+    a: int <- 0;
+    loop { 
+        print a;
+        a <- a + 1;
+    }
+}

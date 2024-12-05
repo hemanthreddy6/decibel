@@ -1,0 +1,7 @@
+
+main {
+    a: string <- "Hello";
+    b: string <- "World";
+    c: string <- a - b;  
+    print c;
+}
