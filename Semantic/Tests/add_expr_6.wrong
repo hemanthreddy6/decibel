@@ -1,0 +1,11 @@
+main {
+    a <- ():(int):int {
+        return (a: int):int {
+            return a + 45;
+        };
+    };
+    b <- (b: int):int {
+        return (b + 24 ++ 4);
+    };
+    c <- a + b;
+}

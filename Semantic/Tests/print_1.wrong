@@ -1,0 +1,4 @@
+main {
+    a: audio <- load "input.wave";
+    print a;
+}

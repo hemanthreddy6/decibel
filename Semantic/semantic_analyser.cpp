@@ -133,11 +133,11 @@ int handle_declaration(Stype *node, bool has_dtype, bool is_const) {
     }
     // if data type was explicitly declared and the assigned type does not
     // match/cannot be implicitly converted
-    if (has_dtype && !can_implicitly_convert(node->children[1]->data_type,
-                                             node->children[2]->data_type)) {
+    if (has_dtype 
+        && !can_implicitly_convert(node->children[1]->data_type, node->children[2]->data_type) 
+        && !node->children[2]->data_type->is_vector) {
         yylval = node->children[1];
-        yyerror("Semantic error: cannot convert this data type to this "
-                "other one");
+        yyerror("Semantic error: cannot convert this data type to this other one");
         return 1;
     }
     DataType *dtype;
@@ -192,9 +192,9 @@ StEntry* handle_identifier_reference(Stype *node) {
         found = true;
         *entry = symbol_table[0][0][node->text];
     }
-    if (found)
+    if (found) {
         node->data_type = entry->data_type;
-    else {
+    } else {
         node->data_type = NULL;
         yylval = node;
         yyerror(
@@ -1027,13 +1027,25 @@ int handle_minus_expression(Stype* node)
         if (isFunction(type2)){
             if (are_data_types_equal_and_not_null(type1, type2)){
                 if (final_return_type(type1) != STRING || final_return_type(type1) != AUDIO ){
-                    // node->data_type = new DataType();
+                    node->data_type = new DataType();
                     node->data_type->is_primitive = false;
                     node->data_type->parameters = type1->parameters;
                     node->data_type->return_type = type1->return_type;
-                } 
-                
+                    return 0;
+                } else {
+                    yylval = node->children[1];
+                    yyerror("Semantic error: invalid operand for minus operator");
+                    return 1;
+                }
+            } else {
+                yylval = node->children[1];
+                yyerror("Semantic error: invalid operand for minus operator");
+                return 1;
             }
+        } else {
+            yylval = node->children[1];
+            yyerror("Semantic error: invalid operand for minus operator");
+            return 1;
         }
     } else {
         yylval = node->children[0];
@@ -1248,8 +1260,8 @@ void traverse_ast(Stype *node) {
     case NODE_READ_STATEMENT:
         cout << string(current_scope, '\t') << "Read statement node" << endl;
         traverse_ast(node->children[0]);
-        if (node->data_type->is_primitive && !node->data_type->is_vector) {
-            if (node->data_type->basic_data_type == AUDIO) {
+        if (node->children[0]->data_type->is_primitive && !node->children[0]->data_type->is_vector) {
+            if (node->children[0]->data_type->basic_data_type == AUDIO) {
                 yyerror("Semantic error: Cannot read audio. Use load statement "
                         "instead");
             }
@@ -1586,34 +1598,46 @@ void traverse_ast(Stype *node) {
         current_scope--;
         break;
     }
-    case NODE_IF_STATEMENT:
+    case NODE_IF_STATEMENT:{
         cout << string(current_scope, '\t') << "NODE_IF_STATEMENT" << endl;
         current_scope++;
         symbol_table[current_scope_table].push_back(
             unordered_map<string, StEntry>());
         traverse_ast(node->children[0]);
+        DataType *type2 = new DataType(BOOL);
+        if (!can_implicitly_convert(node->children[0]->data_type, type2)) {
+            yylval = node->children[0];
+            yyerror("Semantic error: If statement expects a boolean value");
+        }
         traverse_ast(node->children[1]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
         traverse_ast(node->children[2]);
         traverse_ast(node->children[3]);
         break;
+    }
     case NODE_OR_STATEMENTS:
         cout << string(current_scope, '\t') << "NODE_OR_STATEMENTS" << endl;
         for (Stype *child : node->children) {
             traverse_ast(child);
         }
         break;
-    case NODE_OR_STATEMENT:
+    case NODE_OR_STATEMENT:{
         cout << string(current_scope, '\t') << "NODE_OR_STATEMENT" << endl;
         current_scope++;
         symbol_table[current_scope_table].push_back(
             unordered_map<string, StEntry>());
         traverse_ast(node->children[0]);
+        DataType *type2 = new DataType(BOOL);
+        if (!can_implicitly_convert(node->children[0]->data_type, type2)) {
+            yylval = node->children[0];
+            yyerror("Semantic error: If statement expects a boolean value");
+        }
         traverse_ast(node->children[1]);
         symbol_table[current_scope_table].pop_back();
         current_scope--;
         break;
+    }
     case NODE_OTHERWISE_STATEMENT:
         cout << string(current_scope, '\t') << "NODE_OTHERWISE_STATEMENT"
              << endl;
@@ -1840,7 +1864,8 @@ void traverse_ast(Stype *node) {
         // TODO: handle vector index and slice
         for (int i = 1; i < node->children.size(); i++) {
             node->children[i]->data_type = node->data_type;
-            traverse_ast(node->children[1]);
+            traverse_ast(node->children[i]);
+            node->data_type = node->children[i]->data_type;
         }
         break;
     case NODE_NOT_SET:
@@ -2036,8 +2061,8 @@ void built_in_functions(){
     pan_data_type_static->parameters = pan_parameters_static;
     pan_data_type_static->return_type = pan_return_type;
     symbol_table[0][0].insert({"PAN_STATIC", StEntry(pan_data_type_static, true)});
-
 }
+
 int semantic() {
     // Initialising the symbol table
     symbol_table = vector<vector<unordered_map<string, StEntry>>>(

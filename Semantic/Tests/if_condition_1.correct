@@ -1,0 +1,10 @@
+main {
+    a <- 15;
+    b <- 20;
+    if ( a > b ) {
+        print "a is greater than b";
+    }
+    otherwise {
+        print "b is greater than a";
+    }
+}

@@ -1,0 +1,15 @@
+main {
+    a <- 15;
+    b <- 20;
+    if ( a > b ) {
+        c <- 10;
+    }
+    or (a == b) {
+        c = c + -10;
+    }
+    otherwise {
+        if (c){
+            print "scope error";
+        }
+    }
+}

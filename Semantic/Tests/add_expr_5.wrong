@@ -1,0 +1,10 @@
+main {
+    a <- (a: int): int {
+        return a;
+    };
+    b <- (b: int): long {
+        return (b+b+(b+b));
+    };
+
+    c <- a + b;
+}

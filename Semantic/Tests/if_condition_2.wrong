@@ -1,0 +1,16 @@
+function <- (a: int , b : int): string {
+    if ( a > b ) {
+        return "yo mama is so fat"; 
+    }
+    return "yo mama is so thin";
+};
+main {
+    a <- 13;
+    b <- 70;
+    if ( function(a , b) ) {
+        print "function1 returned true";
+    }
+    otherwise {
+        print "function1 returned false";
+    }
+}

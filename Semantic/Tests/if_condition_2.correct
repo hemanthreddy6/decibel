@@ -1,0 +1,28 @@
+func <- (a: string): string {
+    print "a";
+};
+
+main {
+    
+    marks <- 85;
+    if ( marks > 90 ) {
+        func("A+");
+    }
+    or ( marks > 80 && marks <= 90 ) {
+        func("A");
+    }
+    or ( marks > 70 || marks <= 80 ) {
+        func("B");
+    }
+    or ( marks > 60 ) {
+        func("C");
+    }
+    or (marks > 50) {
+        func("D");
+    }
+    otherwise {
+        func("F");
+        func("Don't be Sad");
+    }
+
+}
