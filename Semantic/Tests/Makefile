@@ -1,4 +1,3 @@
--include ../../Makefile.inc
 COMPILER := $(if $(COMPILER),$(COMPILER),g++)
 CORRECT_TESTS := $(wildcard *.correct)
 WRONG_TESTS := $(wildcard *.wrong)
@@ -47,4 +46,4 @@ test: build $(CORRECT_TESTS) $(WRONG_TESTS)
 				printf "%-60b%b\n" "\033[32m$$(basename $(FILE)) " "[ PASSED ]\033[0m"; \
 			fi; \
 		fi; \
-	fi; 
+	fi;

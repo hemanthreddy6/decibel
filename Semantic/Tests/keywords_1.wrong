@@ -1,0 +1,18 @@
+// import "constants.db";
+
+main {
+    const fileName: string <- "song.wav";  // constant string
+    const duration: float <- 3.5;          // constant float
+    const volume: int <- 10;               // constant integer
+    const isActive: bool <- true;          //  constant boolean
+
+    fileName <- "new_song.wav";  // Error: Cannot reassign a constant
+    duration = 4.0;              // Error: Cannot modify a constant
+    volume += 5;                 // Error: Cannot modify a constant
+    isActive = false;            // Error: Cannot modify a constant
+
+    print fileName;
+    print duration;
+    print volume;
+    print isActive;
+}

@@ -1,0 +1,20 @@
+// import "effects.db";
+// import "utils.db";
+// import "pans.db";
+
+a <- (b: int, c: int): int{
+    return 1;
+};
+
+panFunction <- (time: float): float {
+    return SIN(time * 2 * 3.14);  // Oscillator
+};
+
+main {
+    track: audio <- load "original.wav";
+    pannedTrack <- PAN(track, panFunction);
+
+    // Play and save panned track
+    play pannedTrack;
+    save pannedTrack -> "panned_track.wav";
+}
