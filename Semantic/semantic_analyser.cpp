@@ -1799,57 +1799,36 @@ void traverse_ast(Stype *node) {
 }
 
 void built_in_functions(){
-    // print function
-    DataType* print_return_type = NULL;
-    DataType* print_parameter = new DataType(STRING);
-    vector<DataType*> print_parameters = {print_parameter};
-    DataType* print_data_type = new DataType();
-    print_data_type->is_primitive = false;
-    print_data_type->parameters = print_parameters;
-    print_data_type->return_type = print_return_type;
-    symbol_table[0][0].insert({"print", StEntry(print_data_type, true)});
 
-    // read function
-    DataType* read_return_type = new DataType(STRING);
-    vector<DataType*> read_parameters = {};
-    DataType* read_data_type = new DataType();
-    read_data_type->is_primitive = false;
-    read_data_type->parameters = read_parameters;
-    read_data_type->return_type = read_return_type;
-    symbol_table[0][0].insert({"read", StEntry(read_data_type, true)});
+    // AUDIO function
+    DataType* audio_return_type = new DataType(AUDIO);
+    DataType* audio_parameter1 = new DataType();
+    audio_parameter1->is_primitive = false;
+    audio_parameter1->return_type = new DataType(FLOAT);
+    audio_parameter1->parameters = {new DataType(FLOAT)};
+    DataType* audio_parameter2 = new DataType(FLOAT);
+    DataType* audio_parameter3 = new DataType(FLOAT);
+    vector<DataType*> audio_parameters = {audio_parameter1, audio_parameter2, audio_parameter3};
+    DataType* audio_data_type = new DataType();
+    audio_data_type->is_primitive = false;
+    audio_data_type->parameters = audio_parameters;
+    audio_data_type->return_type = audio_return_type;
+    symbol_table[0][0].insert({"AUDIO_STATIC", StEntry(audio_data_type, true)});
 
-    // play function
-    DataType* play_return_type = NULL;
-    DataType* play_parameter = new DataType(AUDIO);
-    vector<DataType*> play_parameters = {play_parameter};
-    DataType* play_data_type = new DataType();
-    play_data_type->is_primitive = false;
-    play_data_type->parameters = play_parameters;
-    play_data_type->return_type = play_return_type;
-    symbol_table[0][0].insert({"play", StEntry(play_data_type, true)});
+    // AUDIO dynamic function
+    DataType* audio_parameter_new2 = new DataType();
+    audio_parameter_new2->is_primitive = false;
+    audio_parameter_new2->return_type = new DataType(FLOAT);
+    audio_parameter_new2->parameters = {new DataType(FLOAT)};
+    vector<DataType*> audio_parameters_dyn = {audio_parameter1, audio_parameter_new2, audio_parameter3};
+    DataType* audio_data_type_dyn = new DataType();
+    audio_data_type_dyn->is_primitive = false;
+    audio_data_type_dyn->parameters = audio_parameters;
+    audio_data_type_dyn->return_type = audio_return_type;
+    symbol_table[0][0].insert({"AUDIO_DYNAMIC", StEntry(audio_data_type_dyn, true)});
 
-    // load function
-    DataType* load_return_type = new DataType(AUDIO);
-    DataType* load_parameter = new DataType(STRING);
-    vector<DataType*> load_parameters = {load_parameter};
-    DataType* load_data_type = new DataType();
-    load_data_type->is_primitive = false;
-    load_data_type->parameters = load_parameters;
-    load_data_type->return_type = load_return_type;
-    symbol_table[0][0].insert({"load", StEntry(load_data_type, true)});
 
-    // save function
-    DataType* save_return_type = NULL;
-    DataType* save_parameter1 = new DataType(AUDIO);
-    DataType* save_parameter2 = new DataType(STRING);
-    vector<DataType*> save_parameters = {save_parameter1, save_parameter2};
-    DataType* save_data_type = new DataType();
-    save_data_type->is_primitive = false;
-    save_data_type->parameters = save_parameters;
-    save_data_type->return_type = save_return_type;
-    symbol_table[0][0].insert({"save", StEntry(save_data_type, true)});
-
-    // sin function
+    // SIN function
     DataType* sin_return_type = new DataType(FLOAT);
     DataType* sin_parameter = new DataType(FLOAT);
     vector<DataType*> sin_parameters = {sin_parameter};
@@ -1857,7 +1836,153 @@ void built_in_functions(){
     sin_data_type->is_primitive = false;
     sin_data_type->parameters = sin_parameters;
     sin_data_type->return_type = sin_return_type;
-    symbol_table[0][0].insert({"sin", StEntry(sin_data_type, true)});
+    symbol_table[0][0].insert({"SIN", StEntry(sin_data_type, true)});
+
+    // COS function
+    DataType* cos_return_type = new DataType(FLOAT);
+    DataType* cos_parameter = new DataType(FLOAT);
+    vector<DataType*> cos_parameters = {cos_parameter};
+    DataType* cos_data_type = new DataType();
+    cos_data_type->is_primitive = false;
+    cos_data_type->parameters = cos_parameters;
+    cos_data_type->return_type = cos_return_type;
+    symbol_table[0][0].insert({"COS", StEntry(cos_data_type, true)});
+
+    // HIGHPASS static function
+    DataType* highpass_return_type = new DataType(AUDIO);
+    DataType* highpass_parameter1 = new DataType(AUDIO);
+    DataType* highpass_parameter2 = new DataType(FLOAT);
+    vector<DataType*> highpass_parameters = {highpass_parameter1, highpass_parameter2};
+    DataType* highpass_data_type = new DataType();
+    highpass_data_type->is_primitive = false;
+    highpass_data_type->parameters = highpass_parameters;
+    highpass_data_type->return_type = highpass_return_type;
+    symbol_table[0][0].insert({"HIGHPASS_STATIC", StEntry(highpass_data_type, true)});
+
+    // HIGHPASS dynamic function
+    DataType* highpass_parameter_new2 = new DataType();
+    highpass_parameter_new2->is_primitive = false;
+    highpass_parameter_new2->return_type = new DataType(FLOAT);
+    highpass_parameter_new2->parameters = {new DataType(FLOAT)};
+    vector<DataType*> highpass_parameters_dyn = {highpass_parameter1, highpass_parameter_new2};
+    DataType* highpass_data_type_dyn = new DataType();
+    highpass_data_type_dyn->is_primitive = false;
+    highpass_data_type_dyn->parameters = highpass_parameters_dyn;
+    highpass_data_type_dyn->return_type = highpass_return_type;
+    symbol_table[0][0].insert({"HIGHPASS_DYNAMIC", StEntry(highpass_data_type_dyn, true)});
+
+    // LOWPASS function
+    DataType* lowpass_return_type = new DataType(AUDIO);
+    DataType* lowpass_parameter1 = new DataType(AUDIO);
+    DataType* lowpass_parameter2 = new DataType(FLOAT);
+    vector<DataType*> lowpass_parameters = {highpass_parameter1, highpass_parameter2};
+    DataType* lowpass_data_type = new DataType();
+    lowpass_data_type->is_primitive = false;
+    lowpass_data_type->parameters = lowpass_parameters;
+    lowpass_data_type->return_type = lowpass_return_type;
+    symbol_table[0][0].insert({"LOWPASS_STATIC", StEntry(lowpass_data_type, true)});
+
+    // LOWPASS dynamic function
+    DataType* lowpass_parameter_new2 = new DataType();
+    lowpass_parameter_new2->is_primitive = false;
+    lowpass_parameter_new2->return_type = new DataType(FLOAT);
+    lowpass_parameter_new2->parameters = {new DataType(FLOAT)};
+    vector<DataType*> lowpass_parameters_dyn = {lowpass_parameter1, lowpass_parameter_new2};
+    DataType* lowpass_data_type_dyn = new DataType();
+    lowpass_data_type_dyn->is_primitive = false;
+    lowpass_data_type_dyn->parameters = lowpass_parameters_dyn;
+    lowpass_data_type_dyn->return_type = lowpass_return_type;
+    symbol_table[0][0].insert({"LOWPASS_DYNAMIC", StEntry(lowpass_data_type_dyn, true)});
+
+    // EQ function
+    DataType* eq_return_type = new DataType(AUDIO);
+    DataType* eq_parameter1 = new DataType(AUDIO);
+    DataType* eq_parameter2 = new DataType();
+    eq_parameter2->is_primitive = false;
+    eq_parameter2->return_type = new DataType(FLOAT);
+    vector<DataType*> eq_parameters = {eq_parameter1, eq_parameter2};
+    DataType* eq_data_type = new DataType();
+    eq_data_type->is_primitive = false;
+    eq_data_type->parameters = eq_parameters;
+    eq_data_type->return_type = eq_return_type;
+    symbol_table[0][0].insert({"EQ", StEntry(eq_data_type, true)});
+
+    // EXP_DECAY function 
+    DataType* exp_decay_return_type = new DataType(AUDIO);
+    DataType* exp_decay_parameter1 = new DataType(AUDIO);
+    DataType* exp_decay_parameter2 = new DataType(FLOAT);
+    vector<DataType*> exp_decay_parameters = {exp_decay_parameter1, exp_decay_parameter2};
+    DataType* exp_decay_data_type = new DataType();
+    exp_decay_data_type->is_primitive = false;
+    exp_decay_data_type->parameters = exp_decay_parameters;
+    exp_decay_data_type->return_type = exp_decay_return_type;
+    symbol_table[0][0].insert({"EXP_DECAY", StEntry(exp_decay_data_type, true)});
+
+    // LIN_DECAY function 
+    DataType* lin_decay_return_type = new DataType(AUDIO);
+    DataType* lin_decay_parameter1 = new DataType(AUDIO);
+    DataType* lin_decay_parameter2 = new DataType(FLOAT);
+    vector<DataType*> lin_decay_parameters = {lin_decay_parameter1, lin_decay_parameter2};
+    DataType* lin_decay_data_type = new DataType();
+    lin_decay_data_type->is_primitive = false;
+    lin_decay_data_type->parameters = lin_decay_parameters;
+    lin_decay_data_type->return_type = lin_decay_return_type;
+    symbol_table[0][0].insert({"LIN_DECAY", StEntry(lin_decay_data_type, true)});
+
+    // SQUARE WAVE function 
+    DataType* square_wave_return_type = new DataType(INT);
+    DataType* square_wave_parameter1 = new DataType(FLOAT);
+    vector<DataType*> square_wave_parameters = {square_wave_parameter1};
+    DataType* square_wave_data_type = new DataType();
+    square_wave_data_type->is_primitive = false;
+    square_wave_data_type->parameters = square_wave_parameters;
+    square_wave_data_type->return_type = square_wave_return_type;
+    symbol_table[0][0].insert({"SQUARE_WAVE", StEntry(square_wave_data_type, true)});
+
+    // SAW WAVE function
+    DataType* saw_wave_return_type = new DataType(INT);
+    DataType* saw_wave_parameter1 = new DataType(FLOAT);
+    vector<DataType*> saw_wave_parameters = {saw_wave_parameter1};
+    DataType* saw_wave_data_type = new DataType();
+    saw_wave_data_type->is_primitive = false;
+    saw_wave_data_type->parameters = saw_wave_parameters;
+    saw_wave_data_type->return_type = saw_wave_return_type;
+    symbol_table[0][0].insert({"SAW_WAVE", StEntry(saw_wave_data_type, true)});
+
+    // TRIANGLE WAVE function
+    DataType* triangle_wave_return_type = new DataType(INT);
+    DataType* triangle_wave_parameter1 = new DataType(FLOAT);
+    vector<DataType*> triangle_wave_parameters = {triangle_wave_parameter1};
+    DataType* triangle_wave_data_type = new DataType();
+    triangle_wave_data_type->is_primitive = false;
+    triangle_wave_data_type->parameters = triangle_wave_parameters;
+    triangle_wave_data_type->return_type = triangle_wave_return_type;
+    symbol_table[0][0].insert({"TRIANGLE_WAVE", StEntry(triangle_wave_data_type, true)});
+
+    // PAN dynamic function 
+    DataType* pan_return_type = new DataType(AUDIO);
+    DataType* pan_parameter1 = new DataType(AUDIO);
+    DataType* pan_parameter2 = new DataType();
+    pan_parameter2->is_primitive = false;
+    pan_parameter2->return_type = new DataType(FLOAT);
+    DataType* pan_parameter2_data_type = new DataType(FLOAT);
+    pan_parameter2->parameters = {pan_parameter2_data_type};
+    vector<DataType*> pan_parameters = {pan_parameter1, pan_parameter2};
+    DataType* pan_data_type = new DataType();
+    pan_data_type->is_primitive = false;
+    pan_data_type->parameters = pan_parameters;
+    pan_data_type->return_type = pan_return_type;
+    symbol_table[0][0].insert({"PAN_DYNAMIC", StEntry(pan_data_type, true)});
+
+    // PAN static function
+    DataType* pan_parameter_static_2 = new DataType(FLOAT);
+    vector<DataType*> pan_parameters_static = {pan_parameter1, pan_parameter_static_2};
+    DataType* pan_data_type_static = new DataType();
+    pan_data_type_static->is_primitive = false;
+    pan_data_type_static->parameters = pan_parameters_static;
+    pan_data_type_static->return_type = pan_return_type;
+    symbol_table[0][0].insert({"PAN_STATIC", StEntry(pan_data_type_static, true)});
+
 }
 int semantic() {
     // Initialising the symbol table
