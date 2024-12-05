@@ -106,8 +106,6 @@ struct StEntry {
 
 vector<vector<unordered_map<string, StEntry>>> symbol_table;
 
-// This is just a reference to easily access symbol_table[0][0]
-
 // this is the first index into the symbol table. when it's 0, it is the scope
 // table of global statements and statements in the main block.
 // the other scope tables are for function declarations
@@ -115,6 +113,8 @@ int current_scope_table = 0;
 // this is the scope level inside a specific scope table. This will increase
 // when we go inside an if statement or something.
 int current_scope = 0;
+
+DataType* curr_func = NULL;
 
 DataType *current_return_type;
 
@@ -173,6 +173,12 @@ int handle_parameter_declaration(Stype *identifier, Stype *data_type) {
 StEntry* handle_identifier_reference(Stype *node) {
     bool found = false;
     StEntry* entry = new StEntry();
+    if (node->text == "self"){
+        node->data_type = curr_func;
+        entry->data_type = curr_func;
+        entry->is_const = true;
+        return entry;
+    }
     // start at the highest scope and go higher and higher until it's found
     for (int scope = current_scope; scope >= 0; scope--) {
         if (symbol_table[current_scope_table][scope].count(node->text)) {
@@ -225,10 +231,23 @@ int handle_function_expression(Stype *node) {
     // Creating a new table and creating a new scope
     symbol_table.push_back(vector<unordered_map<string, StEntry>>());
     symbol_table.back().push_back(unordered_map<string, StEntry>());
+    
+    // traverse parameter list first to get data type
+    traverse_ast(node->children[0]);
+
+    // Assigning correct data_type to function node
+    node->data_type = new DataType();
+    node->data_type->is_primitive = false;
+    node->data_type->parameters = node->children[0]->data_type->parameters;
+    node->data_type->return_type = current_return_type;
+
+    DataType* prev_func = curr_func;
+    curr_func = node->data_type;
 
     // Traversing the children nodes
-    traverse_ast(node->children[0]);
     traverse_ast(node->children[2]);
+
+    curr_func = prev_func;
 
     // Return type check for inline functions
     if (node->node_type == NODE_INLINE_FUNCTION) {
@@ -252,11 +271,6 @@ int handle_function_expression(Stype *node) {
         }
     }
 
-    // Assigning correct data_type to function node
-    node->data_type = new DataType();
-    node->data_type->is_primitive = false;
-    node->data_type->parameters = node->children[0]->data_type->parameters;
-    node->data_type->return_type = current_return_type;
 
     // Restoring global variables
     current_scope_table = last_scope_table;
@@ -477,10 +491,6 @@ int handle_mult_expression(Stype *node) {
     DataType *type1 = node->children[0]->data_type;
     DataType *type2 = node->children[1]->data_type;
 
-    bool is_function = false;
-    DataType* function_datatype_left = new DataType(*type1);
-    DataType* function_datatype_right = new DataType(*type2);
-
     // Checking if any data types are NULL(void in DSL)
     if (type1 == NULL) {
         yylval = node->children[0];
@@ -495,6 +505,10 @@ int handle_mult_expression(Stype *node) {
                 "void data types");
         return 1;
     }
+    bool is_function = false;
+    DataType* function_datatype_left = new DataType(*type1);
+    DataType* function_datatype_right = new DataType(*type2);
+
 
     if (isFunction(type1) && isFunction(type2)) {
         if (are_data_types_equal(type1, type2) && final_return_type(type1) && final_return_type(type2)) {
@@ -608,11 +622,6 @@ int handle_divide_expression(Stype *node) {
     DataType *type1 = node->children[0]->data_type;
     DataType *type2 = node->children[1]->data_type;
 
-    bool is_function = false;
-    DataType* function_datatype_left = new DataType(*type1);
-    DataType* function_datatype_right = new DataType(*type2);
-
-    // Checking if any data types are NULL(void in DSL)
     if (type1 == NULL) {
         yylval = node->children[0];
         yyerror("Semantic error: division operator cannot be invoked on "
@@ -626,6 +635,11 @@ int handle_divide_expression(Stype *node) {
                 "void data types");
         return 1;
     }
+    bool is_function = false;
+    DataType* function_datatype_left = new DataType(*type1);
+    DataType* function_datatype_right = new DataType(*type2);
+
+    // Checking if any data types are NULL(void in DSL)
 
     if (isFunction(type1) && isFunction(type2)) {
         if (are_data_types_equal(type1, type2) && final_return_type(type1) && final_return_type(type2)) {
@@ -1068,6 +1082,9 @@ int handle_assignment_statement(Stype* node)
     traverse_ast(node->children[1]);
     traverse_ast(node->children[0]);
     StEntry* entry = handle_identifier_reference(node->children[0]->children[0]);
+    if (!entry){
+        return 1;
+    }
     if (entry->is_const){
         yylval = node->children[0];
         yyerror("Semantic error: Const variable cannot be re-assigned");
@@ -1270,6 +1287,7 @@ void traverse_ast(Stype *node) {
     case NODE_IDENTIFIER:
         cout << string(current_scope, '\t') << "Identifier node" << endl;
         if (!handle_identifier_reference(node)){
+            node->data_type = NULL;
             break;
         }
         break;

@@ -3,7 +3,7 @@ factorial <- (n: int): int {
     if n == 0 {
         return 1;
     } or n > 0 {
-        return n * factorial(n - 1);
+        return n * self(n - 1);
     } otherwise {
         return 0; 
     }
