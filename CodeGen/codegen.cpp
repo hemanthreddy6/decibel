@@ -392,8 +392,8 @@ Value *codegen(Stype *node) {
 
         // Create blocks for the then and else cases.
         BasicBlock *ThenBB = BasicBlock::Create(TheContext, "then", TheFunction);
-        BasicBlock *ElseBB = BasicBlock::Create(TheContext, "else");
-        BasicBlock *MergeBB = BasicBlock::Create(TheContext, "ifcont");
+        BasicBlock *ElseBB = BasicBlock::Create(TheContext, "else", TheFunction);
+        BasicBlock *MergeBB = BasicBlock::Create(TheContext, "ifcont", TheFunction);
 
         Builder.CreateCondBr(CondV, ThenBB, ElseBB);
 
