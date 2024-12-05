@@ -1031,9 +1031,21 @@ int handle_minus_expression(Stype* node)
                     node->data_type->is_primitive = false;
                     node->data_type->parameters = type1->parameters;
                     node->data_type->return_type = type1->return_type;
-                } 
-                
+                    return 0;
+                } else {
+                    yylval = node->children[1];
+                    yyerror("Semantic error: invalid operand for minus operator");
+                    return 1;
+                }
+            } else {
+                yylval = node->children[1];
+                yyerror("Semantic error: invalid operand for minus operator");
+                return 1;
             }
+        } else {
+            yylval = node->children[1];
+            yyerror("Semantic error: invalid operand for minus operator");
+            return 1;
         }
     } else {
         yylval = node->children[0];
@@ -2053,8 +2065,8 @@ void built_in_functions(){
     pan_data_type_static->parameters = pan_parameters_static;
     pan_data_type_static->return_type = pan_return_type;
     symbol_table[0][0].insert({"PAN_STATIC", StEntry(pan_data_type_static, true)});
-
 }
+
 int semantic() {
     // Initialising the symbol table
     symbol_table = vector<vector<unordered_map<string, StEntry>>>(
