@@ -1,0 +1,13 @@
+// LOOP UNTIL with Function
+
+getRandomNumber <- () : int {
+
+};
+
+main {
+    number <- 0;
+    loop until number == 4 {
+        number = getRandomNumber();
+        print number;
+    }
+}

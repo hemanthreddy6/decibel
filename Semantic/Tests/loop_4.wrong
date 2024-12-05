@@ -1,0 +1,11 @@
+// Function in Loop Until Expression
+
+increment <- (count: int) : int {
+    count = count+1;
+};
+
+main {
+    loop until increment {
+        print "Looping";
+    }
+}

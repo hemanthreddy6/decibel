@@ -1,0 +1,8 @@
+// Audio Type in Repeat Loop Expression
+
+main {
+    audioVar <- load "sound.wav";
+    loop audioVar {
+        print "Playing sound";
+    }
+}

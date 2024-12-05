@@ -1,0 +1,7 @@
+// Type mismatch in loop ranges
+
+main {
+    loop over i "bro" to 10 {
+        print i;
+    }
+}

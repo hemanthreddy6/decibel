@@ -1,0 +1,11 @@
+// LOOP with if Condition Inside
+
+main {
+    loop over i 1 to 5 {
+        if i % 2 == 0 {
+            print("Even");
+        } otherwise {
+            print("Odd");
+        }
+    }
+}

@@ -1,0 +1,9 @@
+// Simple LOOP Repeat
+
+main {
+    counter <- 0;
+    loop 5 {
+        print counter;
+        counter = counter + 1;
+    }
+}

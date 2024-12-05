@@ -1,0 +1,8 @@
+// LOOP with Variable Declaration
+
+main {
+    loop 3 {
+        temp <- 10;
+        print temp;
+    }
+}

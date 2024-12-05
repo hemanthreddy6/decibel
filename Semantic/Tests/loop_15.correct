@@ -1,0 +1,9 @@
+// LOOP UNTIL with Non-boolean Condition
+
+main {
+    loop until 5 {
+        print "This should pass";
+    }
+}
+
+//The 5 will be typecasted to bool like c++

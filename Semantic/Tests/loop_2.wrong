@@ -1,0 +1,8 @@
+// Looping Over a String
+
+main {
+    str <- "Hello";
+    loop over i 0 to str {
+        print i;
+    }
+}
