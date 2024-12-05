@@ -591,12 +591,14 @@ int yyerror(const char* s){
 int codegen_main(Stype* root);
 #endif
 int main() {
+    std::cout << "dsljfdksjlfdskjf" << std::endl;
     yyparse();
     
     if (is_error){
         yyerror("");
         return 1;
     }
+
 
     #ifdef SEMANTIC
     semantic();

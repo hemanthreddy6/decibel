@@ -11,10 +11,10 @@ clean:
 	@make clean -C "Lex/Tests" --quiet
 	@make clean -C "Parser" --quiet
 	@make clean -C "Semantic" --quiet
-	@make clean -C "Codegen" --quiet
+	@make clean -C "CodeGen" --quiet
 
 test:
 	-@make test -C "Lex" --quiet
 	-@make test -C "Parser" --quiet
 	-@make test -C "Semantic" --quiet
-	-@make test -C "Codegen" --quiet
+	-@make test -C "CodeGen" --quiet

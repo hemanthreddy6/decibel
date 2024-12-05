@@ -1347,6 +1347,7 @@ void traverse_ast(Stype *node) {
         traverse_ast(node->children[0]);
         traverse_ast(node->children[1]);
         if (node->children[0]->data_type->is_primitive) {
+            yylval = node->children[0];
             yyerror("Semantic error: Cannot call a non-function  ");
         }
         std::vector<DataType *> parameters = node->children[0]->data_type->parameters;
@@ -1379,10 +1380,10 @@ void traverse_ast(Stype *node) {
             //     yyerror("Semantic error: Incompatible argument type");
             // }
         }
-        if (new_parameters.size()){
+        if (parameters.size()){
             node->data_type = new DataType();
             node->data_type->is_primitive = false;
-            node->data_type->parameters = new_parameters;
+            node->data_type->parameters = parameters;
             node->data_type->return_type = node->children[0]->data_type->return_type;
         } else {
             node->data_type = node->children[0]->data_type->return_type;
@@ -1796,8 +1797,8 @@ int semantic() {
         1, vector<unordered_map<string, StEntry>>(
                1, unordered_map<string, StEntry>()));
 
-    cerr << "------------semantic started------------" << endl;
+    // cerr << "------------semantic started------------" << endl;
     traverse_ast(root);
-    cerr << "------------semantic done------------" << endl;
+    // cerr << "------------semantic done------------" << endl;
     return 0;
 }
