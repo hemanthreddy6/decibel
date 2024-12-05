@@ -10,6 +10,8 @@ codegen: codegen.cpp ../Semantic/semantic_analyser.cpp ../Parser/y.tab.c
 ../Parser/y.tab.c: ../Parser/parser.y ../Lex/lexer.l
 	@make build -C "../Parser" --quiet
 
+test: run
+
 run: codegen
 	./codegen < test.dbl
 	llc-18 -filetype=obj -relocation-model=pic out.ll -o out.o

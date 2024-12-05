@@ -259,13 +259,13 @@ Value *codegen(Stype *node) {
     }
     case NODE_UNARY_PLUS_EXPR: {
         cerr << "NODE_UNARY_PLUS_EXPR" << endl;
-        Value *Operand codegen(node->children[0]);
+        Value *Operand = codegen(node->children[0]);
         return Builder.CreateAdd(Operand, ConstantInt::get(Operand->getType(), 0), "plustmp");
     }
     case NODE_UNARY_MINUS_EXPR: {
         cerr << "NODE_UNARY_MINUS_EXPR" << endl;
         Value *Operand = codegen(node->children[0]);
-        return Builder.CreateNeg(Operand, ConstantInt::get(Operand->getType(), 0), "negtmp");
+        return Builder.CreateSub(ConstantInt::get(Operand->getType(), 0), Operand, "negtmp");
     }
     // case NODE_NEGATE_EXPR: {cerr << "NODE_NEGATE_EXPR" << endl;
     //     Value* Operand = codegen(node->children[0]);

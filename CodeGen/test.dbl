@@ -3,11 +3,8 @@ loop 10 {
     a += 1;
     print a;
     if a > 44 {
-        print 1-a;
         if a > 50 {
-            print 1000-a;
-        } otherwise {
-            print 1000000000 - a;
+            print -a;
         }
     }
 }
