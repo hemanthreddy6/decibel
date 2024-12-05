@@ -189,6 +189,7 @@ StEntry* handle_identifier_reference(Stype *node) {
     if (found)
         node->data_type = entry->data_type;
     else {
+        node->data_type = NULL;
         yylval = node;
         yyerror(
             ("Semantic error: undefined reference to " + node->text).c_str());
@@ -1268,8 +1269,9 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_IDENTIFIER:
         cout << string(current_scope, '\t') << "Identifier node" << endl;
-        if (!handle_identifier_reference(node))
+        if (!handle_identifier_reference(node)){
             break;
+        }
         break;
     case NODE_PARAMETER_LIST:
         cout << string(current_scope, '\t') << "NODE_PARAMETER_LIST" << endl;
@@ -1347,6 +1349,10 @@ void traverse_ast(Stype *node) {
         cout << string(current_scope, '\t') << "NODE_FUNCTION_CALL" << endl;
         traverse_ast(node->children[0]);
         traverse_ast(node->children[1]);
+        if (!node->children[0]->data_type){
+            node->data_type = NULL;
+            break;
+        }
         if (node->children[0]->data_type->is_primitive) {
             yylval = node->children[0];
             yyerror("Semantic error: Cannot call a non-function  ");
