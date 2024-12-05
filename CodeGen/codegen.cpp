@@ -451,8 +451,6 @@ Value *codegen(Stype *node) {
             Builder.CreateBr(MergeBB);
         }
 
-        Builder.CreateBr(ElseBB);
-
         // Emit else block.
         // TheFunction->getBasicBlocks().push_back(ElseBB);
         Builder.SetInsertPoint(ElseBB);
