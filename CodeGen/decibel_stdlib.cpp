@@ -255,6 +255,7 @@ struct Audio repeat_audio(struct Audio audio_var, double times) {
     new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
 
     unsigned int index = 0;
+
     for(int i=0;i<new_audio.length;i++) {
         new_audio.ptr[i] = audio_var.ptr[index++];
         if(index == old_length) {
