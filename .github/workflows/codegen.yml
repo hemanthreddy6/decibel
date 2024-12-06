@@ -15,11 +15,21 @@ jobs:
         steps:
         - uses: actions/checkout@v3
 
-        - name: Install flex
-          run: sudo apt-get install flex
+        - name: Add LLVM APT Repository
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y wget lsb-release software-properties-common
+            wget https://apt.llvm.org/llvm.sh
+            chmod +x llvm.sh
+            sudo ./llvm.sh 18
         
-        - name: Install yacc
-          run: sudo apt-get install yacc
+        - name: Install SFML
+          run: sudo apt install libopenal-dev libsndfile1-dev libsfml-dev
+
+        - name: Verify Clang 18 Installation
+          run: |
+            clang-18 --version
+            llvm-config-18 --version
 
         - name: Build Code Generation
           run: cd CodeGen && make
@@ -29,6 +39,22 @@ jobs:
 
         steps:
         - uses: actions/checkout@v3
+
+        - name: Add LLVM APT Repository
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y wget lsb-release software-properties-common
+            wget https://apt.llvm.org/llvm.sh
+            chmod +x llvm.sh
+            sudo ./llvm.sh 18
+        
+        - name: Install SFML
+          run: sudo apt install libopenal-dev libsndfile1-dev libsfml-dev
+
+        - name: Verify Clang 18 Installation
+          run: |
+            clang-18 --version
+            llvm-config-18 --version
 
         - name: Run Tests
           run: cd CodeGen && make test

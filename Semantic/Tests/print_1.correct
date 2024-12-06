@@ -15,4 +15,4 @@ main {
     print f[2][3];
     g: string[4] <- "hello";
     print g[0];
-}
+} 
