@@ -22,6 +22,9 @@ jobs:
             wget https://apt.llvm.org/llvm.sh
             chmod +x llvm.sh
             sudo ./llvm.sh 18
+        
+        - name: Install SFML
+          run: sudo apt install libopenal-dev libsndfile1-dev libsfml-dev
 
         - name: Verify Clang 18 Installation
           run: |

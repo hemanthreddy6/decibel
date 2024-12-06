@@ -17,7 +17,7 @@ print 1000hz;
 f2 <- f;
 if 100 > 20 {
     f2 = f1;
-}
+} 
 // If it's f1, 10 will be printed, otherwise 100
 print f2(100, 10);
 a <- 0;
