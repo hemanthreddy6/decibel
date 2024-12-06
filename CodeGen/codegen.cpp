@@ -253,10 +253,31 @@ Value *codegen(Stype *node) {
         cerr << "NODE_MULT_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
-        if (LHS->getType()->isFloatingPointTy() || RHS->getType()->isFloatingPointTy()) {
+        Type *LHSType = LHS->getType();
+        Type *RHSType = RHS->getType();
+
+
+        if (LHSType->isFloatingPointTy() || RHSType->isFloatingPointTy()) {
             return Builder.CreateFMul(LHS, RHS, "multmp");
-        } else {
-            return Builder.CreateMul(LHS, RHS, "multmp");
+        }
+
+        if (LHSType->isIntegerTy() && RHSType->isIntegerTy()) {
+            return Builder.CreateMul(LHS, RHS, "addtmp");
+        }
+
+        bool LHSisAudio = LHSType->isStructTy() && LHSType->getStructName() == "struct.Audio";
+        bool RHSisAudio = RHSType->isStructTy() && RHSType->getStructName() == "struct.Audio";
+        bool LHSisScalar = LHSType->isFloatingPointTy() || LHSType->isIntegerTy();
+        bool RHSisScalar = RHSType->isFloatingPointTy() || RHSType->isIntegerTy();
+
+        // Audio Scaling
+        if((LHSisAudio && RHSisScalar) || (RHSisAudio && LHSisScalar)) {
+            Function *ScaleAudioFunc = TheModule->getFunction("scale_audio");
+            if(!ScaleAudioFunc) {
+                FunctionType *ScaleAudioType = FunctionType::get(AudioType, {LHSType, RHSType}, false);
+                ScaleAudioFunc = Function::Create(ScaleAudioType, Function::ExternalLinkage, "scale_audio", TheModule.get());
+            }
+            return Builder.CreateCall(ScaleAudioFunc, {LHS, RHS}, "scaleaudio")
         }
     }
     case NODE_DIVIDE_EXPR: {
@@ -274,10 +295,41 @@ Value *codegen(Stype *node) {
         // Implement power operation using llvm.pow function
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
+        Type *LHSType = LHS->getType();
+        Type *RHSType = RHS->getType();
+
         Function *PowFunc = Intrinsic::getDeclaration(TheModule.get(), Intrinsic::pow, {Type::getDoubleTy(TheContext)});
         LHS = Builder.CreateSIToFP(LHS, Type::getDoubleTy(TheContext));
         RHS = Builder.CreateSIToFP(RHS, Type::getDoubleTy(TheContext));
         return Builder.CreateCall(PowFunc, {LHS, RHS}, "powtmp");
+
+        bool LHSisString = LHSType->isPointerTy() && LHSType->getContainedType(0)->isIntegerTy(8);
+        bool LHSisAudio = LHSType->isStructTy() && LHSType->getStructName() == "struct.Audio";
+        bool RHSisScalar = RHSType->isFloatingPointTy() || RHSType->isIntegerTy();
+
+        // String Repeating
+        if (LHSisString && RHSisScalar) {
+            Function *StrRepeat = TheModule->getFunction("string_repeat");
+            if (!StrRepeat) {
+                FunctionType *StrRepeat =
+                    FunctionType::get(Type::getInt8Ty(TheContext)->getPointerTo(),            // Return type: char*
+                                      {Type::getInt8Ty(TheContext)->getPointerTo(), RHSType}, // Arguments: char*, scalar
+                                      false);
+                StrRepeat = Function::Create(StrRepeat, Function::ExternalLinkage, "string_repeat", TheModule.get());
+            }
+            return Builder.CreateCall(StrRepeat, {LHS, RHS}, "stringrepeat");
+        }
+
+        //Audio Repeating
+        if(LHSisAudio && RHSisScalar) {
+            Function *AudioRepeat = TheModule->getFunction("audio_repeat");
+            if(!AudioRepeat) {
+                FunctionType *AudioRepeat = FunctionType::get(AudioType, {LHSType, RHSType}, false);
+                AudioRepeat = Function::Create(AudioRepeat, Function::ExternalLinkage, "audio_repeat", TheModule.get());
+            }
+            return Builder.CreateCall(AudioRepeat, {LHS, RHS}, "audiorepeat");
+        }
+
     }
     case NODE_EQUALS_EXPR: {
         cerr << "NODE_EQUALS_EXPR" << endl;
@@ -445,7 +497,7 @@ Value *codegen(Stype *node) {
         int ind = 0;
         for (Stype *arg : FuncArgsNode->children[0]->children) {
             Value *ArgVal = codegen(arg);
-            // TODO: Have to typecast to the required type of they are of different types
+            // TODO: Have to typecast to the required type if they are of different types
             ArgVal = createCast(ArgVal, getLLVMType(node->children[0]->data_type->parameters[ind]));
             ArgsV.push_back(ArgVal);
             ind++;
