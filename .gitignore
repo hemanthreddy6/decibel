@@ -13,6 +13,7 @@ CodeGen/codegen
 CodeGen/out.ll
 CodeGen/out1.ll
 CodeGen/out.o
+CodeGen/decibel_stdlib.o
 CodeGen/out
 .vscode/
 .DS_Store

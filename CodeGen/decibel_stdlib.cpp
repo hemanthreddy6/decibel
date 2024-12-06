@@ -41,6 +41,7 @@ void writeValue(vector<char>&file, unsigned int value, unsigned int count) {
 }
 
 // Audio functions
+extern "C"{
 struct Audio load_audio(char* filename) {
     ifstream file(filename, ios::binary);
     vector<char> fileBytes((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
@@ -175,4 +176,4 @@ void play_audio(struct Audio audio_var) {
 
     remove(temp_file);
 }
-
+}
