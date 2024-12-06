@@ -2,7 +2,7 @@
 #include <SFML/Audio.hpp>
 using namespace std;
 
-#define STANDARD_SAMPLE_RATE 22050
+#define STANDARD_SAMPLE_RATE 44100 
 
 // Command to install SFML: sudo apt install libopenal-dev libsndfile1-dev libsfml-dev
 // Compilation flags: -lsfml-audio -lsfml-system
@@ -40,6 +40,18 @@ void writeValue(vector<char>&file, unsigned int value, unsigned int count) {
     }
 }
 
+unsigned int find_data_chunk(vector<char> fileBytes){
+    unsigned int curr_ind = 36;
+    while (curr_ind < fileBytes.size()) {
+        if (fileBytes[curr_ind] == 'd' && fileBytes[curr_ind+1] == 'a' && fileBytes[curr_ind+2]=='t' && fileBytes[curr_ind+3]=='a'){
+            return curr_ind+4;
+        } else {
+            curr_ind += readValue(fileBytes, curr_ind+4, 4) + 8;
+        }
+    }
+    return curr_ind+4;
+}
+
 // Audio functions
 extern "C"{
 struct Audio load_audio(char* filename) {
@@ -52,8 +64,13 @@ struct Audio load_audio(char* filename) {
     unsigned int block_alignment = readValue(fileBytes, 32, 2);
     unsigned int bits_per_sample = readValue(fileBytes, 34, 2);
     unsigned int bytes_per_sample = bits_per_sample / 8;
-    unsigned int payload_size = readValue(fileBytes, 40, 4);
+    unsigned int data_chunk_start = find_data_chunk(fileBytes);
+    unsigned int payload_size = readValue(fileBytes, data_chunk_start, 4);
     unsigned int block_count = payload_size/block_alignment;
+
+    // block_alignment = 3;
+
+    cout << channel_count << " " << block_alignment << " " << block_count << " "  << payload_size << " " << bytes_per_sample << " "<< endl;
 
     if(sample_rate != STANDARD_SAMPLE_RATE) {
         cerr << filename <<" is currently not supported by decibel" << endl;
@@ -64,13 +81,28 @@ struct Audio load_audio(char* filename) {
     
     for(int i=0;i<block_count;i++)
     {
-        unsigned int data = readValue(fileBytes, 44 + i*block_alignment, bytes_per_sample);
+        unsigned int left_data = readValue(fileBytes, data_chunk_start+4 + i*block_alignment, bytes_per_sample);
+        unsigned int right_data;
         if (channel_count!=1) {
-            data += (readValue(fileBytes, 44 + i*block_alignment + bytes_per_sample, bytes_per_sample) << (bytes_per_sample * 8));
+            right_data = readValue(fileBytes, data_chunk_start+4 + i*block_alignment + bytes_per_sample, bytes_per_sample);
         } else {
-            data += (readValue(fileBytes, 44 + i*block_alignment, bytes_per_sample) << (bytes_per_sample * 8));
+            right_data = left_data;
         }
-        ptr[i] = data;
+        int left_data_signed;
+        int rignt_data_signed;
+        if (left_data > ((1 << bytes_per_sample) - 1)){
+            left_data |= ((1 << (4-bytes_per_sample)) - 1) << bytes_per_sample;
+        }
+        if (right_data > ((1 << bytes_per_sample) - 1)){
+            right_data |= ((1 << (4-bytes_per_sample)) - 1) << bytes_per_sample;
+        }
+        left_data_signed = *(int*)(&left_data);
+        rignt_data_signed= *(int*)(&right_data);
+        left_data_signed /= 1<<(bytes_per_sample*8 - 16);
+        rignt_data_signed /= 1<<(bytes_per_sample*8 - 16);
+        unsigned int left_data_unsigend = *(unsigned int*)(&left_data_signed);
+        unsigned int right_data_unsigend = *(unsigned int*)(&rignt_data_signed);
+        ptr[i] = (left_data_signed & ((1<<16) - 1)) + (rignt_data_signed << 16);
     }
 
     struct Audio audio;
@@ -239,6 +271,7 @@ struct Audio slice_audio(struct Audio audio_var, double start_time_seconds, doub
             new_audio.ptr[index++] = 0;
         }
     }
+    cout << new_audio.length << " " << end_index << endl;
 
     return new_audio;
 }
@@ -274,36 +307,53 @@ struct Audio superimpose_audio(struct Audio audio_var1, struct Audio audio_var2)
     new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
 
     for(int i=0;i<min(audio_var1.length, audio_var2.length);i++) {
-        temp = (audio_var1.ptr[i] & ((1 << 16) -1));
-        short first_left = *(short *)(&(temp));
-        temp = (audio_var1.ptr[i] >> 16);
-        short first_right = *(short *)(&(temp));
-
-        temp = (audio_var2.ptr[i] & ((1 << 16) -1));
-        short second_left = *(short *)(&(temp));
-        temp = (audio_var2.ptr[i] >> 16);
-        short second_right = *(short *)(&(temp));
-
-        int first_left_int = first_left;
-        int first_right_int = first_right;
-        int second_left_int = second_left;
-        int second_right_int = second_right;
-        int final_left = first_left_int + second_left_int;
-        int final_right = first_right_int + second_right_int;
-
-        if(final_left > ((1 << 16) - 1)) {
-            final_left = ((1 << 16) - 1);
-        } else if(final_left < -(1 << 16)) {
-            final_left = -(1 << 16);
-        }
-
-        if(final_right > ((1 << 16) - 1)) {
-            final_right = ((1 << 16) - 1);
-        } else if(final_right < -(1 << 16)) {
-            final_right = -(1 << 16);
-        }
-
-        new_audio.ptr[index++] = (final_left & ((1 << 16) -1)) + (final_right << 16);
+        // temp = (audio_var1.ptr[i] & ((1 << 16) -1));
+        // // short first_left = *(short *)(&(temp));
+        // short first_left = temp;
+        // temp = (audio_var1.ptr[i] >> 16);
+        // // short first_right = *(short *)(&(temp));
+        // short first_right = temp;
+        //
+        // temp = (audio_var2.ptr[i] & ((1 << 16) -1));
+        // // short second_left = *(short *)(&(temp));
+        // short second_left = temp;
+        // temp = (audio_var2.ptr[i] >> 16);
+        // // short second_right = *(short *)(&(temp));
+        // short second_right = temp;
+        //
+        // int first_left_int = -first_left;
+        // int first_right_int = -first_right;
+        // int second_left_int = -second_left;
+        // int second_right_int = -second_right;
+        // int final_left = (first_left_int + second_left_int);
+        // int final_right = (first_right_int + second_right_int);
+        //
+        // if(final_left > ((1 << 16) - 1)) {
+        //     final_left = ((1 << 16) - 1);
+        // } else if(final_left < -(1 << 16)) {
+        //     final_left = -(1 << 16);
+        // }
+        //
+        // if(final_right > ((1 << 16) - 1)) {
+        //     final_right = ((1 << 16) - 1);
+        // } else if(final_right < -(1 << 16)) {
+        //     final_right = -(1 << 16);
+        // }
+        // unsigned int final_left_unsigned = *(unsigned int*)(&final_left);
+        // unsigned int final_right_unsigned = *(unsigned int*)(&final_right);
+        //
+        // new_audio.ptr[index++] = (final_left_unsigned & ((1 << 16) -1)) | (final_right_unsigned << 16);
+        short first_left = (short)(audio_var1.ptr[i] & 0xFFFF);
+        short first_right = (short)((audio_var1.ptr[i] >> 16) & 0xFFFF);
+        short second_left = (short)(audio_var2.ptr[i] & 0xFFFF);
+        short second_right = (short)((audio_var2.ptr[i] >> 16) & 0xFFFF);
+        int final_left = first_left + second_left;
+        if (final_left > INT16_MAX) final_left = INT16_MAX;
+        if (final_left < INT16_MIN) final_left = INT16_MIN;
+        int final_right = first_right + second_right;
+        if (final_right > INT16_MAX) final_right = INT16_MAX;
+        if (final_right < INT16_MIN) final_right = INT16_MIN;
+        new_audio.ptr[index++] = ((unsigned short)final_left & 0xFFFF) | (((unsigned short)final_right & 0xFFFF) << 16);
     }
 
     while(index < new_audio.length) {

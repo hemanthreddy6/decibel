@@ -215,6 +215,7 @@ Value *codegen(Stype *node) {
         // TODO: Need to handle vectors and slices here!!
         if (IdValue->getType() == AudioType) {
             for (int i = 1; i < node->children.size(); i++) {
+                cerr << "hello?-------------------------------------------------------" << endl;
                 Value *start_time = codegen(node->children[i]->children[0]);
                 Value *end_time = codegen(node->children[i]->children[1]);
                 start_time = createCast(start_time, Type::getDoubleTy(TheContext));
@@ -223,8 +224,9 @@ Value *codegen(Stype *node) {
                 IdValue = Builder.CreateCall(SliceFunction, {IdValue, start_time, end_time}, "sliceaudio");
             }
         }
+        return IdValue;
 
-        return codegen(node->children[0]);
+        // return codegen(node->children[0]);
     }
     // Expressions
     case NODE_PLUS_EXPR: {
@@ -348,6 +350,21 @@ Value *codegen(Stype *node) {
             return Builder.CreateSDiv(LHS, RHS, "divtmp");
         }
     }
+    case NODE_SUPERPOSITION_EXPR: {
+        cerr << "NODE_SUPERPOSITION_EXPR" << endl;
+        // Implement power operation using llvm.pow function
+        Value *LHS = codegen(node->children[0]);
+        Value *RHS = codegen(node->children[1]);
+        Type *LHSType = LHS->getType();
+        Type *RHSType = RHS->getType();
+
+        Function *AudioSuperimpose = TheModule->getFunction("superimpose_audio");
+        if (!AudioSuperimpose) {
+            declareAudioFunctions();
+            AudioSuperimpose = TheModule->getFunction("superimpose_audio");
+        }
+        return Builder.CreateCall(AudioSuperimpose, {LHS, RHS}, "audiorepeat");
+    }
     case NODE_POWER_EXPR: {
         cerr << "NODE_POWER_EXPR" << endl;
         // Implement power operation using llvm.pow function
@@ -383,10 +400,12 @@ Value *codegen(Stype *node) {
 
         // Audio Repeating
         if (LHSisAudio && RHSisScalar) {
-            Function *AudioRepeat = TheModule->getFunction("audio_repeat");
+            Function *AudioRepeat = TheModule->getFunction("repeat_audio");
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
+            RHSType = RHS->getType();
             if (!AudioRepeat) {
                 FunctionType *AudioRepeatType = FunctionType::get(AudioType, {LHSType, RHSType}, false);
-                auto AudioRepeat = Function::Create(AudioRepeatType, Function::ExternalLinkage, "audio_repeat", TheModule.get());
+                auto AudioRepeat = Function::Create(AudioRepeatType, Function::ExternalLinkage, "repeat_audio", TheModule.get());
             }
             return Builder.CreateCall(AudioRepeat, {LHS, RHS}, "audiorepeat");
         }
@@ -528,7 +547,11 @@ Value *codegen(Stype *node) {
     case NODE_UNARY_MINUS_EXPR: {
         cerr << "NODE_UNARY_MINUS_EXPR" << endl;
         Value *Operand = codegen(node->children[0]);
-        return Builder.CreateSub(ConstantInt::get(Operand->getType(), 0), Operand, "negtmp");
+        if (Operand->getType()->isIntegerTy()) {
+            return Builder.CreateSub(ConstantInt::get(Operand->getType(), 0), Operand, "negtmp");
+        } else {
+            return Builder.CreateFSub(ConstantFP::get(Operand->getType(), 0), Operand, "negtmp");
+        }
     }
     // case NODE_NEGATE_EXPR: {cerr << "NODE_NEGATE_EXPR" << endl;
     //     Value* Operand = codegen(node->children[0]);

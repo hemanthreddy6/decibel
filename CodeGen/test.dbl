@@ -39,5 +39,10 @@ loop until a==0 {
     a -= 1;
 }
 
-au <- load "sample.wav";
-play au + au;
+snare <- load "snare_44100.wav";
+kick <- load "kick_44100.wav";
+hihat <- load "hihat_44100.wav";
+snare = snare[0:0.5];
+kick = kick[0:0.75] + kick[0:0.5] + kick[0:0.75];
+hihat = hihat[-0.25:0.25]^8;
+play kick^2 | snare[-0.5:0.5]^4 | hihat;
