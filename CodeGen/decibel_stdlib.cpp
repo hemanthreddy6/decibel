@@ -197,4 +197,125 @@ struct Audio concat_audio(struct Audio first_audio, struct Audio second_audio) {
     return new_audio;
 }
 
+struct Audio slice_audio(struct Audio audio_var, double start_time_seconds, double end_time_seconds) {
+    struct Audio new_audio;
+
+    if (start_time_seconds > end_time_seconds 
+        || end_time_seconds < 0 
+        || start_time_seconds*STANDARD_SAMPLE_RATE > audio_var.length ) {
+        return new_audio;
+    }
+
+    unsigned int start_index;
+    unsigned int end_index;
+    unsigned int new_length = 0;
+    unsigned int index = 0;
+
+    start_index = (unsigned int)((int)max((double)0, start_time_seconds*STANDARD_SAMPLE_RATE) + 1);
+    end_index = (unsigned int)(min((double)(audio_var.length), end_time_seconds*STANDARD_SAMPLE_RATE));
+
+    if (start_time_seconds < 0) {
+        new_length += abs((int)(start_time_seconds*STANDARD_SAMPLE_RATE));
+    }
+    new_length += (end_index - start_index + 1);
+    if (end_time_seconds*STANDARD_SAMPLE_RATE > audio_var.length) {
+        new_length += abs(end_time_seconds*STANDARD_SAMPLE_RATE - audio_var.length);
+    }
+
+    new_audio.length = new_length;
+    new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_length);
+
+    if (start_time_seconds < 0) {
+        for(unsigned int i=0;i<abs(start_time_seconds*STANDARD_SAMPLE_RATE);i++) {
+            new_audio.ptr[index++] = 0;
+        }
+    }
+    for(unsigned int i=start_index;i<=end_index;i++)
+    {
+        new_audio.ptr[index++] = audio_var.ptr[i-1];
+    }
+    if (end_time_seconds*STANDARD_SAMPLE_RATE > audio_var.length) {
+        for(unsigned int i=0;i<abs(end_time_seconds*STANDARD_SAMPLE_RATE - audio_var.length);i++) {
+            new_audio.ptr[index++] = 0;
+        }
+    }
+
+    return new_audio;
 }
+
+struct Audio repeat_audio(struct Audio audio_var, double times) {
+    struct Audio new_audio;
+    unsigned int old_length = audio_var.length;
+
+    if (times <=0) {
+        return new_audio;
+    }
+
+    new_audio.length = (unsigned int)old_length * times;
+    new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
+
+    unsigned int index = 0;
+    for(int i=0;i<new_audio.length;i++) {
+        new_audio.ptr[i] = audio_var.ptr[index++];
+        if(index == old_length) {
+            index = 0;
+        }
+    }
+
+    return new_audio;
+}
+
+struct Audio superimpose_audio(struct Audio audio_var1, struct Audio audio_var2) {
+    struct Audio new_audio;
+    unsigned int index = 0;
+    unsigned short temp;
+
+    new_audio.length = max(audio_var1.length, audio_var2.length);
+    new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
+
+    for(int i=0;i<min(audio_var1.length, audio_var2.length);i++) {
+        temp = (audio_var1.ptr[i] & ((1 << 16) -1));
+        short first_left = *(short *)(&(temp));
+        temp = (audio_var1.ptr[i] >> 16);
+        short first_right = *(short *)(&(temp));
+
+        temp = (audio_var2.ptr[i] & ((1 << 16) -1));
+        short second_left = *(short *)(&(temp));
+        temp = (audio_var2.ptr[i] >> 16);
+        short second_right = *(short *)(&(temp));
+
+        int first_left_int = first_left;
+        int first_right_int = first_right;
+        int second_left_int = second_left;
+        int second_right_int = second_right;
+        int final_left = first_left_int + second_left_int;
+        int final_right = first_right_int + second_right_int;
+
+        if(final_left > ((1 << 16) - 1)) {
+            final_left = ((1 << 16) - 1);
+        } else if(final_left < -(1 << 16)) {
+            final_left = -(1 << 16);
+        }
+
+        if(final_right > ((1 << 16) - 1)) {
+            final_right = ((1 << 16) - 1);
+        } else if(final_right < -(1 << 16)) {
+            final_right = -(1 << 16);
+        }
+
+        new_audio.ptr[index++] = (final_left & ((1 << 16) -1)) + (final_right << 16);
+    }
+
+    while(index < new_audio.length) {
+        if (audio_var1.length > index) {
+            new_audio.ptr[index] = audio_var1.ptr[index];
+        } else {
+            new_audio.ptr[index] = audio_var2.ptr[index];
+        }
+        index++;
+    }
+    return new_audio;
+}
+
+}
+
