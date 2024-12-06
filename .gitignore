@@ -15,6 +15,10 @@ CodeGen/out1.ll
 CodeGen/out.o
 CodeGen/decibel_stdlib.o
 CodeGen/out
+CodeGen/Tests/out
+CodeGen/Tests/out.o
+CodeGen/Tests/out.ll
+CodeGen/Tests/*.actual_out
 .vscode/
 .DS_Store
 .clang-format
