@@ -1,0 +1,34 @@
+name: Code Generation
+
+on:
+    push:
+        paths:
+        - 'Lex/**'
+        - 'Parser/**'
+        - 'Semantic/**'
+        - 'CodeGen/**'
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+        - uses: actions/checkout@v3
+
+        - name: Install flex
+          run: sudo apt-get install flex
+        
+        - name: Install yacc
+          run: sudo apt-get install yacc
+
+        - name: Build Code Generation
+          run: cd CodeGen && make
+    
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+        - uses: actions/checkout@v3
+
+        - name: Run Tests
+          run: cd CodeGen && make test
