@@ -97,23 +97,22 @@ void declareAudioFunctions() {
         // struct Audio concat_audio(struct Audio audio_var1, struct Audio audio_var2);
         FunctionType *ConcatAudioType = FunctionType::get(AudioType, {AudioType, AudioType}, false);
         concatAudioFunction = Function::Create(ConcatAudioType, Function::ExternalLinkage, "concat_audio", TheModule.get());
-        //
-        // // struct Audio slice_audio(struct Audio audio_var, double start_time_seconds, double end_time_seconds);
-        // // returns an audio file by trimming the first <start_time> seconds of the file, until <end_time>. If start_time is negative, it adds extra padding
-        // in
-        // // the front with no sound(zeros), and if end_time exceeds the file duration, adds padding at the end
-        // FunctionType *SliceAudioType = FunctionType::get(AudioType, {AudioType, Type::getDoubleTy(TheContext), Type::getDoubleTy(TheContext)}, false);
-        // sliceAudioFunction = Function::Create(SliceAudioType, Function::ExternalLinkage, "slice_audio", TheModule.get());
-        //
-        // // struct Audio repeat_audio(struct Audio audio_var, double times);
-        // // repeats an audio file <times> times. If <times> is a fraction, it will partially repeat the audio
-        // FunctionType *RepeatAudioType = FunctionType::get(AudioType, {AudioType, Type::getDoubleTy(TheContext)}, false);
-        // repeatAudioFunction = Function::Create(RepeatAudioType, Function::ExternalLinkage, "repeat_audio", TheModule.get());
-        //
-        // // struct Audio superimpose_audio(struct Audio audio_var1, struct Audio audio_var2);
-        // // superimposes one audio file over the other. The resulting file's length will be the max length of the two files
-        // FunctionType *SuperimposeAudioType = FunctionType::get(AudioType, {AudioType, Type::getDoubleTy(TheContext)}, false);
-        // superimposeAudioFunction = Function::Create(SuperimposeAudioType, Function::ExternalLinkage, "superimpose_audio", TheModule.get());
+
+        // struct Audio slice_audio(struct Audio audio_var, double start_time_seconds, double end_time_seconds);
+        // returns an audio file by trimming the first <start_time> seconds of the file, until <end_time>. If start_time is negative, it adds extra padding
+        // in the front with no sound(zeros), and if end_time exceeds the file duration, adds padding at the end
+        FunctionType *SliceAudioType = FunctionType::get(AudioType, {AudioType, Type::getDoubleTy(TheContext), Type::getDoubleTy(TheContext)}, false);
+        sliceAudioFunction = Function::Create(SliceAudioType, Function::ExternalLinkage, "slice_audio", TheModule.get());
+
+        // struct Audio repeat_audio(struct Audio audio_var, double times);
+        // repeats an audio file <times> times. If <times> is a fraction, it will partially repeat the audio
+        FunctionType *RepeatAudioType = FunctionType::get(AudioType, {AudioType, Type::getDoubleTy(TheContext)}, false);
+        repeatAudioFunction = Function::Create(RepeatAudioType, Function::ExternalLinkage, "repeat_audio", TheModule.get());
+
+        // struct Audio superimpose_audio(struct Audio audio_var1, struct Audio audio_var2);
+        // superimposes one audio file over the other. The resulting file's length will be the max length of the two files
+        FunctionType *SuperimposeAudioType = FunctionType::get(AudioType, {AudioType, Type::getDoubleTy(TheContext)}, false);
+        superimposeAudioFunction = Function::Create(SuperimposeAudioType, Function::ExternalLinkage, "superimpose_audio", TheModule.get());
         //
         // // struct Audio generate_audio_static(short(*wav_function)(double), double frequency, double length_seconds);
         // // generates one audio file over the other. The resulting file's length will be the max length of the two files
@@ -212,7 +211,19 @@ Value *codegen(Stype *node) {
     }
     case NODE_ASSIGNABLE_VALUE: {
         cerr << "NODE_ASSIGNABLE_VALUE" << endl;
+        Value *IdValue = codegen(node->children[0]);
         // TODO: Need to handle vectors and slices here!!
+        if (IdValue->getType() == AudioType) {
+            for (int i = 1; i < node->children.size(); i++) {
+                Value *start_time = codegen(node->children[i]->children[0]);
+                Value *end_time = codegen(node->children[i]->children[1]);
+                start_time = createCast(start_time, Type::getDoubleTy(TheContext));
+                end_time = createCast(end_time, Type::getDoubleTy(TheContext));
+                auto SliceFunction = getFunction("slice_audio");
+                IdValue = Builder.CreateCall(SliceFunction, {IdValue, start_time, end_time}, "sliceaudio");
+            }
+        }
+
         return codegen(node->children[0]);
     }
     // Expressions
