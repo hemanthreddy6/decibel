@@ -590,7 +590,10 @@ int yyerror(const char* s){
 #ifdef CODEGEN
 int codegen_main(Stype* root);
 #endif
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc > 1){
+        yyin = fopen(argv[1], "r");
+    }
     yyparse();
     
     if (is_error){
