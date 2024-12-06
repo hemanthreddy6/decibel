@@ -256,7 +256,6 @@ Value *codegen(Stype *node) {
         Type *LHSType = LHS->getType();
         Type *RHSType = RHS->getType();
 
-
         if (LHSType->isFloatingPointTy() || RHSType->isFloatingPointTy()) {
             return Builder.CreateFMul(LHS, RHS, "multmp");
         }
@@ -271,13 +270,13 @@ Value *codegen(Stype *node) {
         bool RHSisScalar = RHSType->isFloatingPointTy() || RHSType->isIntegerTy();
 
         // Audio Scaling
-        if((LHSisAudio && RHSisScalar) || (RHSisAudio && LHSisScalar)) {
+        if ((LHSisAudio && RHSisScalar) || (RHSisAudio && LHSisScalar)) {
             Function *ScaleAudioFunc = TheModule->getFunction("scale_audio");
-            if(!ScaleAudioFunc) {
+            if (!ScaleAudioFunc) {
                 FunctionType *ScaleAudioType = FunctionType::get(AudioType, {LHSType, RHSType}, false);
                 ScaleAudioFunc = Function::Create(ScaleAudioType, Function::ExternalLinkage, "scale_audio", TheModule.get());
             }
-            return Builder.CreateCall(ScaleAudioFunc, {LHS, RHS}, "scaleaudio")
+            return Builder.CreateCall(ScaleAudioFunc, {LHS, RHS}, "scaleaudio");
         }
     }
     case NODE_DIVIDE_EXPR: {
@@ -311,25 +310,23 @@ Value *codegen(Stype *node) {
         if (LHSisString && RHSisScalar) {
             Function *StrRepeat = TheModule->getFunction("string_repeat");
             if (!StrRepeat) {
-                FunctionType *StrRepeat =
-                    FunctionType::get(Type::getInt8Ty(TheContext)->getPointerTo(),            // Return type: char*
-                                      {Type::getInt8Ty(TheContext)->getPointerTo(), RHSType}, // Arguments: char*, scalar
-                                      false);
-                StrRepeat = Function::Create(StrRepeat, Function::ExternalLinkage, "string_repeat", TheModule.get());
+                FunctionType *StrRepeatType = FunctionType::get(Type::getInt8Ty(TheContext)->getPointerTo(),            // Return type: char*
+                                                                {Type::getInt8Ty(TheContext)->getPointerTo(), RHSType}, // Arguments: char*, scalar
+                                                                false);
+                auto StrRepeat = Function::Create(StrRepeatType, Function::ExternalLinkage, "string_repeat", TheModule.get());
             }
             return Builder.CreateCall(StrRepeat, {LHS, RHS}, "stringrepeat");
         }
 
-        //Audio Repeating
-        if(LHSisAudio && RHSisScalar) {
+        // Audio Repeating
+        if (LHSisAudio && RHSisScalar) {
             Function *AudioRepeat = TheModule->getFunction("audio_repeat");
-            if(!AudioRepeat) {
-                FunctionType *AudioRepeat = FunctionType::get(AudioType, {LHSType, RHSType}, false);
-                AudioRepeat = Function::Create(AudioRepeat, Function::ExternalLinkage, "audio_repeat", TheModule.get());
+            if (!AudioRepeat) {
+                FunctionType *AudioRepeatType = FunctionType::get(AudioType, {LHSType, RHSType}, false);
+                auto AudioRepeat = Function::Create(AudioRepeatType, Function::ExternalLinkage, "audio_repeat", TheModule.get());
             }
             return Builder.CreateCall(AudioRepeat, {LHS, RHS}, "audiorepeat");
         }
-
     }
     case NODE_EQUALS_EXPR: {
         cerr << "NODE_EQUALS_EXPR" << endl;
