@@ -50,3 +50,12 @@ While there are several audio programming languages and frameworks currently ava
 
 In comparison, Decibel stands out by offering both **simplicity** and **power**, allowing users to focus on audio creation rather than learning complex programming paradigms. It brings together the flexibility of professional audio tools and the user-friendly approach needed for rapid prototyping and development.
 
+## Student to Github Commit Name Mapping
+
+- **Aditya Garg (CS22BTECH11002)**: Arushi Garg, Aditya, Garg_Aditya
+- **Anirudh Saikrishnan (CS22BTECH11004)**: Anirudh Saikrishnan
+- **Bonthu Mani Hemanth Reddy (CS22BTECH11013)**: Hemanth, hemanthreddy6
+- **Edward Nathan Varghese (CS22BTECH11020)**: edwardnvv57k, Edward Nathan Varghese
+- **Kaipa Venkata Tuhil (CS22BTECH11030)**: Tuhil
+- **Shaik Police Parvez (CS22BTECH11052)**: ShaikPoliceParvez
+- **Syed Abrar (CS22BTECH11058)**: Syed Abrar

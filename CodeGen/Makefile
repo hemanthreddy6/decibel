@@ -2,7 +2,7 @@
 COMPILER := $(if $(COMPILER),$(COMPILER),g++)
 .PHONY: build clean
 
-build: codegen
+build: codegen decibel_stdlib.o
 
 codegen: codegen.cpp ../Semantic/semantic_analyser.cpp ../Parser/y.tab.c
 	clang++-18 codegen.cpp -o codegen `llvm-config-18 --cxxflags --ldflags --libs core irreader --system-libs`
@@ -12,14 +12,18 @@ codegen: codegen.cpp ../Semantic/semantic_analyser.cpp ../Parser/y.tab.c
 
 test: run
 
-run: codegen
+run: codegen decibel_stdlib.o
 	./codegen < test.dbl
 	llc-18 -filetype=obj -relocation-model=pic out.ll -o out.o
-	clang-18 out.o -o out
+	clang++ out.o decibel_stdlib.o -o out -lsfml-audio -lsfml-system
 	./out
+
+decibel_stdlib.o: decibel_stdlib.cpp
+	clang++ -c decibel_stdlib.cpp -o decibel_stdlib.o
 
 clean:
 	rm -f codegen
 	rm -f out.ll
 	rm -f out.o
 	rm -f out
+	rm -f decibel_stdlib.o

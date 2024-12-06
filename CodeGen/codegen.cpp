@@ -749,6 +749,35 @@ Value *codegen(Stype *node) {
 
         return Constant::getNullValue(Type::getInt32Ty(TheContext));
     }
+    case NODE_LOOP_UNTIL_STATEMENT: {
+        cerr << "NODE_LOOP_UNTIL_STATEMENT" << endl;
+        // loop_statement: LOOP expr '{' statements '}'
+        Function *TheFunction = Builder.GetInsertBlock()->getParent();
+
+        BasicBlock *LoopBB = BasicBlock::Create(TheContext, "loop", TheFunction);
+        BasicBlock *AfterLoopBB = BasicBlock::Create(TheContext, "afterloop", TheFunction);
+        BasicBlock *CondBB = BasicBlock::Create(TheContext, "condition", TheFunction);
+
+        Builder.CreateBr(CondBB);
+        Builder.SetInsertPoint(CondBB);
+
+        Value *CondV = codegen(node->children[0]);
+        CondV = createCast(CondV, Type::getInt1Ty(TheContext));
+
+        Builder.CreateCondBr(CondV, AfterLoopBB, LoopBB);
+
+        Builder.SetInsertPoint(LoopBB);
+
+        pushSymbolTable();
+        codegen(node->children[1]); // Loop body statements
+        popSymbolTable();
+
+        Builder.CreateBr(CondBB);
+
+        Builder.SetInsertPoint(AfterLoopBB);
+
+        return Constant::getNullValue(Type::getInt32Ty(TheContext));
+    }
     case NODE_BREAK_STATEMENT: {
         cerr << "NODE_BREAK_STATEMENT" << endl;
         // Implement break statement

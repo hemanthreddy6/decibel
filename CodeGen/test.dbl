@@ -34,4 +34,10 @@ loop 10 {
     }
 }
 
+loop until a==0 {
+    print a;
+    a -= 1;
+}
 
+au <- load "sample.wav";
+play au;
