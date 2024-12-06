@@ -196,3 +196,5 @@ struct Audio concat_audio(struct Audio first_audio, struct Audio second_audio) {
 
     return new_audio;
 }
+
+}
