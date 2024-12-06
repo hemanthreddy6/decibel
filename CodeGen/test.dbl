@@ -40,4 +40,4 @@ loop until a==0 {
 }
 
 au <- load "sample.wav";
-play au;
+play au + au;

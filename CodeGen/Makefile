@@ -10,7 +10,8 @@ codegen: codegen.cpp ../Semantic/semantic_analyser.cpp ../Parser/y.tab.c
 ../Parser/y.tab.c: ../Parser/parser.y ../Lex/lexer.l
 	@make build -C "../Parser" --quiet
 
-test: run
+test: build
+	@make test -C "Tests" --quiet
 
 run: codegen decibel_stdlib.o
 	./codegen < test.dbl
