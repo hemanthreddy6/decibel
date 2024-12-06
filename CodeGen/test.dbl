@@ -1,3 +1,4 @@
+print "hello world!";
 f <- (a:long , b:long):long {
     if (a>b){
         return a;
@@ -12,6 +13,7 @@ f1 <- (a:long , b:long):long {
         return b;
     }
 };
+print 1000hz;
 f2 <- f;
 if 100 > 20 {
     f2 = f1;

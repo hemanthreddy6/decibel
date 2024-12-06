@@ -15,6 +15,7 @@
 #include <llvm-14/llvm/IR/Constants.h>
 #include <llvm-14/llvm/IR/Instructions.h>
 #include <llvm-14/llvm/Support/Casting.h>
+#include <math.h>
 #include <string>
 #include <vector>
 
@@ -52,7 +53,7 @@ void declareAudioFunctions();
 Function *loadAudioFunction = nullptr;
 Function *playAudioFunction = nullptr;
 Function *saveAudioFunction = nullptr;
-Function *freeAudioFunction = nullptr;
+Function *concatAudioFunction = nullptr;
 Function *printFunction = nullptr;
 
 // Push a new symbol table onto the stack
@@ -74,24 +75,20 @@ AllocaInst *findVariable(const string &name) {
 // Declare external audio functions
 void declareAudioFunctions() {
     if (!loadAudioFunction) {
-        // Define the AudioData* type (we'll use i8* for simplicity)
-        Type *AudioDataPtrType = Type::getInt8Ty(TheContext)->getPointerTo();
-
-        // Declare load_audio function
-        FunctionType *LoadAudioType = FunctionType::get(AudioDataPtrType, {Type::getInt8Ty(TheContext)->getPointerTo()}, false);
+        // struct Audio load_audio(char * filename);
+        FunctionType *LoadAudioType = FunctionType::get(AudioType, {Type::getInt8Ty(TheContext)->getPointerTo()}, false);
         loadAudioFunction = Function::Create(LoadAudioType, Function::ExternalLinkage, "load_audio", TheModule.get());
 
-        // Declare play_audio function
-        FunctionType *PlayAudioType = FunctionType::get(Type::getVoidTy(TheContext), {AudioDataPtrType}, false);
+        // void play_audio(struct Audio audio_var);
+        FunctionType *PlayAudioType = FunctionType::get(Type::getVoidTy(TheContext), {AudioType}, false);
         playAudioFunction = Function::Create(PlayAudioType, Function::ExternalLinkage, "play_audio", TheModule.get());
 
-        // Declare save_audio function
-        FunctionType *SaveAudioType = FunctionType::get(Type::getVoidTy(TheContext), {AudioDataPtrType, Type::getInt8Ty(TheContext)->getPointerTo()}, false);
+        // void save_audio(struct Audio audio_var, char* filename);
+        FunctionType *SaveAudioType = FunctionType::get(Type::getVoidTy(TheContext), {AudioType, Type::getInt8Ty(TheContext)->getPointerTo()}, false);
         saveAudioFunction = Function::Create(SaveAudioType, Function::ExternalLinkage, "save_audio", TheModule.get());
 
-        // Declare free_audio function
-        FunctionType *FreeAudioType = FunctionType::get(Type::getVoidTy(TheContext), {AudioDataPtrType}, false);
-        freeAudioFunction = Function::Create(FreeAudioType, Function::ExternalLinkage, "free_audio", TheModule.get());
+        FunctionType *ConcatAudioType = FunctionType::get(AudioType, {AudioType, AudioType}, false);
+        concatAudioFunction = Function::Create(ConcatAudioType, Function::ExternalLinkage, "concat_audio", TheModule.get());
     }
 }
 
@@ -136,7 +133,31 @@ Value *codegen(Stype *node) {
     }
     case NODE_FLOAT_LITERAL: {
         cerr << "NODE_FLOAT_LITERAL" << endl;
-        double val = std::stod(node->text);
+        double val = 0;
+        if (node->text.size() >= 2) {
+            if (node->text[node->text.size() - 2] == 'h' || node->text[node->text.size() - 2] == 'H') {
+                node->text.pop_back();
+                node->text.pop_back();
+                val = std::stod(node->text);
+                val /= 440;
+                if (val <= 0)
+                    // TODO: this is an arbitrary largee negative value, decide on a proper value later
+                    val = -1e30;
+                else
+                    val = 12 * log2(val);
+            } else if (node->text[node->text.size() - 2] == 'm' || node->text[node->text.size() - 2] == 'M') {
+                node->text.pop_back();
+                node->text.pop_back();
+                val = std::stod(node->text);
+                val /= 1000;
+            } else if (node->text[node->text.size() - 1] == 's' || node->text[node->text.size() - 1] == 'S') {
+                node->text.pop_back();
+                val = std::stod(node->text);
+            } else {
+                val = std::stod(node->text);
+            }
+        } else
+            val = std::stod(node->text);
         return ConstantFP::get(TheContext, APFloat(val));
     }
     case NODE_BOOL_LITERAL: {
@@ -146,6 +167,8 @@ Value *codegen(Stype *node) {
     }
     case NODE_STRING_LITERAL: {
         cerr << "NODE_STRING_LITERAL" << endl;
+        // remove the quotes around the string
+        node->text = node->text.substr(1, node->text.size()-2);
         return Builder.CreateGlobalStringPtr(node->text);
     }
     case NODE_IDENTIFIER: {
@@ -608,7 +631,7 @@ Value *codegen(Stype *node) {
         declarePrintFunction();
         Value *ExprVal = codegen(node->children[0]);
 
-        if (ExprVal->getType()->isIntegerTy(64)) {
+        if (ExprVal->getType()->isIntegerTy()) {
             Value *FormatStr = Builder.CreateGlobalStringPtr("%ld\n");
             Builder.CreateCall(printFunction, {FormatStr, ExprVal});
         } else if (ExprVal->getType()->isDoubleTy()) {
@@ -670,28 +693,6 @@ Value *codegen(Stype *node) {
             Arg.setName(ParamNames[idx++]);
         }
 
-        // BasicBlock *BB = BasicBlock::Create(TheContext, "func_entry", TheFunction);
-        // Builder.SetInsertPoint(BB);
-        //
-        // pushSymbolTable();
-        //
-        // idx = 0;
-        // for (auto &Arg : TheFunction->args()) {
-        //     AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName().str(), Arg.getType());
-        //     Builder.CreateStore(&Arg, Alloca);
-        //     NamedValues.back()[Arg.getName().str()] = Alloca;
-        //     idx++;
-        // }
-        //
-        // codegen(BodyNode);
-        //
-        // if (ReturnType == Type::getVoidTy(TheContext)) {
-        //     Builder.CreateRetVoid();
-        // } else
-        //
-        // popSymbolTable();
-        //
-        // verifyFunction(*TheFunction);
         function_nodes.push_back({node, TheFunction});
         PointerType *FuncPointerType = PointerType::get(FT, 0);
         return ConstantExpr::getBitCast(TheFunction, FuncPointerType);
@@ -706,7 +707,7 @@ Value *codegen(Stype *node) {
         return LastValue;
     }
     default:
-        cerr << "forgot to handle a node bruh " << node->node_type << endl;
+        cerr << "forgot to handle a node bruh: " << node->node_type << endl;
         return nullptr;
     }
 }
@@ -765,17 +766,16 @@ Function *getFunction(const string &name) {
 
 // Main codegen entry point
 int codegen_main(Stype *root) {
-    cerr << "---------------------------------------------------------------------" << endl;
-    // Initialize the module
     freopen("out.ll", "w", stdout);
+    // Initialize the module
     TheModule = make_unique<Module>("MyModule", TheContext);
 
-    // Define the struct type
+    // Define the audio struct type
     AudioType = StructType::create(TheContext, "struct.Audio");
     AudioType->setBody({Type::getInt64Ty(TheContext), PointerType::get(Type::getInt32Ty(TheContext), 0)});
 
     // Generate code for the root node
-    cerr << "-------------------------------starting codegen--------------------------------------" << endl;
+    cerr << "------------------------------------------starting codegen---------------------------------------------" << endl;
     Function *main_function = Function::Create(FunctionType::get(Type::getInt32Ty(TheContext), {}, false), Function::ExternalLinkage, "main", TheModule.get());
     BasicBlock *BB = BasicBlock::Create(TheContext, "entry", main_function);
     Builder.SetInsertPoint(BB);
@@ -811,15 +811,13 @@ int codegen_main(Stype *root) {
             Builder.CreateRetVoid();
         }
 
-        Builder.CreateRet(Constant::getNullValue(RetType));
-
         popSymbolTable();
 
+        Builder.CreateRet(Constant::getNullValue(RetType));
         verifyFunction(*TheFunction);
-
     }
 
-    cerr << "--------------------------traversed tree for codegen---------------------------------" << endl;
+    cerr << "---------------------------------finished traversing tree for codegen----------------------------------" << endl;
 
     // Validate the generated code
     verifyModule(*TheModule, &errs());
