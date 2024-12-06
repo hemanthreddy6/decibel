@@ -34,4 +34,7 @@ loop 10 {
     }
 }
 
-
+loop until a==0 {
+    print a;
+    a -= 1;
+}
