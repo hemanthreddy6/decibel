@@ -11,10 +11,11 @@
 #include "llvm/Support/raw_ostream.h"
 #include <cstdio>
 #include <iostream>
-#include <llvm-14/llvm/ADT/STLFunctionalExtras.h>
-#include <llvm-14/llvm/IR/Constants.h>
+// #include <llvm-14/llvm/ADT/STLFunctionalExtras.h>
+// #include <llvm-14/llvm/IR/Constants.h>
+// #include <llvm-14/llvm/IR/Instructions.h>
+// #include <llvm-14/llvm/Support/Casting.h>
 #include <llvm-14/llvm/IR/Instructions.h>
-#include <llvm-14/llvm/Support/Casting.h>
 #include <math.h>
 #include <string>
 #include <vector>
@@ -42,6 +43,8 @@ vector<pair<Stype *, Function *>> function_nodes;
 // Function Declarations
 Value *codegen(Stype *node);
 Type *getLLVMType(DataType *dtype);
+Value *convertToString(Value *Val);
+Value *createCast(Value *Val, Type *DestType);
 Function *getFunction(const string &name);
 AllocaInst *CreateEntryBlockAlloca(Function *TheFunction, const string &VarName, Type *varType);
 void pushSymbolTable();
@@ -168,7 +171,7 @@ Value *codegen(Stype *node) {
     case NODE_STRING_LITERAL: {
         cerr << "NODE_STRING_LITERAL" << endl;
         // remove the quotes around the string
-        node->text = node->text.substr(1, node->text.size()-2);
+        node->text = node->text.substr(1, node->text.size() - 2);
         return Builder.CreateGlobalStringPtr(node->text);
     }
     case NODE_IDENTIFIER: {
@@ -280,58 +283,128 @@ Value *codegen(Stype *node) {
         cerr << "NODE_EQUALS_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
-        return Builder.CreateICmpEQ(LHS, RHS, "eqtmp");
+        auto LHS_TYPE = LHS->getType();
+        auto RHS_TYPE = RHS->getType();
+        if (LHS_TYPE->isIntegerTy() && RHS_TYPE->isIntegerTy()) {
+            LHS = createCast(LHS, Type::getInt64Ty(TheContext));
+            RHS = createCast(RHS, Type::getInt64Ty(TheContext));
+            return Builder.CreateICmpEQ(LHS, RHS, "eqtmp");
+        } else if (LHS_TYPE->isFloatingPointTy() || RHS_TYPE->isFloatingPointTy()) {
+            LHS = createCast(LHS, Type::getDoubleTy(TheContext));
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
+            return Builder.CreateFCmp(llvm::FCmpInst::FCMP_UEQ, LHS, RHS, "eqtmp");
+        } else {
+            // TODO: string equality check
+        }
     }
     case NODE_NOT_EQUALS_EXPR: {
         cerr << "NODE_NOT_EQUALS_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
-        return Builder.CreateICmpNE(LHS, RHS, "netmp");
+        auto LHS_TYPE = LHS->getType();
+        auto RHS_TYPE = RHS->getType();
+        if (LHS_TYPE->isIntegerTy() && RHS_TYPE->isIntegerTy()) {
+            LHS = createCast(LHS, Type::getInt64Ty(TheContext));
+            RHS = createCast(RHS, Type::getInt64Ty(TheContext));
+            return Builder.CreateICmpNE(LHS, RHS, "eqtmp");
+        } else if (LHS_TYPE->isFloatingPointTy() || RHS_TYPE->isFloatingPointTy()) {
+            LHS = createCast(LHS, Type::getDoubleTy(TheContext));
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
+            return Builder.CreateFCmp(llvm::FCmpInst::FCMP_UNE, LHS, RHS, "eqtmp");
+        } else {
+            // TODO: string non-equality check
+        }
     }
     case NODE_LEQ_EXPR: {
         cerr << "NODE_LEQ_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
-        return Builder.CreateICmpSLE(LHS, RHS, "leqtmp");
+        auto LHS_TYPE = LHS->getType();
+        auto RHS_TYPE = RHS->getType();
+        if (LHS_TYPE->isIntegerTy() && RHS_TYPE->isIntegerTy()) {
+            LHS = createCast(LHS, Type::getInt64Ty(TheContext));
+            RHS = createCast(RHS, Type::getInt64Ty(TheContext));
+            return Builder.CreateICmpSLE(LHS, RHS, "eqtmp");
+        } else if (LHS_TYPE->isFloatingPointTy() || RHS_TYPE->isFloatingPointTy()) {
+            LHS = createCast(LHS, Type::getDoubleTy(TheContext));
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
+            return Builder.CreateFCmp(llvm::FCmpInst::FCMP_ULE, LHS, RHS, "eqtmp");
+        }
     }
     case NODE_GEQ_EXPR: {
         cerr << "NODE_GEQ_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
-        return Builder.CreateICmpSGE(LHS, RHS, "geqtmp");
+        auto LHS_TYPE = LHS->getType();
+        auto RHS_TYPE = RHS->getType();
+        if (LHS_TYPE->isIntegerTy() && RHS_TYPE->isIntegerTy()) {
+            LHS = createCast(LHS, Type::getInt64Ty(TheContext));
+            RHS = createCast(RHS, Type::getInt64Ty(TheContext));
+            return Builder.CreateICmpSGE(LHS, RHS, "eqtmp");
+        } else if (LHS_TYPE->isFloatingPointTy() || RHS_TYPE->isFloatingPointTy()) {
+            LHS = createCast(LHS, Type::getDoubleTy(TheContext));
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
+            return Builder.CreateFCmp(llvm::FCmpInst::FCMP_UGE, LHS, RHS, "eqtmp");
+        }
     }
     case NODE_LE_EXPR: {
         cerr << "NODE_LE_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
-        return Builder.CreateICmpSLT(LHS, RHS, "letmp");
+        auto LHS_TYPE = LHS->getType();
+        auto RHS_TYPE = RHS->getType();
+        if (LHS_TYPE->isIntegerTy() && RHS_TYPE->isIntegerTy()) {
+            LHS = createCast(LHS, Type::getInt64Ty(TheContext));
+            RHS = createCast(RHS, Type::getInt64Ty(TheContext));
+            return Builder.CreateICmpSLT(LHS, RHS, "eqtmp");
+        } else if (LHS_TYPE->isFloatingPointTy() || RHS_TYPE->isFloatingPointTy()) {
+            LHS = createCast(LHS, Type::getDoubleTy(TheContext));
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
+            return Builder.CreateFCmp(llvm::FCmpInst::FCMP_ULT, LHS, RHS, "eqtmp");
+        }
     }
     case NODE_GE_EXPR: {
         cerr << "NODE_GE_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
-        return Builder.CreateICmpSGT(LHS, RHS, "getmp");
+        auto LHS_TYPE = LHS->getType();
+        auto RHS_TYPE = RHS->getType();
+        if (LHS_TYPE->isIntegerTy() && RHS_TYPE->isIntegerTy()) {
+            LHS = createCast(LHS, Type::getInt64Ty(TheContext));
+            RHS = createCast(RHS, Type::getInt64Ty(TheContext));
+            return Builder.CreateICmpSGT(LHS, RHS, "eqtmp");
+        } else if (LHS_TYPE->isFloatingPointTy() || RHS_TYPE->isFloatingPointTy()) {
+            LHS = createCast(LHS, Type::getDoubleTy(TheContext));
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
+            return Builder.CreateFCmp(llvm::FCmpInst::FCMP_UGT, LHS, RHS, "eqtmp");
+        }
     }
     case NODE_LOGICAL_AND_EXPR: {
         cerr << "NODE_LOGICAL_AND_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
+        LHS = createCast(LHS, Type::getInt1Ty(TheContext));
+        RHS = createCast(RHS, Type::getInt1Ty(TheContext));
         return Builder.CreateAnd(LHS, RHS, "andtmp");
     }
     case NODE_LOGICAL_OR_EXPR: {
         cerr << "NODE_LOGICAL_OR_EXPR" << endl;
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
+        LHS = createCast(LHS, Type::getInt1Ty(TheContext));
+        RHS = createCast(RHS, Type::getInt1Ty(TheContext));
         return Builder.CreateOr(LHS, RHS, "ortmp");
     }
     case NODE_UNARY_INVERSE_EXPR: {
         cerr << "NODE_UNARY_INVERSE_EXPR" << endl;
         Value *Operand = codegen(node->children[0]);
+        Operand = createCast(Operand, Type::getInt1Ty(TheContext));
         return Builder.CreateNot(Operand, "invtmp");
     }
     case NODE_UNARY_LOGICAL_NOT_EXPR: {
         cerr << "NODE_UNARY_LOGICAL_NOT_EXPR" << endl;
         Value *Operand = codegen(node->children[0]);
+        Operand = createCast(Operand, Type::getInt1Ty(TheContext));
         return Builder.CreateNot(Operand, "nottmp");
     }
     case NODE_UNARY_PLUS_EXPR: {
@@ -359,7 +432,7 @@ Value *codegen(Stype *node) {
         // Function *CalleeF = getFunction(FuncName);
         auto CalleeF = findVariable(FuncName);
         // auto functype = CalleeF->getType();
-        FunctionType *functype = (FunctionType *)getLLVMType(node->data_type);
+        FunctionType *functype = (FunctionType *)getLLVMType(node->children[0]->data_type);
 
         PointerType *FuncPointerType = PointerType::getUnqual(functype);
 
@@ -369,9 +442,13 @@ Value *codegen(Stype *node) {
         // Value *FuncPtr = Builder.CreateLoad(tp, CalleeF);
         vector<Value *> ArgsV;
         Stype *FuncArgsNode = node->children[1];
+        int ind = 0;
         for (Stype *arg : FuncArgsNode->children[0]->children) {
             Value *ArgVal = codegen(arg);
+            // TODO: Have to typecast to the required type of they are of different types
+            ArgVal = createCast(ArgVal, getLLVMType(node->children[0]->data_type->parameters[ind]));
             ArgsV.push_back(ArgVal);
+            ind++;
         }
 
         Value *p = Builder.CreateAlloca(CalleeF->getType(), nullptr, "p");
@@ -615,8 +692,11 @@ Value *codegen(Stype *node) {
     }
     case NODE_RETURN_STATEMENT: {
         cerr << "NODE_RETURN_STATEMENT" << endl;
+        Function *TheFunction = Builder.GetInsertBlock()->getParent();
+        Type *ReturnType = TheFunction->getReturnType();
         if (node->children.size() > 0) {
             Value *RetVal = codegen(node->children[0]);
+            RetVal = createCast(RetVal, ReturnType);
             Builder.CreateRet(RetVal);
         } else {
             Builder.CreateRetVoid();
@@ -749,6 +829,73 @@ Type *getLLVMType(DataType *dtype) {
             ReturnType = Type::getVoidTy(TheContext);
         return FunctionType::get(ReturnType, ParamTypes, false);
     }
+}
+
+Value *convertToString(Value *Val) {
+    Type *SrcType = Val->getType();
+
+    Function *TheFunction = Builder.GetInsertBlock()->getParent();
+    AllocaInst *Buffer = Builder.CreateAlloca(Type::getInt8Ty(TheContext), ConstantInt::get(Type::getInt32Ty(TheContext), 64), "strBuffer");
+
+    Value *FormatStr;
+    if (SrcType->isIntegerTy()) {
+        FormatStr = Builder.CreateGlobalStringPtr("%ld", "formatStr");
+    } else if (SrcType->isFloatingPointTy()) {
+        FormatStr = Builder.CreateGlobalStringPtr("%f", "formatStr");
+    } else {
+        llvm_unreachable("Unsupported type for string conversion");
+    }
+
+    Function *SprintfFunc = TheFunction->getParent()->getFunction("sprintf");
+    if (!SprintfFunc) {
+        // int sprintf(char *buffer, const char *format, ...)
+        FunctionType *SprintfType =
+            FunctionType::get(Type::getInt32Ty(TheContext), {Type::getInt8Ty(TheContext)->getPointerTo(), Type::getInt8Ty(TheContext)->getPointerTo()}, true);
+        SprintfFunc = Function::Create(SprintfType, Function::ExternalLinkage, "sprintf", TheFunction->getParent());
+    }
+
+    Builder.CreateCall(SprintfFunc, {Buffer, FormatStr, Val});
+
+    return Buffer;
+}
+
+Value *createCast(Value *Val, Type *DestType) {
+    Type *SrcType = Val->getType();
+
+    if (SrcType == DestType)
+        return Val;
+
+    if (DestType->isFloatingPointTy()) {
+        // assuming srctype is not invalid
+        if (SrcType->isIntegerTy(1)) {
+            // bool to float
+            return Builder.CreateUIToFP(Val, DestType, "cast");
+        }
+        // int/long to float
+        return Builder.CreateSIToFP(Val, DestType, "cast");
+    } else if (DestType->isIntegerTy()) {
+        if (SrcType->isFloatingPointTy()) {
+            if (DestType->isIntegerTy(1))
+                return Builder.CreateFCmpUNE(Val, ConstantFP::get(SrcType, 0.0), "to_bool");
+            else
+                return Builder.CreateFPToSI(Val, DestType, "cast");
+        } else if (SrcType->isIntegerTy()) {
+            if (DestType->isIntegerTy(1)) {
+                // int to bool
+                return Builder.CreateICmpNE(Val, ConstantInt::get(SrcType, 0), "cast");
+            } else if (SrcType->getIntegerBitWidth() < DestType->getIntegerBitWidth()) {
+                // int to long (sign-extend)
+                return Builder.CreateSExt(Val, DestType, "cast");
+            } else {
+                // long to int (truncate)
+                return Builder.CreateTrunc(Val, DestType, "cast");
+            }
+        }
+    } else if (DestType->isPointerTy()) {
+        return convertToString(Val);
+    }
+
+    llvm_unreachable("Unsupported cast type combination");
 }
 
 // Function to create an alloca instruction in the entry block

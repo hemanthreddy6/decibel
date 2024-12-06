@@ -1,18 +1,18 @@
 print "hello world!";
-f <- (a:long , b:long):long {
-    if (a>b){
+f <- (a:long, b:int):int {
+    if (a > b) {
         return a;
     } otherwise {
         return b;
     }
-};
-f1 <- (a:long , b:long):long {
-    if (a<b){
+} ;
+f1 <- (a:long, b:int):int {
+    if (a < b) {
         return a;
     } otherwise {
         return b;
     }
-};
+} ;
 print 1000hz;
 f2 <- f;
 if 100 > 20 {
@@ -24,12 +24,14 @@ a <- 0;
 loop 10 {
     a += 1;
     if a > 8 {
-        print -a;
+        print - a;
     } or a > 6 {
-        print a*100;
+        print a * 100;
     } or a > 4 {
         print a - 100;
     } otherwise {
         print a;
     }
 }
+
+
