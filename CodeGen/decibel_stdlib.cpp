@@ -176,3 +176,22 @@ void play_audio(struct Audio audio_var) {
     remove(temp_file);
 }
 
+struct Audio concat_audio(struct Audio first_audio, struct Audio second_audio) {
+    unsigned int first_audio_length = first_audio.length;
+    unsigned int second_audio_length = second_audio.length;
+
+    struct Audio new_audio;
+    new_audio.length = first_audio.length + second_audio.length;
+    new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
+
+    for(int i=0;i<first_audio_length;i++)
+    {
+        new_audio.ptr[i] = first_audio.ptr[i];
+    }
+    for(int i=0;i<second_audio_length;i++)
+    {
+        new_audio.ptr[first_audio_length + i] = second_audio.ptr[i];
+    }
+
+    return new_audio;
+}
