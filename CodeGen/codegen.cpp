@@ -238,14 +238,14 @@ Value *codegen(Stype *node) {
         Type *LHSType = LHS->getType();
         Type *RHSType = RHS->getType();
         if (LHSType->isFloatingPointTy() || RHSType->isFloatingPointTy()) {
-            if (LHSType->isIntegerTy())
-                LHS = Builder.CreateSIToFP(LHS, Type::getDoubleTy(TheContext), "int_to_float");
-            if (RHSType->isIntegerTy())
-                RHS = Builder.CreateSIToFP(RHS, Type::getDoubleTy(TheContext), "int_to_float");
+            LHS = createCast(LHS, Type::getDoubleTy(TheContext));
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
             return Builder.CreateFSub(LHS, RHS, "addtmp");
         }
 
         if (LHSType->isIntegerTy() && RHSType->isIntegerTy()) {
+            LHS = createCast(LHS, Type::getInt64Ty(TheContext));
+            RHS = createCast(RHS, Type::getInt64Ty(TheContext));
             return Builder.CreateSub(LHS, RHS, "addtmp");
         }
     }
@@ -257,10 +257,14 @@ Value *codegen(Stype *node) {
         Type *RHSType = RHS->getType();
 
         if (LHSType->isFloatingPointTy() || RHSType->isFloatingPointTy()) {
+            LHS = createCast(LHS, Type::getDoubleTy(TheContext));
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
             return Builder.CreateFMul(LHS, RHS, "multmp");
         }
 
         if (LHSType->isIntegerTy() && RHSType->isIntegerTy()) {
+            LHS = createCast(LHS, Type::getInt64Ty(TheContext));
+            RHS = createCast(RHS, Type::getInt64Ty(TheContext));
             return Builder.CreateMul(LHS, RHS, "addtmp");
         }
 
@@ -271,8 +275,17 @@ Value *codegen(Stype *node) {
 
         // Audio Scaling
         if ((LHSisAudio && RHSisScalar) || (RHSisAudio && LHSisScalar)) {
+            if (RHSisAudio) {
+                Value *temp = LHS;
+                LHS = RHS;
+                RHS = temp;
+            }
+            LHSType = AudioType;
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
+            RHSType = RHS->getType();
             Function *ScaleAudioFunc = TheModule->getFunction("scale_audio");
             if (!ScaleAudioFunc) {
+                // struct Audio scale_audio(struct Audio audio_var, double scaling_factor);
                 FunctionType *ScaleAudioType = FunctionType::get(AudioType, {LHSType, RHSType}, false);
                 ScaleAudioFunc = Function::Create(ScaleAudioType, Function::ExternalLinkage, "scale_audio", TheModule.get());
             }
@@ -284,8 +297,12 @@ Value *codegen(Stype *node) {
         Value *LHS = codegen(node->children[0]);
         Value *RHS = codegen(node->children[1]);
         if (LHS->getType()->isFloatingPointTy() || RHS->getType()->isFloatingPointTy()) {
+            LHS = createCast(LHS, Type::getDoubleTy(TheContext));
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
             return Builder.CreateFDiv(LHS, RHS, "divtmp");
         } else {
+            LHS = createCast(LHS, Type::getInt64Ty(TheContext));
+            RHS = createCast(RHS, Type::getInt64Ty(TheContext));
             return Builder.CreateSDiv(LHS, RHS, "divtmp");
         }
     }
@@ -297,15 +314,19 @@ Value *codegen(Stype *node) {
         Type *LHSType = LHS->getType();
         Type *RHSType = RHS->getType();
 
-        Function *PowFunc = Intrinsic::getDeclaration(TheModule.get(), Intrinsic::pow, {Type::getDoubleTy(TheContext)});
-        LHS = Builder.CreateSIToFP(LHS, Type::getDoubleTy(TheContext));
-        RHS = Builder.CreateSIToFP(RHS, Type::getDoubleTy(TheContext));
-        return Builder.CreateCall(PowFunc, {LHS, RHS}, "powtmp");
-
         bool LHSisString = LHSType->isPointerTy() && LHSType->getContainedType(0)->isIntegerTy(8);
         bool LHSisAudio = LHSType->isStructTy() && LHSType->getStructName() == "struct.Audio";
         bool RHSisScalar = RHSType->isFloatingPointTy() || RHSType->isIntegerTy();
 
+        if (!(LHSisAudio || LHSisString)) {
+            Function *PowFunc = Intrinsic::getDeclaration(TheModule.get(), Intrinsic::pow, {Type::getDoubleTy(TheContext)});
+            LHS = createCast(LHS, Type::getDoubleTy(TheContext));
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
+            return Builder.CreateCall(PowFunc, {LHS, RHS}, "powtmp");
+        }
+
+        RHS = createCast(RHS, Type::getDoubleTy(TheContext));
+        RHSType = RHS->getType();
         // String Repeating
         if (LHSisString && RHSisScalar) {
             Function *StrRepeat = TheModule->getFunction("string_repeat");
