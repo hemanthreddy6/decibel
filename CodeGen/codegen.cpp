@@ -62,6 +62,8 @@ Function *repeatAudioFunction = nullptr;
 Function *superimposeAudioFunction = nullptr;
 Function *scaleAudioFunctionStatic = nullptr;
 Function *scaleAudioFunctionDynamic = nullptr;
+Function *generateAudioFunctionStatic = nullptr;
+Function *generateAudioFunctionDynamic = nullptr;
 Function *printFunction = nullptr;
 
 // Push a new symbol table onto the stack
@@ -128,15 +130,19 @@ void declareAudioFunctions() {
             AudioType, {AudioType, PointerType::getUnqual(FunctionType::get(Type::getDoubleTy(TheContext), {Type::getDoubleTy(TheContext)}, false))}, false);
         scaleAudioFunctionDynamic = Function::Create(ScaleAudioDynamic, Function::ExternalLinkage, "scale_audio_dynamic", TheModule.get());
 
-        //
-        // // struct Audio generate_audio_static(short(*wav_function)(double), double frequency, double length_seconds);
-        // // generates one audio file over the other. The resulting file's length will be the max length of the two files
-        // FunctionType *WavFuncType = FunctionType::get(Type::getInt16Ty(TheContext), {Type::getDoubleTy(TheContext)}, false);
-        // FunctionType *GenerateAudioTypeStatic =
-        //     FunctionType::get(AudioType, {WavFuncType->getPointerTo(), Type::getDoubleTy(TheContext), Type::getDoubleTy(TheContext)}, false);
-        // generateAudioFunctionStatic = Function::Create(GenerateAudioTypeStatic, Function::ExternalLinkage, "generate_audio_static", TheModule.get());
+        // struct Audio generate_audio_static(short(*wav_function)(double), double frequency, double length_seconds);
+        // generates one audio file over the other. The resulting file's length will be the max length of the two files
+        FunctionType *WavFuncType = FunctionType::get(Type::getInt16Ty(TheContext), {Type::getDoubleTy(TheContext)}, false);
+        FunctionType *GenerateAudioTypeStatic =
+            FunctionType::get(AudioType, {WavFuncType->getPointerTo(), Type::getDoubleTy(TheContext), Type::getDoubleTy(TheContext)}, false);
+        generateAudioFunctionStatic = Function::Create(GenerateAudioTypeStatic, Function::ExternalLinkage, "generate_audio_static", TheModule.get());
 
-        // These are enough for a decent demonstration ig
+        // struct Audio generate_audio_static(short(*wav_function)(double), double frequency, double length_seconds);
+        // generates one audio file over the other. The resulting file's length will be the max length of the two files
+        FunctionType *TimeDepFunctionType = FunctionType::get(Type::getDoubleTy(TheContext), {Type::getDoubleTy(TheContext)}, false);
+        FunctionType *GenerateAudioTypeDynamic =
+            FunctionType::get(AudioType, {WavFuncType->getPointerTo(), TimeDepFunctionType->getPointerTo(), Type::getDoubleTy(TheContext)}, false);
+        generateAudioFunctionStatic = Function::Create(GenerateAudioTypeStatic, Function::ExternalLinkage, "generate_audio_dynamic", TheModule.get());
     }
 }
 
@@ -222,7 +228,7 @@ Value *codegen(Stype *node) {
     case NODE_IDENTIFIER: {
         cerr << "NODE_IDENTIFIER" << endl;
         AllocaInst *var = findVariable(node->text);
-        cerr << "found?" << endl;
+        // cerr << "found?" << endl;
         return Builder.CreateLoad(var->getAllocatedType(), var, node->text.c_str());
     }
     case NODE_ASSIGNABLE_VALUE: {
@@ -333,17 +339,32 @@ Value *codegen(Stype *node) {
             RHSType = RHS->getType();
             Function *ScaleAudioFunc = TheModule->getFunction("scale_audio_static");
             return Builder.CreateCall(ScaleAudioFunc, {LHS, RHS}, "scaleaudio");
-        }
-        if (LHSType->isFloatingPointTy() || RHSType->isFloatingPointTy()) {
+        } else if (LHSType->isFloatingPointTy() || RHSType->isFloatingPointTy()) {
             LHS = createCast(LHS, Type::getDoubleTy(TheContext));
             RHS = createCast(RHS, Type::getDoubleTy(TheContext));
             return Builder.CreateFMul(LHS, RHS, "multmp");
-        }
+        } else
 
-        if (LHSType->isIntegerTy() && RHSType->isIntegerTy()) {
+            if (LHSType->isIntegerTy() && RHSType->isIntegerTy()) {
             LHS = createCast(LHS, Type::getInt64Ty(TheContext));
             RHS = createCast(RHS, Type::getInt64Ty(TheContext));
             return Builder.CreateMul(LHS, RHS, "addtmp");
+        } else if (LHSisAudio || RHSisAudio) {
+            Type *arg_function_type;
+            if (RHSisAudio) {
+                Value *temp = LHS;
+                LHS = RHS;
+                RHS = temp;
+                arg_function_type = getLLVMType(node->children[0]->data_type);
+            }
+            arg_function_type = getLLVMType(node->children[1]->data_type);
+            LHSType = AudioType;
+
+            Function *ScaleAudioFuncDyn = TheModule->getFunction("scale_audio_dynamic");
+            // return Builder.CreateCall(ScaleAudioFuncDyn, {LHS, RHS}, "scaleaudiodyn");
+            return Builder.CreateCall(ScaleAudioFuncDyn, {LHS, RHS}, "scaleaudiodyn");
+            // return Builder.CreateCall(getFunction("_func_0")->getFunctionType(), temp1, ArgsV);
+            // return Builder.CreateCall(functype, temp1, ArgsV);
         }
     }
     case NODE_DIVIDE_EXPR: {
@@ -358,6 +379,23 @@ Value *codegen(Stype *node) {
             LHS = createCast(LHS, Type::getInt64Ty(TheContext));
             RHS = createCast(RHS, Type::getInt64Ty(TheContext));
             return Builder.CreateSDiv(LHS, RHS, "divtmp");
+        }
+    }
+    case NODE_MOD_EXPR: {
+        cerr << "NODE_MOD_EXPR" << endl;
+        Value *LHS = codegen(node->children[0]);
+        Value *RHS = codegen(node->children[1]);
+        if (LHS->getType()->isFloatingPointTy() || RHS->getType()->isFloatingPointTy()) {
+            LHS = createCast(LHS, Type::getDoubleTy(TheContext));
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
+            Value *Div = Builder.CreateFDiv(LHS, RHS, "div");
+            Value *TruncDiv = Builder.CreateIntrinsic(Intrinsic::trunc, {LHS->getType()}, {Div}, nullptr, "trunc_div");
+            Value *Mul = Builder.CreateFMul(TruncDiv, RHS, "mul");
+            return Builder.CreateFSub(LHS, Mul, "mod_float");
+        } else {
+            LHS = createCast(LHS, Type::getInt64Ty(TheContext));
+            RHS = createCast(RHS, Type::getInt64Ty(TheContext));
+            return Builder.CreateSRem(LHS, RHS, "mod");
         }
     }
     case NODE_SUPERPOSITION_EXPR: {
@@ -602,7 +640,8 @@ Value *codegen(Stype *node) {
         Value *temp = Builder.CreateLoad(FuncPointerType, p);
         Value *temp1 = Builder.CreateLoad(FuncPointerType, temp);
 
-        return Builder.CreateCall(getFunction("_func_0")->getFunctionType(), temp1, ArgsV);
+        // return Builder.CreateCall(getFunction("_func_0")->getFunctionType(), temp1, ArgsV);
+        return Builder.CreateCall(functype, temp1, ArgsV);
 
         // LoadInst *loadFPtr = Builder.CreateLoad(tp, CalleeF, "loadedFuncPtr");
         //
@@ -801,7 +840,7 @@ Value *codegen(Stype *node) {
 
         // cerr << node->children[0]->data_type->is_primitive << ' ' << node->children[0]->data_type->is_vector << ' '
         //      << (node->children[0]->data_type->basic_data_type == LONG) << endl;
-        Type * CounterType = getLLVMType(node->children[0]->data_type);
+        Type *CounterType = getLLVMType(node->children[0]->data_type);
         AllocaInst *LoopCounter = CreateEntryBlockAlloca(TheFunction, node->children[0]->text, CounterType);
         pushSymbolTable();
         NamedValues.back()[node->children[0]->text] = LoopCounter;
@@ -829,7 +868,6 @@ Value *codegen(Stype *node) {
         Builder.CreateCondBr(CondV, LoopBB, AfterLoopBB);
 
         Builder.SetInsertPoint(LoopBB);
-
 
         codegen(node->children[4]); // Loop body statements
 
@@ -979,6 +1017,26 @@ Value *codegen(Stype *node) {
         Value *AudioVal = codegen(node->children[0]);
         Value *FilenameVal = codegen(node->children[1]);
         Builder.CreateCall(saveAudioFunction, {AudioVal, FilenameVal});
+        return nullptr;
+    }
+    case NODE_AUDIO_FUNCTION: {
+        cerr << "NODE_AUDIO_FUNCTION" << endl;
+        declareAudioFunctions();
+        Value *WavFunction = codegen(node->children[0]);
+        Value *Freq = codegen(node->children[1]);
+        Value *TimeSeconds = codegen(node->children[2]);
+        TimeSeconds = createCast(TimeSeconds, Type::getDoubleTy(TheContext));
+        Type *FreqType = Freq->getType();
+        if (FreqType->isIntegerTy() || FreqType->isDoubleTy()) {
+            Freq = createCast(Freq, Type::getDoubleTy(TheContext));
+            Function *genAudioS = TheModule->getFunction("generate_audio_static");
+            return Builder.CreateCall(genAudioS, {WavFunction, Freq, TimeSeconds}, "gen_audio");
+            // return Builder.CreateCall(generateAudioFunctionStatic, {WavFunction, Freq, TimeSeconds});
+        } else {
+            Function *genAudioD = TheModule->getFunction("generate_audio_dynamic");
+            return Builder.CreateCall(genAudioD, {WavFunction, Freq, TimeSeconds}, "gen_audio");
+            // return Builder.CreateCall(generateAudioFunctionDynamic, {WavFunction, Freq, TimeSeconds});
+        }
         return nullptr;
     }
     case NODE_NORMAL_FUNCTION: {

@@ -1,3 +1,4 @@
+#include <cstddef>
 #define SEMANTIC 1
 int semantic();
 #include <iostream>
@@ -10,10 +11,17 @@ using namespace std;
 void built_in_functions();
 void traverse_ast(Stype *node);
 
+// (double):int
+DataType *wave_fuction_data_type;
+// (double):double
+DataType *time_varying_fuction_data_type;
+
 // Use this function to check if two data types are the same type
 bool are_data_types_equal(DataType *type1, DataType *type2) {
-    if (!type1 || !type2)
+    if (!type1 || !type2){
         return type1 == type2;
+    }
+    // cerr << type1->is_primitive << " " << type2->is_primitive << endl;
     if (type1->is_primitive && type2->is_primitive) {
         if (type1->is_vector && type2->is_vector) {
             return are_data_types_equal(type1->vector_data_type,
@@ -37,8 +45,10 @@ bool are_data_types_equal(DataType *type1, DataType *type2) {
         are_equal = are_equal && are_data_types_equal(type1->return_type,
                                                       type2->return_type);
         return are_equal;
-    } else
+    } else{
+        // cerr << "NULLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLl" << endl;
         return false;
+    }
 }
 
 bool are_data_types_equal_and_not_null(DataType *type1, DataType *type2) {
@@ -501,6 +511,21 @@ int handle_distortion_expression(Stype *node) {
     return 0;
 }
 
+int handle_scaling_operator(Stype* child1, Stype* child2){
+    DataType* func_data_type = new DataType();
+    func_data_type->is_primitive = false;
+    DataType* float_dtype = new DataType(FLOAT);
+    func_data_type->parameters.push_back(float_dtype);
+    func_data_type->return_type = float_dtype;
+    if (is_basic_type(child1->data_type, AUDIO) && are_data_types_equal(child2->data_type, func_data_type)){
+        return 0;
+    }
+    if (is_basic_type(child2->data_type, AUDIO) && are_data_types_equal(child1->data_type, func_data_type)){
+        return 0;
+    }
+    return 1;
+}
+
 // Function to handle multiplication expressions
 // - Takes the node as parameter
 // - Performs semantic checks on the operands
@@ -508,6 +533,10 @@ int handle_distortion_expression(Stype *node) {
 int handle_mult_expression(Stype *node) {
     traverse_ast(node->children[0]);
     traverse_ast(node->children[1]);
+    if (!handle_scaling_operator(node->children[0], node->children[1])){
+        node->data_type = new DataType(AUDIO);
+        return 0;
+    }
     DataType *type1 = new DataType();
     DataType *type2 = new DataType();
     copy_data_type(type1, node->children[0]->data_type);
@@ -1590,8 +1619,7 @@ void traverse_ast(Stype *node) {
         } else if (is_int) {
             node->children[0]->data_type = new DataType(LONG);
         } else {
-            cerr << "WTF THIS IS IMPOSSIBLE" << endl;
-            exit(0);
+            yyerror("Semantic error: Loop expects integer or float values");
         }
         symbol_table[current_scope_table][current_scope].insert(
             {node->children[0]->text,
@@ -1871,6 +1899,28 @@ void traverse_ast(Stype *node) {
             node->data_type = node->children[i]->data_type;
         }
         break;
+    case NODE_AUDIO_FUNCTION:
+        cout << string(current_scope, '\t') << "NODE_AUDIO_FUNCTION" << endl;
+        traverse_ast(node->children[0]);
+        traverse_ast(node->children[1]);
+        traverse_ast(node->children[2]);
+        if (!are_data_types_equal_and_not_null(node->children[0]->data_type, wave_fuction_data_type)){
+            yylval = node->children[0];
+            yyerror("First argument of audio generation function must be a wave function");
+            break;
+        }
+        if (!are_data_types_equal_and_not_null(node->children[1]->data_type, time_varying_fuction_data_type) && !convertible_to_float(node->children[1]->data_type)){
+            yylval = node->children[1];
+            yyerror("Second argument of audio generation function must be a time varying function or a constant numberic value");
+            break;
+        }
+        if (!convertible_to_float(node->children[2]->data_type)){
+            yylval = node->children[2];
+            yyerror("Third argument of audio generation function must be a constant numeric value");
+            break;
+        }
+        node->data_type = new DataType(AUDIO);
+        break;
     case NODE_NOT_SET:
         cout << "Big bad error: Oops, looks like you have an uninitialised Stype somewhere!" << endl;
         break;
@@ -1882,32 +1932,42 @@ void traverse_ast(Stype *node) {
 
 void built_in_functions(){
 
-    // AUDIO function
-    DataType* audio_return_type = new DataType(AUDIO);
-    DataType* audio_parameter1 = new DataType();
-    audio_parameter1->is_primitive = false;
-    audio_parameter1->return_type = new DataType(FLOAT);
-    audio_parameter1->parameters = {new DataType(FLOAT)};
-    DataType* audio_parameter2 = new DataType(FLOAT);
-    DataType* audio_parameter3 = new DataType(FLOAT);
-    vector<DataType*> audio_parameters = {audio_parameter1, audio_parameter2, audio_parameter3};
-    DataType* audio_data_type = new DataType();
-    audio_data_type->is_primitive = false;
-    audio_data_type->parameters = audio_parameters;
-    audio_data_type->return_type = audio_return_type;
-    symbol_table[0][0].insert({"AUDIO_STATIC", StEntry(audio_data_type, true)});
+    wave_fuction_data_type = new DataType();
+    wave_fuction_data_type->is_primitive = false;
+    wave_fuction_data_type->return_type = new DataType(INT);
+    wave_fuction_data_type->parameters.push_back(new DataType(FLOAT));
 
-    // AUDIO dynamic function
-    DataType* audio_parameter_new2 = new DataType();
-    audio_parameter_new2->is_primitive = false;
-    audio_parameter_new2->return_type = new DataType(FLOAT);
-    audio_parameter_new2->parameters = {new DataType(FLOAT)};
-    vector<DataType*> audio_parameters_dyn = {audio_parameter1, audio_parameter_new2, audio_parameter3};
-    DataType* audio_data_type_dyn = new DataType();
-    audio_data_type_dyn->is_primitive = false;
-    audio_data_type_dyn->parameters = audio_parameters;
-    audio_data_type_dyn->return_type = audio_return_type;
-    symbol_table[0][0].insert({"AUDIO_DYNAMIC", StEntry(audio_data_type_dyn, true)});
+    time_varying_fuction_data_type = new DataType();
+    time_varying_fuction_data_type->is_primitive = false;
+    time_varying_fuction_data_type->return_type = new DataType(FLOAT);
+    time_varying_fuction_data_type->parameters.push_back(new DataType(FLOAT));
+
+    // // AUDIO function
+    // DataType* audio_return_type = new DataType(AUDIO);
+    // DataType* audio_parameter1 = new DataType();
+    // audio_parameter1->is_primitive = false;
+    // audio_parameter1->return_type = new DataType(FLOAT);
+    // audio_parameter1->parameters = {new DataType(FLOAT)};
+    // DataType* audio_parameter2 = new DataType(FLOAT);
+    // DataType* audio_parameter3 = new DataType(FLOAT);
+    // vector<DataType*> audio_parameters = {audio_parameter1, audio_parameter2, audio_parameter3};
+    // DataType* audio_data_type = new DataType();
+    // audio_data_type->is_primitive = false;
+    // audio_data_type->parameters = audio_parameters;
+    // audio_data_type->return_type = audio_return_type;
+    // symbol_table[0][0].insert({"AUDIO_STATIC", StEntry(audio_data_type, true)});
+    //
+    // // AUDIO dynamic function
+    // DataType* audio_parameter_new2 = new DataType();
+    // audio_parameter_new2->is_primitive = false;
+    // audio_parameter_new2->return_type = new DataType(FLOAT);
+    // audio_parameter_new2->parameters = {new DataType(FLOAT)};
+    // vector<DataType*> audio_parameters_dyn = {audio_parameter1, audio_parameter_new2, audio_parameter3};
+    // DataType* audio_data_type_dyn = new DataType();
+    // audio_data_type_dyn->is_primitive = false;
+    // audio_data_type_dyn->parameters = audio_parameters;
+    // audio_data_type_dyn->return_type = audio_return_type;
+    // symbol_table[0][0].insert({"AUDIO_DYNAMIC", StEntry(audio_data_type_dyn, true)});
 
 
     // SIN function

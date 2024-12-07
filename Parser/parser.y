@@ -200,14 +200,17 @@ function_call
     | '(' expr ')' function_arguments { 
         $$ = new Stype(NODE_FUNCTION_CALL);
         $$->children.push_back($2);
-        $$->children.push_back($4); };
+        $$->children.push_back($4); }
+    | AUDIO '(' expr ',' expr ',' expr ')'{
+        $$ = new Stype(NODE_AUDIO_FUNCTION); 
+        $$->children.push_back($3);
+        $$->children.push_back($5);
+        $$->children.push_back($7);
+        };
 
 function_name
     : IDENTIFIER {
         $$ = $1; }
-    | AUDIO {
-        $$ = $1;
-        $$->node_type = NODE_IDENTIFIER; }
     | HIGHPASS {
         $$ = $1;
         $$->node_type = NODE_IDENTIFIER; }

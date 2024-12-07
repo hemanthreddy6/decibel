@@ -42,6 +42,10 @@ loop 10 {
     }
 }
 
+scaler <- (t:float):float {
+    return (8-t)/8;
+};
+
 // Loop until statement
 loop until a==0 {
     print a;
@@ -65,7 +69,7 @@ loop until a>8{
     a += 1;
 }
 
-new_hihat = new_hihat^4;
+new_hihat = new_hihat^8;
 
 // play new_hihat;
 
@@ -75,18 +79,66 @@ snare = snare[0:0.5];
 // play snare;
 
 // kick = kick[0:0.75] + kick[0:0.5] + kick[0:0.75];
-kick = kick[0:0.5]^16;
+kick = kick[0:0.5]^32;
 
 // snare_kick <- kick[-0.25:0.25] | snare[0:0.25];
 // play snare_kick;
 
 // play kick;
 
-final_audio <- kick | snare[-0.5:0.5]^8 | new_hihat[-4:4] | (hihat[-0.25:0.25]*3)^16;
+final_audio <- kick | snare[-0.5:0.5]^16 | new_hihat[-8:8]*2 | (hihat[-0.25:0.25]*5)^32;
 
-play final_audio;
+wf <- (t:float):int {
+    scale <- 7000;
+    if (t < 0.5){
+        return (-scale + 4*t*scale);
+    } otherwise {
+        return (scale - 4*(t-0.5)*scale);
+    }
+};
 
-loop over i 10 to 1 @-1{
-    print i;
-}
+freq <- (t:float):float {
+    if t < 0.05 {
+        return 24 - 480*t;
+    } or t < 0.3 {
+        return -(t-0.05)*24/(0.3-0.05);
+    } otherwise {
+        return -24 -20*(t-0.3);
+    }
+    return -24;
+};
+
+duck <- (t:float):float {
+    if t%0.5 <= 0.25{
+        return ((t%0.5)/0.25)*((t%0.5)/0.25);
+    } otherwise {
+        return 1;
+    }
+};
+duck2 <- (t:float):float {
+    return 1-8*(t%0.125)*8*(t%0.125);
+};
+
+
+// gen <- audio(wf, freq, 0.5) * (t:float):float {return 1-t/0.5;};
+gen1 <- audio(wf, -24, 0.75);
+gen2 <- audio(wf, -22, 1);
+gen3 <- audio(wf, -20, 1.75);
+gen4 <- audio(wf, -22, 0.5);
+gen5 <- audio(wf, -19, 0.75);
+gen6 <- audio(wf, -17, 1);
+gen7 <- audio(wf, -15, 1.75);
+gen8 <- audio(wf, -12, 0.5);
+
+
+gen <- ((gen1|gen5)+(gen2|gen6)+(gen3|gen7)+(gen4|gen8))*duck;
+gen = gen*duck2;
+
+// final_audio = final_audio*scaler;
+
+play final_audio | gen^4 | (kick[-3.75:0.25])^4;
+
+// loop over i 10 to 1 @-1{
+//     print i;
+// }
 

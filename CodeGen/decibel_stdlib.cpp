@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 #include <SFML/Audio.hpp>
+#include <cmath>
 using namespace std;
 
 #define STANDARD_SAMPLE_RATE 44100 
@@ -360,14 +361,81 @@ struct Audio scale_audio_dynamic(struct Audio audio_var1, double (*scaling_facto
     new_audio.length = audio_var1.length;
     new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
 
+    // cout << "Hello" << endl;
+    // cout << scaling_factor(4) << endl;
+
     for(int i=0;i<audio_var1.length;i++) {
-        double time = ((double)i)*STANDARD_SAMPLE_RATE/(double)new_audio.length;
+        double time = ((double)i)/(double)STANDARD_SAMPLE_RATE;
         short first_left = (short)(audio_var1.ptr[i] & 0xFFFF);
         short first_right = (short)((audio_var1.ptr[i] >> 16) & 0xFFFF);
-        int final_left = first_left * time;
+        int final_left = first_left * scaling_factor(time);
         if (final_left > INT16_MAX) final_left = INT16_MAX;
         if (final_left < INT16_MIN) final_left = INT16_MIN;
-        int final_right = first_right * time;
+        int final_right = first_right * scaling_factor(time);
+        if (final_right > INT16_MAX) final_right = INT16_MAX;
+        if (final_right < INT16_MIN) final_right = INT16_MIN;
+        new_audio.ptr[index++] = ((unsigned short)final_left & 0xFFFF) | (((unsigned short)final_right & 0xFFFF) << 16);
+    }
+    return new_audio;
+}
+
+struct Audio generate_audio_static(short(*wav_function)(double), double frequency_semitones, double length_seconds){
+    struct Audio new_audio;
+    unsigned int index = 0;
+    unsigned short temp;
+
+    new_audio.length = length_seconds*STANDARD_SAMPLE_RATE;
+    new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
+
+    cout << "Hello" << endl;
+    // cout << scaling_factor(4) << endl;
+    
+    double phase = 0;
+    double prev_time = 0;
+    double frequency = 440.0*pow(2, frequency_semitones/12.0);
+
+    for(int i=0;i<new_audio.length;i++) {
+        double time = ((double)i)/(double)STANDARD_SAMPLE_RATE;
+        int val = wav_function(phase - (double)((long long)(phase)));
+        phase += frequency*(time-prev_time);
+        prev_time = time;
+
+        int final_left = val;
+        if (final_left > INT16_MAX) final_left = INT16_MAX;
+        if (final_left < INT16_MIN) final_left = INT16_MIN;
+        int final_right = val;
+        if (final_right > INT16_MAX) final_right = INT16_MAX;
+        if (final_right < INT16_MIN) final_right = INT16_MIN;
+        new_audio.ptr[index++] = ((unsigned short)final_left & 0xFFFF) | (((unsigned short)final_right & 0xFFFF) << 16);
+    }
+    return new_audio;
+}
+
+struct Audio generate_audio_dynamic(short(*wav_function)(double), double(*frequency_semitones)(double), double length_seconds){
+    struct Audio new_audio;
+    unsigned int index = 0;
+    unsigned short temp;
+
+    new_audio.length = length_seconds*STANDARD_SAMPLE_RATE;
+    new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
+
+    // cout << "Hello" << endl;
+    // cout << scaling_factor(4) << endl;
+    
+    double phase = 0;
+    double prev_time = 0;
+
+    for(int i=0;i<new_audio.length;i++) {
+        double time = ((double)i)/(double)STANDARD_SAMPLE_RATE;
+        int val = wav_function(phase - (double)((long long)(phase)));
+        double frequency = 440.0*pow(2, frequency_semitones(time)/12.0);
+        phase += frequency*(time-prev_time);
+        prev_time = time;
+
+        int final_left = val;
+        if (final_left > INT16_MAX) final_left = INT16_MAX;
+        if (final_left < INT16_MIN) final_left = INT16_MIN;
+        int final_right = val;
         if (final_right > INT16_MAX) final_right = INT16_MAX;
         if (final_right < INT16_MIN) final_right = INT16_MIN;
         new_audio.ptr[index++] = ((unsigned short)final_left & 0xFFFF) | (((unsigned short)final_right & 0xFFFF) << 16);
