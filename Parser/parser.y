@@ -294,6 +294,7 @@ loop_statement
         $$->children.push_back($4);
         $$->children.push_back($6);
         $$->children.push_back(new Stype(NODE_INT_LITERAL));
+        $$->children.back()->text = "1";
         $$->children.push_back($8);
     };
 

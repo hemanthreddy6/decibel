@@ -72,11 +72,17 @@ void popSymbolTable() { NamedValues.pop_back(); }
 
 // Look up a variable in the symbol table
 AllocaInst *findVariable(const string &name) {
-    for (auto it = NamedValues.rbegin(); it != NamedValues.rend(); ++it) {
-        auto varIter = it->find(name);
-        if (varIter != it->end())
+    // for (auto it = NamedValues.rbegin(); it != NamedValues.rend(); ++it) {
+    //     auto varIter = it->find(name);
+    //     if (varIter != it->end())
+    //         return varIter->second;
+    // }
+    for (int i = NamedValues.size() - 1; i >= 0; i--) {
+        auto varIter = NamedValues[i].find(name);
+        if (varIter != NamedValues[i].end())
             return varIter->second;
     }
+    cerr << "Could not find " << name << endl;
     return nullptr;
 }
 
@@ -216,6 +222,7 @@ Value *codegen(Stype *node) {
     case NODE_IDENTIFIER: {
         cerr << "NODE_IDENTIFIER" << endl;
         AllocaInst *var = findVariable(node->text);
+        cerr << "found?" << endl;
         return Builder.CreateLoad(var->getAllocatedType(), var, node->text.c_str());
     }
     case NODE_ASSIGNABLE_VALUE: {
@@ -308,7 +315,6 @@ Value *codegen(Stype *node) {
         Value *RHS = codegen(node->children[1]);
         Type *LHSType = LHS->getType();
         Type *RHSType = RHS->getType();
-
 
         bool LHSisAudio = LHSType->isStructTy() && LHSType->getStructName() == "struct.Audio";
         bool RHSisAudio = RHSType->isStructTy() && RHSType->getStructName() == "struct.Audio";
@@ -777,6 +783,68 @@ Value *codegen(Stype *node) {
         // Emit merge block.
         // TheFunction->getBasicBlocks().push_back(MergeBB);
         Builder.SetInsertPoint(MergeBB);
+
+        return Constant::getNullValue(Type::getInt32Ty(TheContext));
+    }
+    case NODE_LOOP_GENERAL_STATEMENT: {
+        cerr << "NODE_LOOP_GENERAL_STATEMENT" << endl;
+        // loop_statement: LOOP over id(0) expr(1) to expr(2) @ expr(3) '{' statements(4) '}'
+        Function *TheFunction = Builder.GetInsertBlock()->getParent();
+
+        BasicBlock *LoopBB = BasicBlock::Create(TheContext, "loop", TheFunction);
+        BasicBlock *AfterLoopBB = BasicBlock::Create(TheContext, "afterloop", TheFunction);
+        BasicBlock *CondBB = BasicBlock::Create(TheContext, "condition", TheFunction);
+
+        Value *InitValue = codegen(node->children[1]);
+        Value *FinValue = codegen(node->children[2]);
+        Value *StepValue = codegen(node->children[3]);
+
+        // cerr << node->children[0]->data_type->is_primitive << ' ' << node->children[0]->data_type->is_vector << ' '
+        //      << (node->children[0]->data_type->basic_data_type == LONG) << endl;
+        Type * CounterType = getLLVMType(node->children[0]->data_type);
+        AllocaInst *LoopCounter = CreateEntryBlockAlloca(TheFunction, node->children[0]->text, CounterType);
+        pushSymbolTable();
+        NamedValues.back()[node->children[0]->text] = LoopCounter;
+        InitValue = createCast(InitValue, CounterType);
+        FinValue = createCast(FinValue, CounterType);
+        StepValue = createCast(StepValue, CounterType);
+        // Value *LoopCounter = Builder.CreateAlloca(InitValue->getType(), nullptr, "loopcounter");
+        Builder.CreateStore(InitValue, LoopCounter);
+
+        Builder.CreateBr(CondBB);
+        Builder.SetInsertPoint(CondBB);
+
+        Value *CurrentCounter = Builder.CreateLoad(InitValue->getType(), LoopCounter, "currentcounter");
+
+        Value *CondV;
+        if (CounterType->isDoubleTy())
+            CondV = Builder.CreateFCmpULT(CurrentCounter, FinValue, "loopcond");
+        else if (CounterType->isIntegerTy())
+            CondV = Builder.CreateICmpSLT(CurrentCounter, FinValue, "loopcond");
+        else {
+            cerr << "Ayo you got the wrong type mate" << endl;
+            cerr << CounterType->isIntegerTy() << endl;
+        }
+
+        Builder.CreateCondBr(CondV, LoopBB, AfterLoopBB);
+
+        Builder.SetInsertPoint(LoopBB);
+
+
+        codegen(node->children[4]); // Loop body statements
+
+        Value *NewCounter;
+        if (CounterType->isDoubleTy())
+            NewCounter = Builder.CreateFAdd(CurrentCounter, StepValue, "increment");
+        else
+            NewCounter = Builder.CreateAdd(CurrentCounter, StepValue, "increment");
+        Builder.CreateStore(NewCounter, LoopCounter);
+
+        popSymbolTable();
+
+        Builder.CreateBr(CondBB);
+
+        Builder.SetInsertPoint(AfterLoopBB);
 
         return Constant::getNullValue(Type::getInt32Ty(TheContext));
     }

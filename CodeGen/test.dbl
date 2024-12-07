@@ -50,7 +50,7 @@ loop until a==0 {
 
 // Audio functions
 // loading 3 samples
-snare <- load "snare_44100.wav";
+snare <- load "snare2.wav";
 kick <- load "kick_44100.wav";
 hihat <- (load "hihat_44100.wav")*0.1;
 
@@ -65,6 +65,8 @@ loop until a>8{
     a += 1;
 }
 
+new_hihat = new_hihat^4;
+
 // play new_hihat;
 
 
@@ -73,8 +75,18 @@ snare = snare[0:0.5];
 // play snare;
 
 // kick = kick[0:0.75] + kick[0:0.5] + kick[0:0.75];
-kick = kick[0:0.5]^8;
+kick = kick[0:0.5]^16;
+
+// snare_kick <- kick[-0.25:0.25] | snare[0:0.25];
+// play snare_kick;
 
 // play kick;
 
-play kick | snare[-0.5:0.5]^4 | new_hihat^4 | (hihat[-0.25:0.25]*3)^8;
+final_audio <- kick | snare[-0.5:0.5]^8 | new_hihat[-4:4] | (hihat[-0.25:0.25]*3)^16;
+
+play final_audio;
+
+loop over i 10 to 1 @-1{
+    print i;
+}
+

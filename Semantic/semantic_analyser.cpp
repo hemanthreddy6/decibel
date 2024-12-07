@@ -1588,7 +1588,10 @@ void traverse_ast(Stype *node) {
         if (is_float) {
             node->children[0]->data_type = new DataType(FLOAT);
         } else if (is_int) {
-            node->children[0]->data_type = new DataType(INT);
+            node->children[0]->data_type = new DataType(LONG);
+        } else {
+            cerr << "WTF THIS IS IMPOSSIBLE" << endl;
+            exit(0);
         }
         symbol_table[current_scope_table][current_scope].insert(
             {node->children[0]->text,
