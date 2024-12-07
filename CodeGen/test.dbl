@@ -1,4 +1,7 @@
+// Print statements
 print "hello world!";
+
+// Functions
 f <- (a:long, b:int):int {
     if (a > b) {
         return a;
@@ -13,13 +16,18 @@ f1 <- (a:long, b:int):int {
         return b;
     }
 } ;
-print 1000hz;
+// Function variables can be determined at runtime
 f2 <- f;
 if 100 > 20 {
     f2 = f1;
 }
 // If it's f1, 10 will be printed, otherwise 100
 print f2(100, 10);
+
+// Hz gets turned into semitones
+print 1000hz;
+
+// Loop statement and conditionals
 a <- 0;
 loop 10 {
     a += 1;
@@ -34,15 +42,38 @@ loop 10 {
     }
 }
 
+// Loop until statement
 loop until a==0 {
     print a;
     a -= 1;
 }
 
+// Audio functions
+// loading 3 samples
 snare <- load "snare_44100.wav";
 kick <- load "kick_44100.wav";
-hihat <- load "hihat_44100.wav";
+hihat <- (load "hihat_44100.wav")*0.1;
+
+hihat = hihat[0:0.125];
+
+new_hihat <- hihat*0.1;
+
+// Creating a hihat loop with increasing volume
+a = 2;
+loop until a>8{
+    new_hihat = new_hihat + hihat*(0.1*a);
+    a += 1;
+}
+
+//play new_hihat;
+
+
 snare = snare[0:0.5];
+
+// play snare;
+
 kick = kick[0:0.75] + kick[0:0.5] + kick[0:0.75];
-hihat = hihat[-0.25:0.25]^8;
-play kick^2 | snare[-0.5:0.5]^4 | hihat;
+
+// play kick;
+
+play kick^2 | snare[-0.5:0.5]^4 | new_hihat^4;

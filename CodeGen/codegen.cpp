@@ -60,7 +60,8 @@ Function *concatAudioFunction = nullptr;
 Function *sliceAudioFunction = nullptr;
 Function *repeatAudioFunction = nullptr;
 Function *superimposeAudioFunction = nullptr;
-Function *generateAudioFunctionStatic = nullptr;
+Function *scaleAudioFunctionStatic = nullptr;
+Function *scaleAudioFunctionDynamic = nullptr;
 Function *printFunction = nullptr;
 
 // Push a new symbol table onto the stack
@@ -113,6 +114,14 @@ void declareAudioFunctions() {
         // superimposes one audio file over the other. The resulting file's length will be the max length of the two files
         FunctionType *SuperimposeAudioType = FunctionType::get(AudioType, {AudioType, Type::getDoubleTy(TheContext)}, false);
         superimposeAudioFunction = Function::Create(SuperimposeAudioType, Function::ExternalLinkage, "superimpose_audio", TheModule.get());
+
+        FunctionType *ScaleAudioStatic = FunctionType::get(AudioType, {AudioType, Type::getDoubleTy(TheContext)}, false);
+        scaleAudioFunctionStatic = Function::Create(ScaleAudioStatic, Function::ExternalLinkage, "scale_audio_static", TheModule.get());
+
+        FunctionType *ScaleAudioDynamic = FunctionType::get(
+            AudioType, {AudioType, PointerType::getUnqual(FunctionType::get(Type::getDoubleTy(TheContext), {Type::getDoubleTy(TheContext)}, false))}, false);
+        scaleAudioFunctionDynamic = Function::Create(ScaleAudioDynamic, Function::ExternalLinkage, "scale_audio_dynamic", TheModule.get());
+
         //
         // // struct Audio generate_audio_static(short(*wav_function)(double), double frequency, double length_seconds);
         // // generates one audio file over the other. The resulting file's length will be the max length of the two files
@@ -300,17 +309,6 @@ Value *codegen(Stype *node) {
         Type *LHSType = LHS->getType();
         Type *RHSType = RHS->getType();
 
-        if (LHSType->isFloatingPointTy() || RHSType->isFloatingPointTy()) {
-            LHS = createCast(LHS, Type::getDoubleTy(TheContext));
-            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
-            return Builder.CreateFMul(LHS, RHS, "multmp");
-        }
-
-        if (LHSType->isIntegerTy() && RHSType->isIntegerTy()) {
-            LHS = createCast(LHS, Type::getInt64Ty(TheContext));
-            RHS = createCast(RHS, Type::getInt64Ty(TheContext));
-            return Builder.CreateMul(LHS, RHS, "addtmp");
-        }
 
         bool LHSisAudio = LHSType->isStructTy() && LHSType->getStructName() == "struct.Audio";
         bool RHSisAudio = RHSType->isStructTy() && RHSType->getStructName() == "struct.Audio";
@@ -327,13 +325,19 @@ Value *codegen(Stype *node) {
             LHSType = AudioType;
             RHS = createCast(RHS, Type::getDoubleTy(TheContext));
             RHSType = RHS->getType();
-            Function *ScaleAudioFunc = TheModule->getFunction("scale_audio");
-            if (!ScaleAudioFunc) {
-                // struct Audio scale_audio(struct Audio audio_var, double scaling_factor);
-                FunctionType *ScaleAudioType = FunctionType::get(AudioType, {LHSType, RHSType}, false);
-                ScaleAudioFunc = Function::Create(ScaleAudioType, Function::ExternalLinkage, "scale_audio", TheModule.get());
-            }
+            Function *ScaleAudioFunc = TheModule->getFunction("scale_audio_static");
             return Builder.CreateCall(ScaleAudioFunc, {LHS, RHS}, "scaleaudio");
+        }
+        if (LHSType->isFloatingPointTy() || RHSType->isFloatingPointTy()) {
+            LHS = createCast(LHS, Type::getDoubleTy(TheContext));
+            RHS = createCast(RHS, Type::getDoubleTy(TheContext));
+            return Builder.CreateFMul(LHS, RHS, "multmp");
+        }
+
+        if (LHSType->isIntegerTy() && RHSType->isIntegerTy()) {
+            LHS = createCast(LHS, Type::getInt64Ty(TheContext));
+            RHS = createCast(RHS, Type::getInt64Ty(TheContext));
+            return Builder.CreateMul(LHS, RHS, "addtmp");
         }
     }
     case NODE_DIVIDE_EXPR: {
@@ -363,7 +367,7 @@ Value *codegen(Stype *node) {
             declareAudioFunctions();
             AudioSuperimpose = TheModule->getFunction("superimpose_audio");
         }
-        return Builder.CreateCall(AudioSuperimpose, {LHS, RHS}, "audiorepeat");
+        return Builder.CreateCall(AudioSuperimpose, {LHS, RHS}, "superimpose");
     }
     case NODE_POWER_EXPR: {
         cerr << "NODE_POWER_EXPR" << endl;
@@ -1084,6 +1088,7 @@ int codegen_main(Stype *root) {
     // Define the audio struct type
     AudioType = StructType::create(TheContext, "struct.Audio");
     AudioType->setBody({Type::getInt64Ty(TheContext), PointerType::get(Type::getInt32Ty(TheContext), 0)});
+    declareAudioFunctions();
 
     // Generate code for the root node
     cerr << "------------------------------------------starting codegen---------------------------------------------" << endl;

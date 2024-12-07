@@ -68,9 +68,8 @@ struct Audio load_audio(char* filename) {
     unsigned int payload_size = readValue(fileBytes, data_chunk_start, 4);
     unsigned int block_count = payload_size/block_alignment;
 
-    // block_alignment = 3;
 
-    cout << channel_count << " " << block_alignment << " " << block_count << " "  << payload_size << " " << bytes_per_sample << " "<< endl;
+    // cout << channel_count << " " << block_alignment << " " << block_count << " "  << payload_size << " " << bytes_per_sample << " "<< endl;
 
     if(sample_rate != STANDARD_SAMPLE_RATE) {
         cerr << filename <<" is currently not supported by decibel" << endl;
@@ -271,7 +270,7 @@ struct Audio slice_audio(struct Audio audio_var, double start_time_seconds, doub
             new_audio.ptr[index++] = 0;
         }
     }
-    cout << new_audio.length << " " << end_index << endl;
+    // cout << new_audio.length << " " << end_index << endl;
 
     return new_audio;
 }
@@ -308,42 +307,6 @@ struct Audio superimpose_audio(struct Audio audio_var1, struct Audio audio_var2)
     new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
 
     for(int i=0;i<min(audio_var1.length, audio_var2.length);i++) {
-        // temp = (audio_var1.ptr[i] & ((1 << 16) -1));
-        // // short first_left = *(short *)(&(temp));
-        // short first_left = temp;
-        // temp = (audio_var1.ptr[i] >> 16);
-        // // short first_right = *(short *)(&(temp));
-        // short first_right = temp;
-        //
-        // temp = (audio_var2.ptr[i] & ((1 << 16) -1));
-        // // short second_left = *(short *)(&(temp));
-        // short second_left = temp;
-        // temp = (audio_var2.ptr[i] >> 16);
-        // // short second_right = *(short *)(&(temp));
-        // short second_right = temp;
-        //
-        // int first_left_int = -first_left;
-        // int first_right_int = -first_right;
-        // int second_left_int = -second_left;
-        // int second_right_int = -second_right;
-        // int final_left = (first_left_int + second_left_int);
-        // int final_right = (first_right_int + second_right_int);
-        //
-        // if(final_left > ((1 << 16) - 1)) {
-        //     final_left = ((1 << 16) - 1);
-        // } else if(final_left < -(1 << 16)) {
-        //     final_left = -(1 << 16);
-        // }
-        //
-        // if(final_right > ((1 << 16) - 1)) {
-        //     final_right = ((1 << 16) - 1);
-        // } else if(final_right < -(1 << 16)) {
-        //     final_right = -(1 << 16);
-        // }
-        // unsigned int final_left_unsigned = *(unsigned int*)(&final_left);
-        // unsigned int final_right_unsigned = *(unsigned int*)(&final_right);
-        //
-        // new_audio.ptr[index++] = (final_left_unsigned & ((1 << 16) -1)) | (final_right_unsigned << 16);
         short first_left = (short)(audio_var1.ptr[i] & 0xFFFF);
         short first_right = (short)((audio_var1.ptr[i] >> 16) & 0xFFFF);
         short second_left = (short)(audio_var2.ptr[i] & 0xFFFF);
@@ -364,6 +327,50 @@ struct Audio superimpose_audio(struct Audio audio_var1, struct Audio audio_var2)
             new_audio.ptr[index] = audio_var2.ptr[index];
         }
         index++;
+    }
+    return new_audio;
+}
+struct Audio scale_audio_static(struct Audio audio_var1, double scaling_factor) {
+    struct Audio new_audio;
+    unsigned int index = 0;
+    unsigned short temp;
+
+    new_audio.length = audio_var1.length;
+    new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
+
+    for(int i=0;i<audio_var1.length;i++) {
+        short first_left = (short)(audio_var1.ptr[i] & 0xFFFF);
+        short first_right = (short)((audio_var1.ptr[i] >> 16) & 0xFFFF);
+        int final_left = first_left * scaling_factor;
+        if (final_left > INT16_MAX) final_left = INT16_MAX;
+        if (final_left < INT16_MIN) final_left = INT16_MIN;
+        int final_right = first_right * scaling_factor;
+        if (final_right > INT16_MAX) final_right = INT16_MAX;
+        if (final_right < INT16_MIN) final_right = INT16_MIN;
+        new_audio.ptr[index++] = ((unsigned short)final_left & 0xFFFF) | (((unsigned short)final_right & 0xFFFF) << 16);
+    }
+    return new_audio;
+}
+
+struct Audio scale_audio_dynamic(struct Audio audio_var1, double (*scaling_factor)(double)) {
+    struct Audio new_audio;
+    unsigned int index = 0;
+    unsigned short temp;
+
+    new_audio.length = audio_var1.length;
+    new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
+
+    for(int i=0;i<audio_var1.length;i++) {
+        double time = ((double)i)*STANDARD_SAMPLE_RATE/(double)new_audio.length;
+        short first_left = (short)(audio_var1.ptr[i] & 0xFFFF);
+        short first_right = (short)((audio_var1.ptr[i] >> 16) & 0xFFFF);
+        int final_left = first_left * time;
+        if (final_left > INT16_MAX) final_left = INT16_MAX;
+        if (final_left < INT16_MIN) final_left = INT16_MIN;
+        int final_right = first_right * time;
+        if (final_right > INT16_MAX) final_right = INT16_MAX;
+        if (final_right < INT16_MIN) final_right = INT16_MIN;
+        new_audio.ptr[index++] = ((unsigned short)final_left & 0xFFFF) | (((unsigned short)final_right & 0xFFFF) << 16);
     }
     return new_audio;
 }
