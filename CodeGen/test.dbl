@@ -65,7 +65,7 @@ loop until a>8{
     a += 1;
 }
 
-//play new_hihat;
+// play new_hihat;
 
 
 snare = snare[0:0.5];
