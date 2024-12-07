@@ -1,0 +1,19 @@
+Optimizations currently happening in decibel:
+
+1. When loading a wav file, we extract and store minimal info in struct Audio 
+    which would allow us to construct an wav file back after performing multiple audio operations.
+
+2. Storing the samples of both audio channels together within struct Audio. 
+    This helps us optimize the implementations of various audio operations and reduces the memory footprint by 50%.
+
+3. All other optimizations provided by LLVM on the generated LLVM code.
+
+More possible optimizations:
+
+1. Reordering operations on audio / cross operator optimisations. 
+    Eg: When an intermediary value in an audio expression is not being assigned anywhere, 
+    it would be more memory efficient to do the operation on the audio in-place, instead of creating a new audio file.
+
+2. Parallelize audio playback and generation to run simultaneously on different threads.
+
+3. Constant propagation for audio operations
