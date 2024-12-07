@@ -132,28 +132,6 @@
         }
     } typedef DataType;
 
-    double frequency_to_semitones(char* str) {
-        size_t len = strlen(str);
-        str[len-2] = '\0';
-        double freq;
-        sscanf(str, "%lf", &freq);
-        double semitones = 12 * log2(freq/440);
-        return semitones;
-    }
-    double milliseconds_to_float(char* str) {
-        size_t len = strlen(str);
-        str[len-2] = '\0';
-        double ms;
-        sscanf(str, "%lf", &ms);
-        return ms/1000;
-    }
-    double seconds_to_float(char* str) {
-        size_t len = strlen(str);
-        str[len-1] = '\0';
-        double ms;
-        sscanf(str, "%lf", &ms);
-        return ms;
-    }
     long long line_no = 1;
     long long col_no = 1;
     char line_buffer[32768];
