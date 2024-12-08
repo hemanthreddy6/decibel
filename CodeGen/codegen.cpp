@@ -15,6 +15,7 @@
 // #include <llvm-14/llvm/IR/Constants.h>
 // #include <llvm-14/llvm/IR/Instructions.h>
 // #include <llvm-14/llvm/Support/Casting.h>
+#include <llvm-14/llvm/IR/GlobalVariable.h>
 #include <llvm-14/llvm/IR/Instructions.h>
 #include <math.h>
 #include <string>
@@ -37,6 +38,7 @@ StructType *AudioType = nullptr;
 
 // Symbol Table for code generation
 static vector<unordered_map<string, AllocaInst *>> NamedValues;
+static unordered_map<string, GlobalVariable *> NamedGlobals;
 int num_funcs = 0;
 vector<pair<Stype *, Function *>> function_nodes;
 
@@ -65,6 +67,8 @@ Function *scaleAudioFunctionStatic = nullptr;
 Function *scaleAudioFunctionDynamic = nullptr;
 Function *generateAudioFunctionStatic = nullptr;
 Function *generateAudioFunctionDynamic = nullptr;
+Function *panAudioFunctionStatic = nullptr;
+Function *panAudioFunctionDynamic = nullptr;
 Function *printFunction = nullptr;
 
 // Push a new symbol table onto the stack
@@ -84,6 +88,11 @@ AllocaInst *findVariable(const string &name) {
         auto varIter = NamedValues[i].find(name);
         if (varIter != NamedValues[i].end())
             return varIter->second;
+    }
+    auto varIter = NamedGlobals.find("_global_" + name);
+    if (varIter != NamedGlobals.end()) {
+        AllocaInst *Val = Builder.CreateAlloca(varIter->second->getType(), 0, "load_global");
+        return Val;
     }
     cerr << "Could not find " << name << endl;
     return nullptr;
@@ -148,6 +157,13 @@ void declareAudioFunctions() {
         FunctionType *GenerateAudioTypeDynamic =
             FunctionType::get(AudioType, {WavFuncType->getPointerTo(), TimeDepFunctionType->getPointerTo(), Type::getDoubleTy(TheContext)}, false);
         generateAudioFunctionStatic = Function::Create(GenerateAudioTypeStatic, Function::ExternalLinkage, "generate_audio_dynamic", TheModule.get());
+
+        FunctionType *PanAudioStatic = FunctionType::get(AudioType, {AudioType, Type::getDoubleTy(TheContext)}, false);
+        panAudioFunctionStatic = Function::Create(PanAudioStatic, Function::ExternalLinkage, "pan_audio_static", TheModule.get());
+
+        FunctionType *PanAudioDynamic = FunctionType::get(
+            AudioType, {AudioType, PointerType::getUnqual(FunctionType::get(Type::getDoubleTy(TheContext), {Type::getDoubleTy(TheContext)}, false))}, false);
+        panAudioFunctionDynamic = Function::Create(PanAudioDynamic, Function::ExternalLinkage, "pan_audio_dynamic", TheModule.get());
     }
 }
 
@@ -233,7 +249,7 @@ Value *codegen(Stype *node) {
     case NODE_IDENTIFIER: {
         cerr << "NODE_IDENTIFIER" << endl;
         AllocaInst *var = findVariable(node->text);
-        // cerr << "found?" << endl;
+        cerr << node->text << endl;
         return Builder.CreateLoad(var->getAllocatedType(), var, node->text.c_str());
     }
     case NODE_ASSIGNABLE_VALUE: {
@@ -250,7 +266,7 @@ Value *codegen(Stype *node) {
                 auto SliceFunction = getFunction("slice_audio");
                 auto NewIdVal = Builder.CreateCall(SliceFunction, {IdValue, start_time, end_time}, "sliceaudio");
                 Function *AudioFreeFunc = TheModule->getFunction("free_audio");
-                if (i > 1){
+                if (i > 1) {
                     Builder.CreateCall(AudioFreeFunc, {IdValue});
                 }
                 IdValue = NewIdVal;
@@ -672,7 +688,10 @@ Value *codegen(Stype *node) {
         for (Stype *arg : FuncArgsNode->children[0]->children) {
             Value *ArgVal = codegen(arg);
             // TODO: Have to typecast to the required type if they are of different types
-            ArgVal = createCast(ArgVal, getLLVMType(node->children[0]->data_type->parameters[ind]));
+            if (node->children[0]->data_type->parameters[ind]->is_primitive)
+                ArgVal = createCast(ArgVal, getLLVMType(node->children[0]->data_type->parameters[ind]));
+            else
+                ArgVal = createCast(ArgVal, getLLVMType(node->children[0]->data_type->parameters[ind])->getPointerTo());
             ArgsV.push_back(ArgVal);
             ind++;
         }
@@ -786,8 +805,12 @@ Value *codegen(Stype *node) {
         // Create an alloca in the entry block.
         AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, VarName, VarType);
 
+        // auto GlobalAlloca = new GlobalVariable(VarType, false, GlobalValue::ExternalLinkage, 0, "_global_" + VarName);
+        // NamedGlobals["_global_" + VarName] = GlobalAlloca;
+
         // Store the initial value into the alloca.
         Builder.CreateStore(InitVal, Alloca);
+        // Builder.CreateStore(InitVal, GlobalAlloca);
 
         // Add the variable to the symbol table.
         NamedValues.back()[VarName] = Alloca;
@@ -1064,7 +1087,6 @@ Value *codegen(Stype *node) {
     }
     case NODE_AUDIO_FUNCTION: {
         cerr << "NODE_AUDIO_FUNCTION" << endl;
-        declareAudioFunctions();
         Value *WavFunction = codegen(node->children[0]);
         Value *Freq = codegen(node->children[1]);
         Value *TimeSeconds = codegen(node->children[2]);
@@ -1082,6 +1104,27 @@ Value *codegen(Stype *node) {
         }
         return nullptr;
     }
+    case NODE_PAN_FUNCTION: {
+        cerr << "NODE_PAN_FUNCTION" << endl;
+        declareAudioFunctions();
+        Value *AudioVal = codegen(node->children[0]);
+        Value *Panning = codegen(node->children[1]);
+        Value *Ret;
+        if (Panning->getType()->isIntegerTy() || Panning->getType()->isDoubleTy()) {
+            Panning = createCast(Panning, Type::getDoubleTy(TheContext));
+            Function *panAudioS = TheModule->getFunction("pan_audio_static");
+            Ret = Builder.CreateCall(panAudioS, {AudioVal, Panning}, "pan_audio");
+        } else {
+            Function *panAudioD = TheModule->getFunction("pan_audio_dynamic");
+            Ret = Builder.CreateCall(panAudioD, {AudioVal, Panning}, "gen_audio");
+            // return Builder.CreateCall(generateAudioFunctionDynamic, {WavFunction, Freq, TimeSeconds});
+        }
+        if (node->children[0]->can_free) {
+            Function *AudioFreeFunc = TheModule->getFunction("free_audio");
+            Builder.CreateCall(AudioFreeFunc, {AudioVal});
+        }
+        return Ret;
+    }
     case NODE_NORMAL_FUNCTION: {
         cerr << "NODE_NORMAL_FUNCTION" << endl;
         // Implement function definition
@@ -1094,7 +1137,11 @@ Value *codegen(Stype *node) {
         vector<string> ParamNames;
         for (Stype *paramNode : ParamListNode->children) {
             DataType *ParamDataType = paramNode->data_type;
-            Type *ParamType = getLLVMType(ParamDataType);
+            Type *ParamType;
+            if (ParamDataType->is_primitive)
+                ParamType = getLLVMType(ParamDataType);
+            else
+                ParamType = getLLVMType(ParamDataType)->getPointerTo();
             ParamTypes.push_back(ParamType);
             ParamNames.push_back(paramNode->children[0]->text);
         }
@@ -1102,6 +1149,7 @@ Value *codegen(Stype *node) {
         Type *ReturnType = getLLVMType(ReturnTypeData);
         FunctionType *FT = FunctionType::get(ReturnType, ParamTypes, false);
         Function *TheFunction = Function::Create(FT, Function::ExternalLinkage, "_func_" + to_string(num_funcs), TheModule.get());
+        node->text = "_func_" + to_string(num_funcs);
 
         num_funcs++;
 
@@ -1237,7 +1285,7 @@ Value *createCast(Value *Val, Type *DestType) {
 
 // Function to create an alloca instruction in the entry block
 AllocaInst *CreateEntryBlockAlloca(Function *TheFunction, const string &VarName, Type *varType) {
-    IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
+    IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().getFirstInsertionPt());
     return TmpB.CreateAlloca(varType, 0, VarName.c_str());
 }
 
@@ -1266,14 +1314,17 @@ int codegen_main(Stype *root) {
     Builder.SetInsertPoint(BB);
     pushSymbolTable();
     codegen(root);
-    popSymbolTable();
     Builder.CreateRet(ConstantInt::get(Type::getInt32Ty(TheContext), 0));
+    popSymbolTable();
 
     while (function_nodes.size() != 0) {
         auto node_func = function_nodes.back();
         function_nodes.pop_back();
         auto node = node_func.first;
-        auto TheFunction = node_func.second;
+        // auto TheFunction = node_func.second;
+        Function *TheFunction = TheModule->getFunction(node->text);
+
+        // print_data_type(node->data_type);
 
         BasicBlock *BB = BasicBlock::Create(TheContext, "func_entry", TheFunction);
         Builder.SetInsertPoint(BB);
@@ -1282,8 +1333,23 @@ int codegen_main(Stype *root) {
 
         int idx = 0;
         for (auto &Arg : TheFunction->args()) {
-            AllocaInst *Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName().str(), Arg.getType());
-            Builder.CreateStore(&Arg, Alloca);
+            auto TP = getLLVMType(node->data_type->parameters[idx])->getPointerTo();
+            // print_data_type(node->data_type->parameters[idx]);
+            cerr << Arg.getName().str() << endl;
+            cerr << node->text << endl;
+            AllocaInst *Alloca;
+            if (TP->isFunctionTy()) {
+                // auto VoidPtrType = Type::getInt8Ty(TheContext)->getPointerTo();
+                Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName().str(), Arg.getType());
+                // Value *VoidPtr = Builder.CreateBitCast(&Arg, VoidPtrType);
+                cerr << "before store!!" << endl;
+                Builder.CreateStore(&Arg, Alloca);
+                cerr << "fdsljflkdsjlslklklksldf" << endl;
+            } else {
+                Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName().str(), Arg.getType());
+                Builder.CreateStore(&Arg, Alloca);
+            }
+            // auto Alloca = Builder.CreateAlloca(TP, 0, Arg.getName().str());
             NamedValues.back()[Arg.getName().str()] = Alloca;
             idx++;
         }

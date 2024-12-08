@@ -15,24 +15,57 @@ snare = snare*snare_env;
 
 kick = kick[0:0.5]^16;
 
-wf <- (t:float):int {
+
+wf_tri <- (t:float):int {
+    t2 <- t + 0.25;
+    t2 = t2 % 1.0;
     scale <- 7000;
-    if (t < 0.5){
-        return (-scale + 4*t*scale);
+    if (t2 < 0.5){
+        return (4*t2*scale - scale);
     } otherwise {
-        return (scale - 4*(t-0.5)*scale);
+        return (scale - 4*(t2-0.5)*scale);
     }
 };
+wf <- (t:float):int {
+    scale <- 7000;
+    return 2*t*scale - scale;
+};
+print wf(0);
+print wf(0.25);
+print wf(0.5);
+print wf(0.75);
+print wf(1);
 
-a1 <- audio(wf, -27, 0.25);
-a2 <- audio(wf, -29, 0.25);
-a3 <- audio(wf, -31, 0.25);
-a4 <- audio(wf, -24, 0.25);
+audio_detuned <- (w:(float):int, freq:float, length:float):audio {
+    return PAN(audio(w, freq-0.2, length), -0.5) | PAN(audio(w, freq, length), 0) | PAN(audio(w, freq+0.2, length), 0.5);
+};
 
-a5 <- audio(wf, -12, 0.25);
-a6 <- audio(wf, -13, 0.25);
-a7 <- audio(wf, -15, 0.25);
-a8 <- audio(wf, -8, 0.25);
+freq <- -24;
+length <- 1;
+
+// au <- PAN(audio(wf, freq-0.2, length), -1) | PAN(audio(wf, freq, length), 0) | PAN(audio(wf, freq+0.2, length), 1);
+//
+// play au;
+
+a1 <- audio_detuned(wf, -27, 0.25);
+a2 <- audio_detuned(wf, -29, 0.25);
+a3 <- audio_detuned(wf, -31, 0.25);
+a4 <- audio_detuned(wf, -24, 0.25);
+
+a5 <- audio_detuned(wf, -12, 0.25);
+a6 <- audio_detuned(wf, -13, 0.25);
+a7 <- audio_detuned(wf, -15, 0.25);
+a8 <- audio_detuned(wf, -8, 0.25);
+
+// a1 <- audio_detuned(-27, 0.25);
+// a2 <- audio_detuned(-29, 0.25);
+// a3 <- audio_detuned(-31, 0.25);
+// a4 <- audio_detuned(-24, 0.25);
+//
+// a5 <- audio_detuned(-12, 0.25);
+// a6 <- audio_detuned(-13, 0.25);
+// a7 <- audio_detuned(-15, 0.25);
+// a8 <- audio_detuned(-8, 0.25);
 
 tr1 <- a1[0:0.5] + a1[0:0.5] + a1[0:0.375] + a4[0:0.375] + a4[0:0.24];
 tr2 <- a2[0:0.5] + a2[0:0.5] + a2[0:0.375] + a4[0:0.375] + a4[0:0.24];
@@ -41,7 +74,11 @@ tr3 <- a3[0:0.5] + a3[0:0.5] + a3[0:0.375] + a4[0:0.375] + a4[0:0.24];
 tr4 <- a5[0:0.5] + a5[0:0.5] + a5[0:0.375] + a8[0:0.375] + a8[0:0.24];
 tr5 <- a6[0:0.5] + a6[0:0.5] + a6[0:0.375] + a8[0:0.375] + a8[0:0.24];
 tr6 <- a7[0:0.5] + a7[0:0.5] + a7[0:0.375] + a8[0:0.375] + a8[0:0.24];
-chords <- (tr1[0:2] + tr2[0:2] + tr3[0:2] + tr3[0:2]) | (tr4[0:2] + tr5[0:2] + tr6[0:2] + tr6[0:2]);
+lower_ch <- (tr1[0:2] + tr2[0:2] + tr3[0:2] + tr3[0:2]);
+upper_ch <- (tr4[0:2] + tr5[0:2] + tr6[0:2] + tr6[0:2]);
+lower_ch = PAN(lower_ch, -0.5);
+upper_ch = PAN(upper_ch, 0.5);
+chords <- lower_ch | upper_ch;
 duck <- (t:float):float {
     if t%0.5 < 0.15{
         return ((t%0.5)/0.15)*((t%0.5)/0.15);
@@ -54,4 +91,8 @@ duck_chords <- chords*duck;
 other_drums <- (snare[-0.5:0.5] | (hihat[-0.25:0.25]^2))^16 | hihat_loop[-8:8]*0.2;
 chords = chords[0:8] + duck_chords + duck_chords + duck_chords;
 
-play chords| kick[-8:8] + kick^2 | other_drums[-16:16];
+song <- chords| kick[-8:8] + kick^2 | other_drums[-16:16];
+
+save song -> "song.wav";
+
+play song;

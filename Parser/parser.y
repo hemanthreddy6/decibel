@@ -206,6 +206,11 @@ function_call
         $$->children.push_back($3);
         $$->children.push_back($5);
         $$->children.push_back($7);
+        }
+    | PAN '(' expr ',' expr ')'{
+        $$ = new Stype(NODE_PAN_FUNCTION); 
+        $$->children.push_back($3);
+        $$->children.push_back($5);
         };
 
 function_name
@@ -239,9 +244,6 @@ function_name
         $$ = $1;
         $$->node_type = NODE_IDENTIFIER; }
     | TRIANGLE {
-        $$ = $1;
-        $$->node_type = NODE_IDENTIFIER; }
-    | PAN {
         $$ = $1;
         $$->node_type = NODE_IDENTIFIER; };
 

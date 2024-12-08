@@ -1,0 +1,11 @@
+audio_detuned <- (w:(float):int, freq:float, length:float):audio {
+    a <- 1;
+    return PAN(audio(w, freq-0.2, length), -1) | PAN(audio(w, freq, length), 0) | PAN(audio(w, freq+0.2, length), 1);
+};
+func <- (a:int, b:int, c:(int):int, d:int):int {
+    return a+b+c(100)+d;
+};
+f <- (a:int):int {
+    return a*a;
+};
+print func(1, 1, f, 1);

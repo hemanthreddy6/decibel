@@ -16,6 +16,50 @@ DataType *wave_fuction_data_type;
 // (double):double
 DataType *time_varying_fuction_data_type;
 
+void print_data_type(DataType* dtype){
+    if (!dtype){
+        cerr << "void";
+        return;
+    }
+    if (dtype->is_primitive){
+        if (dtype->is_vector){
+            print_data_type(dtype->vector_data_type);
+            cerr << "[]";
+        } else {
+            switch (dtype->basic_data_type) {
+                case BOOL:
+                    cerr << "bool";
+                    break;
+                case INT:
+                    cerr << "int";
+                    break;
+                case LONG:
+                    cerr << "long";
+                    break;
+                case FLOAT:
+                    cerr << "float";
+                    break;
+                case AUDIO:
+                    cerr << "audio";
+                    break;
+            }
+        }
+    } else {
+        cerr << "(";
+        for (int i = 0; i < dtype->parameters.size(); i++){
+            print_data_type(dtype->parameters[i]);
+            if (i != dtype->parameters.size()-1){
+                cerr << ", ";
+            }
+        }
+        cerr << ")";
+        if (dtype->return_type){
+            cerr << ":";
+            print_data_type(dtype->return_type);
+        }
+    }
+}
+
 // Use this function to check if two data types are the same type
 bool are_data_types_equal(DataType *type1, DataType *type2) {
     if (!type1 || !type2){
@@ -1924,6 +1968,22 @@ void traverse_ast(Stype *node) {
         }
         node->data_type = new DataType(AUDIO);
         break;
+    case NODE_PAN_FUNCTION:
+        cout << string(current_scope, '\t') << "NODE_PAN_FUNCTION" << endl;
+        traverse_ast(node->children[0]);
+        traverse_ast(node->children[1]);
+        if (!are_data_types_equal_and_not_null(node->children[1]->data_type, time_varying_fuction_data_type) && !convertible_to_float(node->children[1]->data_type)){
+            yylval = node->children[1];
+            yyerror("Second argument of pan function must be a time varying function or a constant numberic value");
+            break;
+        }
+        if (!is_basic_type(node->children[0]->data_type, AUDIO)){
+            yylval = node->children[0];
+            yyerror("First argument of pan function must be audio");
+            break;
+        }
+        node->data_type = new DataType(AUDIO);
+        break;
     case NODE_NOT_SET:
         cout << "Big bad error: Oops, looks like you have an uninitialised Stype somewhere!" << endl;
         break;
@@ -2105,28 +2165,28 @@ void built_in_functions(){
     symbol_table[0][0].insert({"TRIANGLE_WAVE", StEntry(triangle_wave_data_type, true)});
 
     // PAN dynamic function 
-    DataType* pan_return_type = new DataType(AUDIO);
-    DataType* pan_parameter1 = new DataType(AUDIO);
-    DataType* pan_parameter2 = new DataType();
-    pan_parameter2->is_primitive = false;
-    pan_parameter2->return_type = new DataType(FLOAT);
-    DataType* pan_parameter2_data_type = new DataType(FLOAT);
-    pan_parameter2->parameters = {pan_parameter2_data_type};
-    vector<DataType*> pan_parameters = {pan_parameter1, pan_parameter2};
-    DataType* pan_data_type = new DataType();
-    pan_data_type->is_primitive = false;
-    pan_data_type->parameters = pan_parameters;
-    pan_data_type->return_type = pan_return_type;
-    symbol_table[0][0].insert({"PAN_DYNAMIC", StEntry(pan_data_type, true)});
+    // DataType* pan_return_type = new DataType(AUDIO);
+    // DataType* pan_parameter1 = new DataType(AUDIO);
+    // DataType* pan_parameter2 = new DataType();
+    // pan_parameter2->is_primitive = false;
+    // pan_parameter2->return_type = new DataType(FLOAT);
+    // DataType* pan_parameter2_data_type = new DataType(FLOAT);
+    // pan_parameter2->parameters = {pan_parameter2_data_type};
+    // vector<DataType*> pan_parameters = {pan_parameter1, pan_parameter2};
+    // DataType* pan_data_type = new DataType();
+    // pan_data_type->is_primitive = false;
+    // pan_data_type->parameters = pan_parameters;
+    // pan_data_type->return_type = pan_return_type;
+    // symbol_table[0][0].insert({"PAN_DYNAMIC", StEntry(pan_data_type, true)});
 
     // PAN static function
-    DataType* pan_parameter_static_2 = new DataType(FLOAT);
-    vector<DataType*> pan_parameters_static = {pan_parameter1, pan_parameter_static_2};
-    DataType* pan_data_type_static = new DataType();
-    pan_data_type_static->is_primitive = false;
-    pan_data_type_static->parameters = pan_parameters_static;
-    pan_data_type_static->return_type = pan_return_type;
-    symbol_table[0][0].insert({"PAN_STATIC", StEntry(pan_data_type_static, true)});
+    // DataType* pan_parameter_static_2 = new DataType(FLOAT);
+    // vector<DataType*> pan_parameters_static = {pan_parameter1, pan_parameter_static_2};
+    // DataType* pan_data_type_static = new DataType();
+    // pan_data_type_static->is_primitive = false;
+    // pan_data_type_static->parameters = pan_parameters_static;
+    // pan_data_type_static->return_type = pan_return_type;
+    // symbol_table[0][0].insert({"PAN_STATIC", StEntry(pan_data_type_static, true)});
 }
 
 int semantic() {

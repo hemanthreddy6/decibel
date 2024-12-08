@@ -15,6 +15,7 @@ CodeGen/out1.ll
 CodeGen/out.o
 CodeGen/decibel_stdlib.o
 CodeGen/out
+CodeGen/song.wav
 CodeGen/Tests/out
 CodeGen/Tests/out.o
 CodeGen/Tests/out.ll

@@ -78,6 +78,7 @@
         NODE_LOGICAL_OR_EXPR,
         NODE_ASSIGNABLE_VALUE,
         NODE_AUDIO_FUNCTION,
+        NODE_PAN_FUNCTION,
         NODE_NOT_SET
     };
 

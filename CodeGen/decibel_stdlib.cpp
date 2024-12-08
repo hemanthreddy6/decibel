@@ -5,6 +5,7 @@
 using namespace std;
 
 #define STANDARD_SAMPLE_RATE 44100 
+#define PI 3.14159265358979323846
 
 // Command to install SFML: sudo apt install libopenal-dev libsndfile1-dev libsfml-dev
 // Compilation flags: -lsfml-audio -lsfml-system
@@ -197,9 +198,7 @@ void play_audio(struct Audio audio_var) {
 
     sf::SoundBuffer buffer;
     buffer.loadFromFile(temp_file);
-
-    sf::Sound sound;
-    sound.setBuffer(buffer);
+    sf::Sound sound(buffer);
     sound.play();
 
     cout << "Playing audio" << endl;
@@ -441,6 +440,67 @@ struct Audio generate_audio_dynamic(short(*wav_function)(double), double(*freque
         if (final_left > INT16_MAX) final_left = INT16_MAX;
         if (final_left < INT16_MIN) final_left = INT16_MIN;
         int final_right = val;
+        if (final_right > INT16_MAX) final_right = INT16_MAX;
+        if (final_right < INT16_MIN) final_right = INT16_MIN;
+        new_audio.ptr[index++] = ((unsigned short)final_left & 0xFFFF) | (((unsigned short)final_right & 0xFFFF) << 16);
+    }
+    return new_audio;
+}
+struct Audio pan_audio_static(struct Audio audio_var1, double panning) {
+    struct Audio new_audio;
+    unsigned int index = 0;
+    unsigned short temp;
+
+    new_audio.length = audio_var1.length;
+    new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
+
+    double multiplier = 1.0/sin(PI/4.0);
+    double left_gain = cos((1+panning)*PI/4.0);
+    double right_gain = sin((1+panning)*PI/4.0);
+    left_gain *= multiplier;
+    right_gain *= multiplier;
+
+    cout << left_gain << " " << right_gain << endl;
+    cout << panning << endl;
+
+    for(int i=0;i<audio_var1.length;i++) {
+        short first_left = (short)(audio_var1.ptr[i] & 0xFFFF);
+        short first_right = (short)((audio_var1.ptr[i] >> 16) & 0xFFFF);
+        int final_left = first_left * left_gain;
+        if (final_left > INT16_MAX) final_left = INT16_MAX;
+        if (final_left < INT16_MIN) final_left = INT16_MIN;
+        int final_right = first_right * right_gain;
+        if (final_right > INT16_MAX) final_right = INT16_MAX;
+        if (final_right < INT16_MIN) final_right = INT16_MIN;
+        new_audio.ptr[index++] = ((unsigned short)final_left & 0xFFFF) | (((unsigned short)final_right & 0xFFFF) << 16);
+    }
+    return new_audio;
+}
+
+struct Audio pan_audio_dynamic(struct Audio audio_var1, double (*panning)(double)) {
+    struct Audio new_audio;
+    unsigned int index = 0;
+    unsigned short temp;
+
+    new_audio.length = audio_var1.length;
+    new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
+    double multiplier = 1.0/sin(PI/4.0);
+
+    // cout << "Hello" << endl;
+    // cout << scaling_factor(4) << endl;
+
+    for(int i=0;i<audio_var1.length;i++) {
+        double time = ((double)i)/(double)STANDARD_SAMPLE_RATE;
+        short first_left = (short)(audio_var1.ptr[i] & 0xFFFF);
+        short first_right = (short)((audio_var1.ptr[i] >> 16) & 0xFFFF);
+        double left_gain = cos((1+panning(time))*PI/4.0);
+        double right_gain = sin((1+panning(time))*PI/4.0);
+        left_gain *= multiplier;
+        right_gain *= multiplier;
+        int final_left = first_left * left_gain;
+        if (final_left > INT16_MAX) final_left = INT16_MAX;
+        if (final_left < INT16_MIN) final_left = INT16_MIN;
+        int final_right = first_right * right_gain;
         if (final_right > INT16_MAX) final_right = INT16_MAX;
         if (final_right < INT16_MIN) final_right = INT16_MIN;
         new_audio.ptr[index++] = ((unsigned short)final_left & 0xFFFF) | (((unsigned short)final_right & 0xFFFF) << 16);
