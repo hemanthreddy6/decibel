@@ -1,5 +1,5 @@
 snare <- load "snare2.wav";
-kick <- load "kick_44100.wav";
+kick <- (load "kick_44100.wav")*0.5;
 hihat <- (load "hihat_44100.wav")*0.2;
 
 hihat_loop <- ((hihat[0:0.125]) + (hihat[0:0.125]*0.5))^32;
@@ -47,15 +47,15 @@ length <- 1;
 //
 // play au;
 
-a1 <- audio_detuned(wf, -27, 0.25);
-a2 <- audio_detuned(wf, -29, 0.25);
-a3 <- audio_detuned(wf, -31, 0.25);
-a4 <- audio_detuned(wf, -24, 0.25);
+a1 <- audio(wf, -27, 0.25);
+a2 <- audio(wf, -29, 0.25);
+a3 <- audio(wf, -31, 0.25);
+a4 <- audio(wf, -24, 0.25);
 
-a5 <- audio_detuned(wf, -12, 0.25);
-a6 <- audio_detuned(wf, -13, 0.25);
-a7 <- audio_detuned(wf, -15, 0.25);
-a8 <- audio_detuned(wf, -8, 0.25);
+a5 <- audio(wf, -12, 0.25);
+a6 <- audio(wf, -13, 0.25);
+a7 <- audio(wf, -15, 0.25);
+a8 <- audio(wf, -8, 0.25);
 
 // a1 <- audio_detuned(-27, 0.25);
 // a2 <- audio_detuned(-29, 0.25);
@@ -88,11 +88,95 @@ duck <- (t:float):float {
 };
 
 duck_chords <- chords*duck;
-other_drums <- (snare[-0.5:0.5] | (hihat[-0.25:0.25]^2))^16 | hihat_loop[-8:8]*0.2;
-chords = chords[0:8] + duck_chords + duck_chords + duck_chords;
+other_drums <- (snare[-0.5:0.5] | (hihat[-0.25:0.25]^2))^8;
+chords_kick <- duck_chords|kick;
+chords_kick_snare <- duck_chords|kick|other_drums;
+full_thing <- chords_kick_snare | hihat_loop*0.3;
 
-song <- chords| kick[-8:8] + kick^2 | other_drums[-16:16];
+audio_lead <- (w:(float):int, freq:float, length:float):audio {
+    return (PAN(audio(w, freq-0.05, length), -0.5) | PAN(audio(w, freq, length), 0) | PAN(audio(w, freq+0.05, length), 0.5))*0.5;
+};
 
-save song -> "song.wav";
+n1 <- audio_lead(wf, 4, 0.25);
+n2 <- audio_lead(wf, 2, 0.25);
+n3 <- audio_lead(wf, 0, 0.125);
+n4 <- audio_lead(wf, 2, 0.5 - 0.125);
+n5 <- audio_lead(wf, 2, 0.25);
+n6 <- audio_lead(wf, 0, 0.25);
+n7 <- audio_lead(wf, -3, 0.5);
+n8 <- audio_lead(wf, 0, 0.5);
+n9 <- audio_lead(wf, 2, .125);
+n10 <- audio_lead(wf, 4, 0.5 - .125);
+n11 <- audio_lead(wf, 7, 0.25);
+verse1 <- n1[-0.25:0] + n1^4 + n2 + n3 + n4;
+verse2 <- n5^5 + n1 + n6^2;
+verse3 <- n7 + n8 + n9 + n10 + n7[-0.25:0.5] + n7[0:0.25] + n8 + n9 + n10[0:1-0.125];
+verse4 <- n1[-0.25:0] + n1^4 + n11 + n3 + n4;
 
-play song;
+lead1 <- verse1+verse2 + verse3;
+lead2 <- verse4+verse2 + verse3;
+
+// play chords_kick_snare^2 | (lead1+lead2);
+
+
+n12 <- audio_lead(wf, 4, 0.75);
+n13 <- audio_lead(wf, 0, 0.25);
+n14 <- audio_lead(wf, 5, 0.25);
+n15 <- audio_lead(wf, -1, 0.25);
+n16 <- audio_lead(wf, 2, 0.125);
+n17 <- audio_lead(wf, 4, 0.5 - 0.125);
+
+verse5 <- n12 + n13 + n2[-1:0.25] + n2^5;
+verse6 <- n1 + n14;
+verse7 <- n6 + n15;
+lead3 <- verse5 + verse6 + verse5 + verse7;
+
+verse8 <- n11[-0.25:0.25] + n11^3 + n14 + n16 + n17;
+lead4 <- verse8 + verse2 + verse3[0:2.75];
+
+m1 <- audio_lead(wf, 4, 0.25);
+m2 <- audio_lead(wf, 9, 0.25);
+m3 <- audio_lead(wf, 11, 0.25);
+m4 <- audio_lead(wf, 12, 0.75);
+m5 <- audio_lead(wf, 12, .5);
+m6 <- audio_lead(wf, 12, .25);
+m7 <- audio_lead(wf, 7, 0.25);
+m8 <- audio_lead(wf, 7, 0.5);
+m9 <- audio_lead(wf, 7, 0.125);
+m10 <- audio_lead(wf, 9, 1-0.125);
+
+lead5 <- m1 + m2^2 + m3 + m4 + m1[-1:0.25] + m5 + m6 + m3^2 + m2^2 + m7 + m8 + m2 + m9 + m10;
+// play lead4 + (lead5 | verse3[2.75:3.5]) + lead5[-1.25:6.5];
+
+m11 <- audio_lead(wf, 0, 0.25);
+m12 <- audio_lead(wf, 2, 0.25);
+m13 <- audio_lead(wf, 2, 0.5);
+m14 <- audio_lead(wf, 4, 0.5);
+m15 <- audio_lead(wf, 0, 0.125);
+m16 <- audio_lead(wf, -3, 0.5 - 0.125);
+
+lead6 <- m11 + m12 + m12[-0.25:0.25] + m12[-0.25:0.25] + m13[-0.125:0.375];
+lead7 <- m11 + m12 + m12[-0.25:0.25] + m12[-0.25:0.25] + m14[-0.125:0.375];
+lead8 <- m11 + m15 + m16;
+last_lead <- lead6^2 + lead7 + lead8 + lead5[-0.25:6.5];
+
+drums1 <- chords_kick_snare^2;
+drums1 = drums1[0:15] + kick[-1:0];
+
+part2 <- (chords_kick^2 + drums1 + full_thing^4) | (lead1 + lead2 + lead3 + lead4 + lead5 + lead5[-1.25:6.5] + last_lead[-2.5:16]);
+// play lead5[-1.25:6.5] + last_lead[-2.375:16];
+full_song <- chords^2 + part2;
+save full_song -> "song.wav";
+play full_song;
+
+
+// play chords;
+// play chords_kick;
+
+// chords = chords[0:8] + duck_chords + duck_chords + duck_chords;
+//
+// song <- chords| kick[-8:8] + kick^2 | other_drums[-16:16];
+
+// save song -> "song.wav";
+//
+// play song;
