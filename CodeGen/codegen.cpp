@@ -56,6 +56,7 @@ void declareAudioFunctions();
 Function *loadAudioFunction = nullptr;
 Function *playAudioFunction = nullptr;
 Function *saveAudioFunction = nullptr;
+Function *freeAudioFunction = nullptr;
 Function *concatAudioFunction = nullptr;
 Function *sliceAudioFunction = nullptr;
 Function *repeatAudioFunction = nullptr;
@@ -102,6 +103,10 @@ void declareAudioFunctions() {
         // void save_audio(struct Audio audio_var, char* filename);
         FunctionType *SaveAudioType = FunctionType::get(Type::getVoidTy(TheContext), {AudioType, Type::getInt8Ty(TheContext)->getPointerTo()}, false);
         saveAudioFunction = Function::Create(SaveAudioType, Function::ExternalLinkage, "save_audio", TheModule.get());
+
+        // void free_audio(struct Audio audio_var);
+        FunctionType *FreeAudioType = FunctionType::get(Type::getVoidTy(TheContext), {AudioType}, false);
+        freeAudioFunction = Function::Create(FreeAudioType, Function::ExternalLinkage, "free_audio", TheModule.get());
 
         // struct Audio concat_audio(struct Audio audio_var1, struct Audio audio_var2);
         FunctionType *ConcatAudioType = FunctionType::get(AudioType, {AudioType, AudioType}, false);
@@ -243,7 +248,12 @@ Value *codegen(Stype *node) {
                 start_time = createCast(start_time, Type::getDoubleTy(TheContext));
                 end_time = createCast(end_time, Type::getDoubleTy(TheContext));
                 auto SliceFunction = getFunction("slice_audio");
-                IdValue = Builder.CreateCall(SliceFunction, {IdValue, start_time, end_time}, "sliceaudio");
+                auto NewIdVal = Builder.CreateCall(SliceFunction, {IdValue, start_time, end_time}, "sliceaudio");
+                Function *AudioFreeFunc = TheModule->getFunction("free_audio");
+                if (i > 1){
+                    Builder.CreateCall(AudioFreeFunc, {IdValue});
+                }
+                IdValue = NewIdVal;
             }
         }
         return IdValue;
@@ -285,11 +295,19 @@ Value *codegen(Stype *node) {
         // Audio addition
         if (LHSType->isStructTy() && RHSType->isStructTy() && LHSType->getStructName() == "struct.Audio" && RHSType->getStructName() == "struct.Audio") {
             Function *AudioAddFunc = TheModule->getFunction("concat_audio");
+            Function *AudioFreeFunc = TheModule->getFunction("free_audio");
             if (!AudioAddFunc) {
                 declareAudioFunctions();
                 AudioAddFunc = TheModule->getFunction("concat_audio");
             }
-            return Builder.CreateCall(AudioAddFunc, {LHS, RHS}, "audioadd");
+            auto Val = Builder.CreateCall(AudioAddFunc, {LHS, RHS}, "audioadd");
+            if (node->children[0]->can_free) {
+                Builder.CreateCall(AudioFreeFunc, {LHS});
+            }
+            if (node->children[1]->can_free) {
+                Builder.CreateCall(AudioFreeFunc, {RHS});
+            }
+            return Val;
         }
 
         // handling addition of two function
@@ -333,12 +351,18 @@ Value *codegen(Stype *node) {
                 Value *temp = LHS;
                 LHS = RHS;
                 RHS = temp;
+                node->children[0]->can_free = node->children[1]->can_free;
             }
             LHSType = AudioType;
             RHS = createCast(RHS, Type::getDoubleTy(TheContext));
             RHSType = RHS->getType();
             Function *ScaleAudioFunc = TheModule->getFunction("scale_audio_static");
-            return Builder.CreateCall(ScaleAudioFunc, {LHS, RHS}, "scaleaudio");
+            auto Val = Builder.CreateCall(ScaleAudioFunc, {LHS, RHS}, "scaleaudio");
+            Function *AudioFreeFunc = TheModule->getFunction("free_audio");
+            if (node->children[0]->can_free) {
+                Builder.CreateCall(AudioFreeFunc, {LHS});
+            }
+            return Val;
         } else if (LHSType->isFloatingPointTy() || RHSType->isFloatingPointTy()) {
             LHS = createCast(LHS, Type::getDoubleTy(TheContext));
             RHS = createCast(RHS, Type::getDoubleTy(TheContext));
@@ -356,13 +380,19 @@ Value *codegen(Stype *node) {
                 LHS = RHS;
                 RHS = temp;
                 arg_function_type = getLLVMType(node->children[0]->data_type);
+                node->children[0]->can_free = node->children[1]->can_free;
             }
             arg_function_type = getLLVMType(node->children[1]->data_type);
             LHSType = AudioType;
 
             Function *ScaleAudioFuncDyn = TheModule->getFunction("scale_audio_dynamic");
             // return Builder.CreateCall(ScaleAudioFuncDyn, {LHS, RHS}, "scaleaudiodyn");
-            return Builder.CreateCall(ScaleAudioFuncDyn, {LHS, RHS}, "scaleaudiodyn");
+            auto Val = Builder.CreateCall(ScaleAudioFuncDyn, {LHS, RHS}, "scaleaudiodyn");
+            Function *AudioFreeFunc = TheModule->getFunction("free_audio");
+            if (node->children[0]->can_free) {
+                Builder.CreateCall(AudioFreeFunc, {LHS});
+            }
+            return Val;
             // return Builder.CreateCall(getFunction("_func_0")->getFunctionType(), temp1, ArgsV);
             // return Builder.CreateCall(functype, temp1, ArgsV);
         }
@@ -411,7 +441,15 @@ Value *codegen(Stype *node) {
             declareAudioFunctions();
             AudioSuperimpose = TheModule->getFunction("superimpose_audio");
         }
-        return Builder.CreateCall(AudioSuperimpose, {LHS, RHS}, "superimpose");
+        auto Val = Builder.CreateCall(AudioSuperimpose, {LHS, RHS}, "superimpose");
+        Function *AudioFreeFunc = TheModule->getFunction("free_audio");
+        if (node->children[0]->can_free) {
+            Builder.CreateCall(AudioFreeFunc, {LHS});
+        }
+        if (node->children[1]->can_free) {
+            Builder.CreateCall(AudioFreeFunc, {RHS});
+        }
+        return Val;
     }
     case NODE_POWER_EXPR: {
         cerr << "NODE_POWER_EXPR" << endl;
@@ -455,7 +493,12 @@ Value *codegen(Stype *node) {
                 FunctionType *AudioRepeatType = FunctionType::get(AudioType, {LHSType, RHSType}, false);
                 auto AudioRepeat = Function::Create(AudioRepeatType, Function::ExternalLinkage, "repeat_audio", TheModule.get());
             }
-            return Builder.CreateCall(AudioRepeat, {LHS, RHS}, "audiorepeat");
+            auto Val = Builder.CreateCall(AudioRepeat, {LHS, RHS}, "audiorepeat");
+            Function *AudioFreeFunc = TheModule->getFunction("free_audio");
+            if (node->children[0]->can_free) {
+                Builder.CreateCall(AudioFreeFunc, {LHS});
+            }
+            return Val;
         }
     }
     case NODE_EQUALS_EXPR: {

@@ -1363,6 +1363,7 @@ void traverse_ast(Stype *node) {
         break;
     case NODE_IDENTIFIER:
         cout << string(current_scope, '\t') << "Identifier node" << endl;
+        node->can_free = 0;
         if (!handle_identifier_reference(node)){
             node->data_type = NULL;
             break;
@@ -1893,7 +1894,9 @@ void traverse_ast(Stype *node) {
         traverse_ast(node->children[0]);
         node->data_type = node->children[0]->data_type;
         // TODO: handle vector index and slice
+        node->can_free = 0;
         for (int i = 1; i < node->children.size(); i++) {
+            node->can_free = 1;
             node->children[i]->data_type = node->data_type;
             traverse_ast(node->children[i]);
             node->data_type = node->children[i]->data_type;

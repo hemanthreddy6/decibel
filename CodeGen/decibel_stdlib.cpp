@@ -1,6 +1,7 @@
 #include <bits/stdc++.h>
 #include <SFML/Audio.hpp>
 #include <cmath>
+#include <cstdlib>
 using namespace std;
 
 #define STANDARD_SAMPLE_RATE 44100 
@@ -207,6 +208,10 @@ void play_audio(struct Audio audio_var) {
     }
 
     remove(temp_file);
+}
+
+void free_audio(struct Audio audio_var) {
+    free(audio_var.ptr);
 }
 
 struct Audio concat_audio(struct Audio first_audio, struct Audio second_audio) {

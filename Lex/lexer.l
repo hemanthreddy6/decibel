@@ -90,12 +90,14 @@
         enum NodeType node_type;
         std::vector<struct Stype*> children;
         struct DataType* data_type;
+        int can_free;
 
         Stype(): Stype(NODE_NOT_SET) {}
 
         Stype(enum NodeType type){
             node_type = type;
             data_type = NULL;
+            can_free = 1;
         }
     };
     #define YYSTYPE struct Stype *
