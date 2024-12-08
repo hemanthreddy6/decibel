@@ -1,12 +1,57 @@
-add <- (a: int, b: int): int {
-    return a + b;
+snare <- load "snare2.wav";
+kick <- load "kick_44100.wav";
+hihat <- (load "hihat_44100.wav")*0.2;
+
+hihat_loop <- ((hihat[0:0.125]) + (hihat[0:0.125]*0.5))^32;
+
+snare_env <- (t:float):float {
+    if t < 0.25 {
+        return 1-4*t;
+    }
+    return 0;
 };
 
-sub <- (a: int, b: int): int {
-    return a - b;
+snare = snare*snare_env;
+
+kick = kick[0:0.5]^16;
+
+wf <- (t:float):int {
+    scale <- 7000;
+    if (t < 0.5){
+        return (-scale + 4*t*scale);
+    } otherwise {
+        return (scale - 4*(t-0.5)*scale);
+    }
 };
 
-main {
-    result <- add("hello", 5);  // Error: Passing a string as argument when an int is expected
-    print result;
-}
+a1 <- audio(wf, -27, 0.25);
+a2 <- audio(wf, -29, 0.25);
+a3 <- audio(wf, -31, 0.25);
+a4 <- audio(wf, -24, 0.25);
+
+a5 <- audio(wf, -12, 0.25);
+a6 <- audio(wf, -13, 0.25);
+a7 <- audio(wf, -15, 0.25);
+a8 <- audio(wf, -8, 0.25);
+
+tr1 <- a1[0:0.5] + a1[0:0.5] + a1[0:0.375] + a4[0:0.375] + a4[0:0.24];
+tr2 <- a2[0:0.5] + a2[0:0.5] + a2[0:0.375] + a4[0:0.375] + a4[0:0.24];
+tr3 <- a3[0:0.5] + a3[0:0.5] + a3[0:0.375] + a4[0:0.375] + a4[0:0.24];
+
+tr4 <- a5[0:0.5] + a5[0:0.5] + a5[0:0.375] + a8[0:0.375] + a8[0:0.24];
+tr5 <- a6[0:0.5] + a6[0:0.5] + a6[0:0.375] + a8[0:0.375] + a8[0:0.24];
+tr6 <- a7[0:0.5] + a7[0:0.5] + a7[0:0.375] + a8[0:0.375] + a8[0:0.24];
+chords <- (tr1[0:2] + tr2[0:2] + tr3[0:2] + tr3[0:2]) | (tr4[0:2] + tr5[0:2] + tr6[0:2] + tr6[0:2]);
+duck <- (t:float):float {
+    if t%0.5 < 0.15{
+        return ((t%0.5)/0.15)*((t%0.5)/0.15);
+    } otherwise {
+        return 1;
+    }
+};
+
+duck_chords <- chords*duck;
+other_drums <- (snare[-0.5:0.5] | (hihat[-0.25:0.25]^2))^16 | hihat_loop[-8:8]*0.2;
+chords = chords[0:8] + duck_chords + duck_chords + duck_chords;
+
+play chords| kick[-8:8] + kick^2 | other_drums[-16:16];
