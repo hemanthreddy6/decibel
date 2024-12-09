@@ -15,8 +15,8 @@ test: build
 
 run: codegen decibel_stdlib.o
 	./codegen < test2.dbl
-	llc-18 -filetype=obj -relocation-model=pic out.ll -o out.o
-	clang++ out.o decibel_stdlib.o -o out -lsfml-audio -lsfml-system
+	# llc-18 -filetype=obj -relocation-model=pic out.ll -o out.o
+	clang++-18 out.ll decibel_stdlib.o -o out -lsfml-audio -lsfml-system
 	./out
 
 decibel_stdlib.o: decibel_stdlib.cpp

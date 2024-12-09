@@ -11,6 +11,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include <cstdio>
 #include <iostream>
+#include <optional>
 // #include <llvm-14/llvm/ADT/STLFunctionalExtras.h>
 // #include <llvm-14/llvm/IR/Constants.h>
 // #include <llvm-14/llvm/IR/Instructions.h>
@@ -38,12 +39,13 @@ StructType *AudioType = nullptr;
 // Symbol Table for code generation
 static vector<unordered_map<string, AllocaInst *>> NamedValues;
 static unordered_map<string, GlobalVariable *> NamedGlobals;
+static vector<pair<BasicBlock *, BasicBlock *>> CurrBreakoutPoints;
 int num_funcs = 0;
 vector<pair<Stype *, Function *>> function_nodes;
 
 // Function Declarations
 Value *codegen(Stype *node);
-Type *getLLVMType(DataType *dtype);
+Type *getLLVMType(DataType *dtype, bool);
 Value *convertToString(Value *Val);
 Value *createCast(Value *Val, Type *DestType);
 Function *getFunction(const string &name);
@@ -133,7 +135,7 @@ void declareAudioFunctions() {
 
         // struct Audio superimpose_audio(struct Audio audio_var1, struct Audio audio_var2);
         // superimposes one audio file over the other. The resulting file's length will be the max length of the two files
-        FunctionType *SuperimposeAudioType = FunctionType::get(AudioType, {AudioType, Type::getDoubleTy(TheContext)}, false);
+        FunctionType *SuperimposeAudioType = FunctionType::get(AudioType, {AudioType, AudioType}, false);
         superimposeAudioFunction = Function::Create(SuperimposeAudioType, Function::ExternalLinkage, "superimpose_audio", TheModule.get());
 
         FunctionType *ScaleAudioStatic = FunctionType::get(AudioType, {AudioType, Type::getDoubleTy(TheContext)}, false);
@@ -394,10 +396,10 @@ Value *codegen(Stype *node) {
                 Value *temp = LHS;
                 LHS = RHS;
                 RHS = temp;
-                arg_function_type = getLLVMType(node->children[0]->data_type);
+                arg_function_type = getLLVMType(node->children[0]->data_type, false);
                 node->children[0]->can_free = node->children[1]->can_free;
             }
-            arg_function_type = getLLVMType(node->children[1]->data_type);
+            arg_function_type = getLLVMType(node->children[1]->data_type, false);
             LHSType = AudioType;
 
             Function *ScaleAudioFuncDyn = TheModule->getFunction("scale_audio_dynamic");
@@ -673,7 +675,7 @@ Value *codegen(Stype *node) {
         // Function *CalleeF = getFunction(FuncName);
         auto CalleeF = findVariable(FuncName);
         // auto functype = CalleeF->getType();
-        FunctionType *functype = (FunctionType *)getLLVMType(node->children[0]->data_type);
+        FunctionType *functype = (FunctionType *)getLLVMType(node->children[0]->data_type, false);
 
         PointerType *FuncPointerType = PointerType::getUnqual(functype);
 
@@ -688,18 +690,18 @@ Value *codegen(Stype *node) {
             Value *ArgVal = codegen(arg);
             // TODO: Have to typecast to the required type if they are of different types
             if (node->children[0]->data_type->parameters[ind]->is_primitive)
-                ArgVal = createCast(ArgVal, getLLVMType(node->children[0]->data_type->parameters[ind]));
+                ArgVal = createCast(ArgVal, getLLVMType(node->children[0]->data_type->parameters[ind], false));
             else
-                ArgVal = createCast(ArgVal, getLLVMType(node->children[0]->data_type->parameters[ind])->getPointerTo());
+                ArgVal = createCast(ArgVal, getLLVMType(node->children[0]->data_type->parameters[ind], true));
             ArgsV.push_back(ArgVal);
             ind++;
         }
 
-        Value *p = Builder.CreateAlloca(CalleeF->getType(), nullptr, "p");
+        // Value *p = Builder.CreateAlloca(CalleeF->getType(), nullptr, "p");
 
-        Builder.CreateStore(CalleeF, p, false);
-        Value *temp = Builder.CreateLoad(FuncPointerType, p);
-        Value *temp1 = Builder.CreateLoad(FuncPointerType, temp);
+        // Builder.CreateStore(CalleeF, p, false);
+        // Value *temp = Builder.CreateLoad(FuncPointerType, p);
+        Value *temp1 = Builder.CreateLoad(FuncPointerType, CalleeF);
 
         // return Builder.CreateCall(getFunction("_func_0")->getFunctionType(), temp1, ArgsV);
         return Builder.CreateCall(functype, temp1, ArgsV);
@@ -729,54 +731,23 @@ Value *codegen(Stype *node) {
     //     Value* IndexVal = codegen(node->children[1]);
     //     return Builder.CreateExtractElement(VecVal, IndexVal, "vectorelem");
     // }
-    // Statements
-    case NODE_NORMAL_ASSIGNMENT_STATEMENT:
-    case NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT:
-    case NODE_MINUS_EQUALS_ASSIGNMENT_STATEMENT:
-    case NODE_MULT_EQUALS_ASSIGNMENT_STATEMENT:
-    case NODE_DIVIDE_EQUALS_ASSIGNMENT_STATEMENT:
-    case NODE_POWER_EQUALS_ASSIGNMENT_STATEMENT:
-    case NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT: {
-        cerr << "NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT" << endl;
-        // Handle compound assignments
+
+
+    // These statements have now been simplified to assignment statements in the parser when building ast
+    // case NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT:
+    // case NODE_MINUS_EQUALS_ASSIGNMENT_STATEMENT:
+    // case NODE_MULT_EQUALS_ASSIGNMENT_STATEMENT:
+    // case NODE_DIVIDE_EQUALS_ASSIGNMENT_STATEMENT:
+    // case NODE_POWER_EQUALS_ASSIGNMENT_STATEMENT:
+    // case NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT:
+    case NODE_NORMAL_ASSIGNMENT_STATEMENT: {
+        cerr << "NODE_NORMAL_ASSIGNMENT_STATEMENT" << endl;
         Stype *LHSNode = node->children[0];
         Stype *RHSNode = node->children[1];
         Value *RHSVal = codegen(RHSNode);
         AllocaInst *Var = findVariable(LHSNode->children[0]->text);
-        Value *LHSVal = Builder.CreateLoad(Var->getAllocatedType(), Var);
-
-        Value *Result;
-        switch (node->node_type) {
-        case NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT:
-            Result = Builder.CreateAdd(LHSVal, RHSVal, "addassigntmp");
-            break;
-        case NODE_MINUS_EQUALS_ASSIGNMENT_STATEMENT:
-            Result = Builder.CreateSub(LHSVal, RHSVal, "subassigntmp");
-            break;
-        case NODE_MULT_EQUALS_ASSIGNMENT_STATEMENT:
-            Result = Builder.CreateMul(LHSVal, RHSVal, "mulassigntmp");
-            break;
-        case NODE_DIVIDE_EQUALS_ASSIGNMENT_STATEMENT:
-            Result = Builder.CreateSDiv(LHSVal, RHSVal, "divassigntmp");
-            break;
-        case NODE_POWER_EQUALS_ASSIGNMENT_STATEMENT: {
-            // Implement power assignment
-            Function *PowFunc = Intrinsic::getDeclaration(TheModule.get(), Intrinsic::pow, {Type::getDoubleTy(TheContext)});
-            LHSVal = Builder.CreateSIToFP(LHSVal, Type::getDoubleTy(TheContext));
-            RHSVal = Builder.CreateSIToFP(RHSVal, Type::getDoubleTy(TheContext));
-            Result = Builder.CreateCall(PowFunc, {LHSVal, RHSVal}, "powassigntmp");
-            break;
-        }
-        case NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT:
-            Result = Builder.CreateSRem(LHSVal, RHSVal, "modassigntmp");
-            break;
-        default:
-            Result = RHSVal;
-            break;
-        }
-
-        Builder.CreateStore(Result, Var);
-        return Result;
+        Builder.CreateStore(RHSVal, Var);
+        return RHSVal;
     }
     case NODE_DECLARATION_STATEMENT:
     case NODE_DECLARATION_STATEMENT_WITH_TYPE: {
@@ -796,7 +767,7 @@ Value *codegen(Stype *node) {
         Type *VarType;
         if (node->node_type == NODE_DECLARATION_STATEMENT_WITH_TYPE) {
             DataType *DType = node->children[2]->data_type;
-            VarType = getLLVMType(DType);
+            VarType = getLLVMType(DType, false);
         } else {
             VarType = InitVal->getType();
         }
@@ -905,7 +876,7 @@ Value *codegen(Stype *node) {
 
         // cerr << node->children[0]->data_type->is_primitive << ' ' << node->children[0]->data_type->is_vector << ' '
         //      << (node->children[0]->data_type->basic_data_type == LONG) << endl;
-        Type *CounterType = getLLVMType(node->children[0]->data_type);
+        Type *CounterType = getLLVMType(node->children[0]->data_type, false);
         AllocaInst *LoopCounter = CreateEntryBlockAlloca(TheFunction, node->children[0]->text, CounterType);
         pushSymbolTable();
         NamedValues.back()[node->children[0]->text] = LoopCounter;
@@ -934,7 +905,12 @@ Value *codegen(Stype *node) {
 
         Builder.SetInsertPoint(LoopBB);
 
+        // Store the basic block to use for continue and break statements
+        CurrBreakoutPoints.push_back({CondBB, AfterLoopBB});
+
         codegen(node->children[4]); // Loop body statements
+
+        CurrBreakoutPoints.pop_back();
 
         Value *NewCounter;
         if (CounterType->isDoubleTy())
@@ -979,9 +955,11 @@ Value *codegen(Stype *node) {
         Value *DecrementedCounter = Builder.CreateSub(CurrentCounter, ConstantInt::get(NumIters->getType(), 1), "decrement");
         Builder.CreateStore(DecrementedCounter, LoopCounter);
 
+        CurrBreakoutPoints.push_back({CondBB, AfterLoopBB});
         pushSymbolTable();
         codegen(node->children[1]); // Loop body statements
         popSymbolTable();
+        CurrBreakoutPoints.pop_back();
 
         Builder.CreateBr(CondBB);
 
@@ -1008,9 +986,11 @@ Value *codegen(Stype *node) {
 
         Builder.SetInsertPoint(LoopBB);
 
+        CurrBreakoutPoints.push_back({CondBB, AfterLoopBB});
         pushSymbolTable();
         codegen(node->children[1]); // Loop body statements
         popSymbolTable();
+        CurrBreakoutPoints.pop_back();
 
         Builder.CreateBr(CondBB);
 
@@ -1020,13 +1000,20 @@ Value *codegen(Stype *node) {
     }
     case NODE_BREAK_STATEMENT: {
         cerr << "NODE_BREAK_STATEMENT" << endl;
-        // Implement break statement
-        // For simplicity, we can skip implementing break and continue
+        Function *TheFunction = Builder.GetInsertBlock()->getParent();
+        auto breakpoints = CurrBreakoutPoints.back();
+        Builder.CreateBr(breakpoints.second);
+        BasicBlock *NextBB = BasicBlock::Create(TheContext, "new_bb", TheFunction);
+        Builder.SetInsertPoint(NextBB);
         return Constant::getNullValue(Type::getInt32Ty(TheContext));
     }
     case NODE_CONTINUE_STATEMENT: {
         cerr << "NODE_CONTINUE_STATEMENT" << endl;
-        // Implement continue statement
+        Function *TheFunction = Builder.GetInsertBlock()->getParent();
+        auto breakpoints = CurrBreakoutPoints.back();
+        Builder.CreateBr(breakpoints.first);
+        BasicBlock *NextBB = BasicBlock::Create(TheContext, "new_bb", TheFunction);
+        Builder.SetInsertPoint(NextBB);
         return Constant::getNullValue(Type::getInt32Ty(TheContext));
     }
     case NODE_RETURN_STATEMENT: {
@@ -1052,6 +1039,7 @@ Value *codegen(Stype *node) {
 
         if (ExprVal->getType()->isIntegerTy()) {
             Value *FormatStr = Builder.CreateGlobalStringPtr("%ld\n");
+            ExprVal = createCast(ExprVal, Type::getInt64Ty(TheContext));
             Builder.CreateCall(printFunction, {FormatStr, ExprVal});
         } else if (ExprVal->getType()->isDoubleTy()) {
             Value *FormatStr = Builder.CreateGlobalStringPtr("%f\n");
@@ -1138,14 +1126,14 @@ Value *codegen(Stype *node) {
             DataType *ParamDataType = paramNode->data_type;
             Type *ParamType;
             if (ParamDataType->is_primitive)
-                ParamType = getLLVMType(ParamDataType);
+                ParamType = getLLVMType(ParamDataType, false);
             else
-                ParamType = getLLVMType(ParamDataType)->getPointerTo();
+                ParamType = getLLVMType(ParamDataType, true);
             ParamTypes.push_back(ParamType);
             ParamNames.push_back(paramNode->children[0]->text);
         }
 
-        Type *ReturnType = getLLVMType(ReturnTypeData);
+        Type *ReturnType = getLLVMType(ReturnTypeData, false);
         FunctionType *FT = FunctionType::get(ReturnType, ParamTypes, false);
         Function *TheFunction = Function::Create(FT, Function::ExternalLinkage, "_func_" + to_string(num_funcs), TheModule.get());
         node->text = "_func_" + to_string(num_funcs);
@@ -1177,12 +1165,12 @@ Value *codegen(Stype *node) {
 }
 
 // Function to get LLVM type from DataType
-Type *getLLVMType(DataType *dtype) {
+Type *getLLVMType(DataType *dtype, bool get_func_pointer = false) {
     if (!dtype)
         return nullptr;
     if (dtype->is_primitive) {
         if (dtype->is_vector) {
-            Type *elemType = getLLVMType(dtype->vector_data_type);
+            Type *elemType = getLLVMType(dtype->vector_data_type, true);
             return ArrayType::get(elemType, dtype->vector_size);
         } else {
             switch (dtype->basic_data_type) {
@@ -1205,13 +1193,16 @@ Type *getLLVMType(DataType *dtype) {
     } else {
         vector<Type *> ParamTypes;
         for (DataType *paramType : dtype->parameters) {
-            Type *llvmParamType = getLLVMType(paramType);
+            Type *llvmParamType = getLLVMType(paramType, true);
             ParamTypes.push_back(llvmParamType);
         }
-        Type *ReturnType = getLLVMType(dtype->return_type);
+        Type *ReturnType = getLLVMType(dtype->return_type, true);
         if (!ReturnType)
             ReturnType = Type::getVoidTy(TheContext);
-        return FunctionType::get(ReturnType, ParamTypes, false);
+        if (get_func_pointer)
+            return FunctionType::get(ReturnType, ParamTypes, false)->getPointerTo();
+        else
+            return FunctionType::get(ReturnType, ParamTypes, false);
     }
 }
 
@@ -1332,7 +1323,7 @@ int codegen_main(Stype *root) {
 
         int idx = 0;
         for (auto &Arg : TheFunction->args()) {
-            auto TP = getLLVMType(node->data_type->parameters[idx])->getPointerTo();
+            auto TP = getLLVMType(node->data_type->parameters[idx], true);
             // print_data_type(node->data_type->parameters[idx]);
             cerr << Arg.getName().str() << endl;
             cerr << node->text << endl;
@@ -1355,7 +1346,7 @@ int codegen_main(Stype *root) {
 
         codegen(node->children[2]);
 
-        auto RetType = getLLVMType(node->children[1]->data_type);
+        auto RetType = getLLVMType(node->children[1]->data_type, false);
 
         if (RetType == Type::getVoidTy(TheContext)) {
             Builder.CreateRetVoid();

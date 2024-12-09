@@ -40,9 +40,6 @@ audio_detuned <- (w:(float):int, freq:float, length:float):audio {
     return PAN(audio(w, freq-0.2, length), -0.5) | PAN(audio(w, freq, length), 0) | PAN(audio(w, freq+0.2, length), 0.5);
 };
 
-freq <- -24;
-length <- 1;
-
 // au <- PAN(audio(wf, freq-0.2, length), -1) | PAN(audio(wf, freq, length), 0) | PAN(audio(wf, freq+0.2, length), 1);
 //
 // play au;

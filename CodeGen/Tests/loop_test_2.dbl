@@ -1,0 +1,16 @@
+a <- 10;
+loop until a==0 {
+    a -= 1;
+    if a < 5 {
+        break;
+    }
+    print a;
+}
+loop until a==0 {
+    a -=1;
+    if a < 3 {
+        print "cont";
+        continue;
+    }
+    print a;
+}

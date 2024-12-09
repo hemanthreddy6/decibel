@@ -391,7 +391,7 @@ struct Audio generate_audio_static(short(*wav_function)(double), double frequenc
     new_audio.length = length_seconds*STANDARD_SAMPLE_RATE;
     new_audio.ptr = (unsigned int*)malloc(sizeof(unsigned int) * new_audio.length);
 
-    cout << "Hello" << endl;
+    // cout << "Hello" << endl;
     // cout << scaling_factor(4) << endl;
     
     double phase = 0;
@@ -460,8 +460,8 @@ struct Audio pan_audio_static(struct Audio audio_var1, double panning) {
     left_gain *= multiplier;
     right_gain *= multiplier;
 
-    cout << left_gain << " " << right_gain << endl;
-    cout << panning << endl;
+    // cout << left_gain << " " << right_gain << endl;
+    // cout << panning << endl;
 
     for(int i=0;i<audio_var1.length;i++) {
         short first_left = (short)(audio_var1.ptr[i] & 0xFFFF);

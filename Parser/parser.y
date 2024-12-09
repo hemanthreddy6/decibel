@@ -324,37 +324,61 @@ assignment_statement
         $$->children.push_back($1);
         $$->children.push_back($3); }
     | assignable_value PLUS_EQUALS expr { 
-        $$ = new Stype(NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT);
+        $$ = new Stype(NODE_NORMAL_ASSIGNMENT_STATEMENT);
         $$->children.push_back($1);
-        $$->children.push_back($3); }
+        Stype* plus_node = new Stype(NODE_PLUS_EXPR);
+        plus_node->children.push_back($1);
+        plus_node->children.push_back($3);
+        $$->children.push_back(plus_node); }
     | assignable_value MINUS_EQUALS expr { 
-        $$ = new Stype(NODE_MINUS_EQUALS_ASSIGNMENT_STATEMENT);
+        $$ = new Stype(NODE_NORMAL_ASSIGNMENT_STATEMENT);
         $$->children.push_back($1);
-        $$->children.push_back($3); }
+        Stype* MINUS_node = new Stype(NODE_MINUS_EXPR);
+        MINUS_node->children.push_back($1);
+        MINUS_node->children.push_back($3);
+        $$->children.push_back(MINUS_node); }
     | assignable_value MULT_EQUALS expr { 
-        $$ = new Stype(NODE_MULT_EQUALS_ASSIGNMENT_STATEMENT);
+        $$ = new Stype(NODE_NORMAL_ASSIGNMENT_STATEMENT);
         $$->children.push_back($1);
-        $$->children.push_back($3); }
+        Stype* MULT_node = new Stype(NODE_MULT_EXPR);
+        MULT_node->children.push_back($1);
+        MULT_node->children.push_back($3);
+        $$->children.push_back(MULT_node); }
     | assignable_value DIVIDE_EQUALS expr { 
-        $$ = new Stype(NODE_DIVIDE_EQUALS_ASSIGNMENT_STATEMENT);
+        $$ = new Stype(NODE_NORMAL_ASSIGNMENT_STATEMENT);
         $$->children.push_back($1);
-        $$->children.push_back($3); }
+        Stype* DIVIDE_node = new Stype(NODE_DIVIDE_EXPR);
+        DIVIDE_node->children.push_back($1);
+        DIVIDE_node->children.push_back($3);
+        $$->children.push_back(DIVIDE_node); }
     | assignable_value MOD_EQUALS expr { 
-        $$ = new Stype(NODE_MOD_EQUALS_ASSIGNMENT_STATEMENT);
+        $$ = new Stype(NODE_NORMAL_ASSIGNMENT_STATEMENT);
         $$->children.push_back($1);
-        $$->children.push_back($3); }
+        Stype* MOD_node = new Stype(NODE_MOD_EXPR);
+        MOD_node->children.push_back($1);
+        MOD_node->children.push_back($3);
+        $$->children.push_back(MOD_node); }
     | assignable_value OR_EQUALS expr { 
-        $$ = new Stype(NODE_OR_EQUALS_ASSIGNMENT_STATEMENT);
+        $$ = new Stype(NODE_NORMAL_ASSIGNMENT_STATEMENT);
         $$->children.push_back($1);
-        $$->children.push_back($3); }
+        Stype* OR_node = new Stype(NODE_LOGICAL_OR_EXPR);
+        OR_node->children.push_back($1);
+        OR_node->children.push_back($3);
+        $$->children.push_back(OR_node); }
     | assignable_value POWER_EQUALS expr { 
-        $$ = new Stype(NODE_POWER_EQUALS_ASSIGNMENT_STATEMENT);
+        $$ = new Stype(NODE_NORMAL_ASSIGNMENT_STATEMENT);
         $$->children.push_back($1);
-        $$->children.push_back($3); }
+        Stype* POWER_node = new Stype(NODE_POWER_EXPR);
+        POWER_node->children.push_back($1);
+        POWER_node->children.push_back($3);
+        $$->children.push_back(POWER_node); }
     | assignable_value DISTORTION_EQUALS expr { 
-        $$ = new Stype(NODE_DISTORTION_EQUALS_ASSIGNMENT_STATEMENT);
+        $$ = new Stype(NODE_NORMAL_ASSIGNMENT_STATEMENT);
         $$->children.push_back($1);
-        $$->children.push_back($3); } ;
+        Stype* DISTORTION_node = new Stype(NODE_DISTORTION_EXPR);
+        DISTORTION_node->children.push_back($1);
+        DISTORTION_node->children.push_back($3);
+        $$->children.push_back(DISTORTION_node); };
 
 conditional_statement
     : IF expr '{' loopable_statements '}' or_statements otherwise_statement {
