@@ -1287,7 +1287,7 @@ Function *getFunction(const string &name) {
 
 string outfile_name = "";
 string inp_file = "";
-string stdlib_path = "";
+string stdlib_path = "/usr/lib/decibel/";
 
 void parse_args(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++) {

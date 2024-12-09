@@ -6,6 +6,15 @@ build:
 	@make build -C "Semantic" --quiet
 	@make build -C "CodeGen" --quiet
 
+build_deb: build
+	cp CodeGen/codegen decibel/usr/bin/decibel
+	cp CodeGen/decibel_stdlib.o decibel/usr/lib/decibel/decibel_stdlib.o
+	chmod -R 755 decibel/DEBIAN
+	chmod -R 755 decibel/usr
+	dpkg-deb --build decibel
+
+install: 
+
 clean:
 	@make clean -C "Lex" --quiet
 	@make clean -C "Lex/Tests" --quiet

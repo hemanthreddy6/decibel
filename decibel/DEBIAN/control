@@ -1,0 +1,11 @@
+Package: decibel
+Version: 1.0.0
+Section: devel
+Priority: optional
+Architecture: amd64
+Depends: clang-18, libsfml-audio2.5, libsfml-system2.5
+Maintainer: Tuhil <kvtuhil@gmail.com>
+Description: A compiler for the decibel programming language
+ This package includes the decibel compiler and its runtime libraries.
+ The runtime requires decibel_stdlib.o, which is included in this package.
+ It also depends on clang-18 and SFML for audio processing.

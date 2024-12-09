@@ -619,11 +619,15 @@ int yyerror(const char* s){
 }
 #ifdef CODEGEN
 int codegen_main(Stype* root);
+void parse_args(int argc, char* argv[]);
 #endif
 int main(int argc, char* argv[]) {
-    if (argc > 1){
-        yyin = fopen(argv[1], "r");
-    }
+    #ifdef CODEGEN
+    // if (argc > 1){
+    //     yyin = fopen(argv[1], "r");
+    // }
+    parse_args(argc, argv);
+    #endif
     yyparse();
     
     if (is_error){
