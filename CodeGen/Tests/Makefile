@@ -23,7 +23,7 @@ test: build $(INPUT_FILES)
 	for input_file in $$sorted_files; do \
 		output_file=$$(basename $$input_file .dbl).out; \
 		output_file2=$$(basename $$input_file .dbl).actual_out; \
-		../codegen < $$input_file $(OUTPUT_FLAG); \
+		../codegen $$input_file -o out -I ../ $(OUTPUT_FLAG); \
 		llc-18 -filetype=obj -relocation-model=pic out.ll -o out.o; \
 		clang++ out.o ../decibel_stdlib.o -o out -lsfml-audio -lsfml-system; \
 		./out > $$output_file2; \

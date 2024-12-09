@@ -732,7 +732,6 @@ Value *codegen(Stype *node) {
     //     return Builder.CreateExtractElement(VecVal, IndexVal, "vectorelem");
     // }
 
-
     // These statements have now been simplified to assignment statements in the parser when building ast
     // case NODE_PLUS_EQUALS_ASSIGNMENT_STATEMENT:
     // case NODE_MINUS_EQUALS_ASSIGNMENT_STATEMENT:
@@ -1286,9 +1285,55 @@ Function *getFunction(const string &name) {
     return nullptr;
 }
 
+string outfile_name = "";
+string inp_file = "";
+string stdlib_path = "";
+
+void parse_args(int argc, char *argv[]) {
+    for (int i = 1; i < argc; i++) {
+        if (argv[i][0] == '-' && argv[i][1] == 'o') {
+            cerr << "hello" << endl;
+            if (i + 1 < argc) {
+                outfile_name = argv[i + 1];
+                i++;
+            } else {
+                cerr << "error: output flag specified but no output filename given" << endl;
+            }
+        } else if (argv[i][0] == '-' && argv[i][1] == 'I') {
+            if (i + 1 < argc) {
+                stdlib_path = argv[i + 1];
+                i++;
+            } else {
+                cerr << "error: include path flag specified but no argument given" << endl;
+            }
+
+        } else if (argv[i][0] == '-') {
+            // more options possible here
+            cerr << "hello2" << endl;
+        } else if (inp_file == "") {
+            cerr << argv[i] << endl;
+            inp_file = argv[i];
+            yyin = fopen(argv[i], "r");
+        }
+    }
+}
+
+void compile_and_link_final_binary() {
+    string decibel_stdlib = stdlib_path + "decibel_stdlib.o";
+    string linker_flags = " -lsfml-audio -lsfml-system";
+    string command = "clang++-18 " + outfile_name + ".ll " + decibel_stdlib + " -o " + outfile_name + linker_flags;
+    int result = std::system(command.c_str());
+    if (result != 0) {
+        cerr << "error: Linking failed!" << endl;
+    }
+}
+
 // Main codegen entry point
 int codegen_main(Stype *root) {
-    freopen("out.ll", "w", stdout);
+    if (outfile_name == "") {
+        outfile_name = "a.out";
+    }
+    freopen((outfile_name + ".ll").c_str(), "w", stdout);
     // Initialize the module
     TheModule = make_unique<Module>("MyModule", TheContext);
 
@@ -1365,6 +1410,8 @@ int codegen_main(Stype *root) {
 
     // Print the generated code
     TheModule->print(outs(), nullptr);
+
+    compile_and_link_final_binary();
 
     return 0;
 }
