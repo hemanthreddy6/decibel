@@ -1,8 +1,3 @@
-// Codegen/codegen.cpp
-
-// #include "codegen.h"
-
-// Include LLVM headers
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
@@ -11,12 +6,6 @@
 #include "llvm/Support/raw_ostream.h"
 #include <cstdio>
 #include <iostream>
-#include <optional>
-// #include <llvm-14/llvm/ADT/STLFunctionalExtras.h>
-// #include <llvm-14/llvm/IR/Constants.h>
-// #include <llvm-14/llvm/IR/Instructions.h>
-// #include <llvm-14/llvm/Support/Casting.h>
-// #include <llvm-14/llvm/IR/Instructions.h>
 #include <math.h>
 #include <string>
 #include <vector>
@@ -39,6 +28,8 @@ StructType *AudioType = nullptr;
 // Symbol Table for code generation
 static vector<unordered_map<string, AllocaInst *>> NamedValues;
 static unordered_map<string, GlobalVariable *> NamedGlobals;
+
+// Used for storing the basic blocks that continue and break statements jump to
 static vector<pair<BasicBlock *, BasicBlock *>> CurrBreakoutPoints;
 int num_funcs = 0;
 vector<pair<Stype *, Function *>> function_nodes;
@@ -71,6 +62,7 @@ Function *generateAudioFunctionDynamic = nullptr;
 Function *panAudioFunctionStatic = nullptr;
 Function *panAudioFunctionDynamic = nullptr;
 Function *printFunction = nullptr;
+Function *scanFunction = nullptr;
 
 // Push a new symbol table onto the stack
 void pushSymbolTable() { NamedValues.emplace_back(); }
@@ -168,14 +160,20 @@ void declareAudioFunctions() {
     }
 }
 
-// Declare the printf function
 void declarePrintFunction() {
     if (!printFunction) {
         std::vector<Type *> PrintArgs;
         PrintArgs.push_back(Type::getInt8Ty(TheContext)->getPointerTo()); // char*
         FunctionType *PrintType = FunctionType::get(Type::getInt32Ty(TheContext), PrintArgs, true);
         printFunction = Function::Create(PrintType, Function::ExternalLinkage, "printf", TheModule.get());
-        // cerr << "Declared Print function yay!!" << endl;
+    }
+}
+void declareScanFunction() {
+    if (!scanFunction) {
+        std::vector<Type *> ScanArgs;
+        ScanArgs.push_back(Type::getInt8Ty(TheContext)->getPointerTo()); // char*
+        FunctionType *ScanType = FunctionType::get(Type::getInt32Ty(TheContext), ScanArgs, true);
+        scanFunction = Function::Create(ScanType, Function::ExternalLinkage, "scanf", TheModule.get());
     }
 }
 
@@ -297,7 +295,7 @@ Value *codegen(Stype *node) {
             return Builder.CreateAdd(LHS, RHS, "addtmp");
         }
         // String addition
-        if (LHSType->isPointerTy() && LHSType->getContainedType(0)->isIntegerTy(8)) {
+        if (LHSType->isPointerTy()) {
             Function *StrCatFunc = TheModule->getFunction("string_concat");
             if (!StrCatFunc) {
                 FunctionType *StrCatType =
@@ -1031,6 +1029,27 @@ Value *codegen(Stype *node) {
         Builder.SetInsertPoint(UnreachableBB);
         return nullptr;
     }
+    case NODE_READ_STATEMENT: {
+        cerr << "NODE_READ_STATEMENT" << endl;
+        declareScanFunction();
+        AllocaInst *var = findVariable(node->children[0]->children[0]->text);
+
+        Value *FormatStr;
+
+        if (getLLVMType(node->children[0]->data_type, false)->isIntegerTy()) {
+            FormatStr = Builder.CreateGlobalStringPtr("%ld");
+            Builder.CreateCall(scanFunction, {FormatStr, var});
+        } else if (getLLVMType(node->children[0]->data_type, false)->isDoubleTy()) {
+            FormatStr = Builder.CreateGlobalStringPtr("%f");
+            Builder.CreateCall(scanFunction, {FormatStr, var});
+        } else if (getLLVMType(node->children[0]->data_type, false)->isPointerTy()) {
+            FormatStr = Builder.CreateGlobalStringPtr("%s");
+            AllocaInst *stringBuffer = Builder.CreateAlloca(Type::getInt8Ty(TheContext), ConstantInt::get(Type::getInt32Ty(TheContext), 256), "stringBuffer");
+            Builder.CreateCall(scanFunction, {FormatStr, stringBuffer});
+            Builder.CreateStore(stringBuffer, var);
+        }
+        return nullptr;
+    }
     case NODE_PRINT_STATEMENT: {
         cerr << "NODE_PRINT_STATEMENT" << endl;
         declarePrintFunction();
@@ -1300,6 +1319,7 @@ void parse_args(int argc, char *argv[]) {
                 cerr << "error: output flag specified but no output filename given" << endl;
             }
         } else if (argv[i][0] == '-' && argv[i][1] == 'I') {
+            cerr << "hello43243" << endl;
             if (i + 1 < argc) {
                 stdlib_path = argv[i + 1];
                 i++;

@@ -1,0 +1,4 @@
+a <- "";
+b <- "Hello ";
+read a;
+print b + a;

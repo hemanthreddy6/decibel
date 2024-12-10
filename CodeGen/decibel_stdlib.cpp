@@ -2,6 +2,7 @@
 #include <SFML/Audio.hpp>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 using namespace std;
 
 #define STANDARD_SAMPLE_RATE 44100 
@@ -57,6 +58,16 @@ unsigned int find_data_chunk(vector<char> fileBytes){
 
 // Audio functions
 extern "C"{
+
+char* string_concat(char* str1, char* str2){
+    int len1 = strlen(str1);
+    int len2 = strlen(str2);
+    char* new_str = (char*)malloc(sizeof(char)*(len1+len2));
+    strcat(new_str, str1);
+    strcat(new_str, str2);
+    return new_str;
+}
+
 struct Audio load_audio(char* filename) {
     ifstream file(filename, ios::binary);
     vector<char> fileBytes((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());

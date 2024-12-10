@@ -14,7 +14,7 @@ test: build
 	@make test -C "Tests" --quiet
 
 run: codegen decibel_stdlib.o
-	./codegen test2.dbl -o out -I ./
+	./codegen test3.dbl -o out -I ./
 	# llc-18 -filetype=obj -relocation-model=pic out.ll -o out.o
 	# clang++-18 out.ll decibel_stdlib.o -o out -lsfml-audio -lsfml-system
 	./out
